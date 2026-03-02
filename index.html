@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Banquet Dashboard - V.9.1 Executive</title>
+    <title>Banquet Dashboard - V.9.1 Final</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -15,29 +15,25 @@
         body.night-mode { --bg-deep: #000000; --glass: rgba(0, 0, 0, 0.8); --glass-border: #1e1b4b; --neon: #4f46e5; --gate-bg: #000000; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg-deep); color: #f8fafc; padding: 8px; margin: 0; display: flex; flex-direction: column; height: 100dvh; gap: 6px; overflow: hidden; transition: background 0.3s ease; }
         
-        /* UI Components */
         .card-base { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 1rem; padding: 8px; transition: 0.3s; position: relative; }
         .nav-arrow { background: rgba(255,255,255,0.08); color: white; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: 800; border: 1px solid var(--glass-border); }
         select, .search-input { background: transparent; color: white; border: none; outline: none; font-weight: 800; width: 100%; text-align: center; font-size: 12px; appearance: none; }
         .filter-btn { padding: 4px 10px; border-radius: 99px; font-size: 8px; font-weight: 800; border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; }
         .filter-btn.active { background: var(--neon); color: white; border-color: var(--neon); }
         .action-btn { background: rgba(255,255,255,0.1); color: white; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 11px; border: 1px solid rgba(255,255,255,0.1); }
-        .tentative-glow { border: 1.5px solid #f59e0b !important; box-shadow: inset 0 0 10px rgba(245, 158, 11, 0.1); }
         
-        /* Layout */
+        /* ALERT TENTATIVE */
+        .tentative-glow { border: 1.5px solid #f59e0b !important; box-shadow: inset 0 0 10px rgba(245, 158, 11, 0.1); }
+        .follow-up-badge { background: #f59e0b; color: #000; font-size: 7px; font-weight: 900; padding: 1px 4px; border-radius: 3px; text-transform: uppercase; margin-left: 4px; animation: blink 1.5s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
         #event-container { overflow-y: auto; scrollbar-width: none; flex: 1; min-height: 0; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
-        /* Security Gate Lux Design */
+        /* SECURITY GATE */
         #login-gate { background: var(--gate-bg); transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1); z-index: 999; }
         .lux-card { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(99, 102, 241, 0.2); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px rgba(99, 102, 241, 0.1); border-radius: 2rem; }
         .google-btn { background: #ffffff; color: #1f2937; font-weight: 700; transition: all 0.3s; border: 1px solid #e5e7eb; position: relative; overflow: hidden; }
-        .google-btn:active { scale: 0.95; }
-        .google-btn::after { content: ''; position: absolute; inset: 0; background: linear-gradient(45deg, transparent, rgba(99, 102, 241, 0.1), transparent); transform: translateX(-100%); transition: 0.5s; }
-        .google-btn:hover::after { transform: translateX(100%); }
-        
-        @keyframes pulse-glow { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
-        .animate-pulse-slow { animation: pulse-glow 3s infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .animate-spin { animation: spin 0.8s linear infinite; }
     </style>
@@ -45,36 +41,26 @@
 <body class="no-scrollbar">
 
     <div id="login-gate" class="fixed inset-0 flex flex-col items-center justify-center p-8">
-        <div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-64 h-64 bg-indigo-600/20 blur-[100px] animate-pulse-slow"></div>
-        
         <div class="lux-card w-full max-w-sm p-10 text-center space-y-8 backdrop-blur-3xl relative">
             <div class="space-y-2">
-                <div class="w-16 h-16 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-indigo-500/20 rotate-3">
+                <div class="w-16 h-16 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg rotate-3">
                     <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                 </div>
                 <h2 class="text-2xl font-extrabold tracking-tight text-white italic uppercase">Access Point</h2>
                 <p class="text-[9px] font-bold text-slate-400 tracking-[0.4em] uppercase">Lotus Garden Kediri</p>
             </div>
-
-            <div class="space-y-4">
-                <button onclick="loginWithGoogle()" id="login-btn" class="google-btn w-full py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl">
-                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5">
-                    <span class="text-sm tracking-tight uppercase font-black">Authorize with Google</span>
-                </button>
-                <p id="login-msg" class="text-[9px] font-black text-rose-400 uppercase tracking-widest opacity-0 transition-opacity">Akses Dibatalkan</p>
-            </div>
-
-            <div class="pt-4">
-                <p class="text-[7px] font-bold text-slate-600 uppercase tracking-widest">Banquet Management System V.9.1</p>
-            </div>
+            <button onclick="loginWithGoogle()" id="login-btn" class="google-btn w-full py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5">
+                <span class="text-sm tracking-tight uppercase font-black">Authorize with Google</span>
+            </button>
         </div>
     </div>
 
     <div class="flex justify-between items-center px-1 flex-none">
-        <div><h1 class="text-[12px] font-black italic uppercase text-indigo-400">Banquet Dashboard</h1><p class="text-[6px] font-bold text-slate-500 tracking-widest uppercase text-left">Kediri V.9.1 [Secure]</p></div>
+        <div><h1 class="text-[12px] font-black italic uppercase text-indigo-400">Banquet Dashboard</h1><p class="text-[6px] font-bold text-slate-500 tracking-widest uppercase text-left">Kediri V.9.1 [System Ready]</p></div>
         <div class="flex gap-2">
             <button onclick="toggleNightMode()" id="night-btn" class="bg-slate-800 text-[12px] p-2 rounded-lg border border-slate-700">🌙</button>
-            <button onclick="window.location.href='graphics.html'" class="bg-indigo-500/20 text-indigo-400 px-2 py-1.5 rounded-full text-[8px] font-black border border-indigo-500/30 uppercase tracking-tighter">Analytics →</button>
+            <button onclick="window.location.href='graphics.html'" class="bg-indigo-500/20 text-indigo-400 px-2 py-1.5 rounded-full text-[8px] font-black border border-indigo-500/30">ANALYTICS →</button>
         </div>
     </div>
 
@@ -125,7 +111,7 @@
             </div>
             <div class="grid grid-cols-2 border-t border-white/5 pt-1 text-center">
                 <div><p class="text-[7px] font-bold text-slate-500 uppercase mb-1">Gross</p><p id="daily-gross" class="text-[12px] font-black">Rp0</p></div>
-                <div class="border-l border-white/10"><p class="text-[7px] font-bold text-indigo-400 uppercase mb-1">Nett (Exc. Tax)</p><p id="daily-nett" class="text-[12px] font-black text-indigo-300">Rp0</p></div>
+                <div class="border-l border-white/10"><p class="text-[7px] font-bold text-indigo-400 uppercase mb-1">Nett</p><p id="daily-nett" class="text-[12px] font-black text-indigo-300">Rp0</p></div>
             </div>
         </div>
     </div>
@@ -136,7 +122,7 @@
             <h2 id="mtd-onhand" class="text-xl font-black tracking-tighter leading-none my-1">Rp0</h2>
             <div class="flex items-center gap-2 px-4 mt-1">
                 <div class="bg-white/10 h-1.5 flex-1 rounded-full overflow-hidden">
-                    <div id="progress-bar" class="h-full bg-indigo-500 transition-all duration-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]" style="width: 0%"></div>
+                    <div id="progress-bar" class="h-full bg-indigo-500 transition-all duration-500" style="width: 0%"></div>
                 </div>
                 <span id="mtd-ach" class="text-[10px] font-black text-indigo-300">0%</span>
             </div>
@@ -144,7 +130,6 @@
     </div>
 
     <script>
-        // --- FIREBASE SETUP ---
         const firebaseConfig = {
             apiKey: "AIzaSyCX0--DGM_tp_2y7hBbrGiMfeVyToVD4zM",
             authDomain: "banquet-dashboard-kediri.firebaseapp.com",
@@ -156,30 +141,27 @@
         firebase.initializeApp(firebaseConfig);
         const provider = new firebase.auth.GoogleAuthProvider();
 
-        // --- WHITELIST CONFIG ---
         const allowedEmails = [
             "it.lotusgardenbywh@gmail.com", 
             "sm.lotusgardenbywh@gmail.com",
-            "gm.lotusgardenbywh@gmail.com" // Sesuaikan daftar email lo
+            "agussuryadi197878@gmail.com"
+            "abdullah.junaidi73@gmail.com"
+            
         ];
 
         const API_KEY = 'AIzaSyBZjSmOA81ftVsIJT5etEL19NjPdYTVSQk';
         const SHEET_ID = '1MXwfVXORuTd125BCkKYP_mHC_6O_Z1mZcGno2VCGOeE';
         let cachedRows = []; let currentStatusFilter = 'ALL'; let isHighValueMode = false; let isGlobalTentative = false;
 
-        // AUTH SESSION
         firebase.auth().onAuthStateChanged((user) => {
             const gate = document.getElementById('login-gate');
-            const msg = document.getElementById('login-msg');
             if (user) {
                 if (allowedEmails.includes(user.email)) {
                     gate.style.transform = "translateY(-100%)";
                     setTimeout(() => { gate.style.display = 'none'; handleInit(); }, 600);
                 } else {
                     firebase.auth().signOut();
-                    msg.innerText = "EMAIL TIDAK TERDAFTAR!";
-                    msg.classList.remove('opacity-0');
-                    alert("Akses Ditolak: " + user.email);
+                    alert("Akses Ditolak!");
                 }
             } else {
                 gate.style.display = 'flex';
@@ -188,15 +170,7 @@
         });
 
         async function loginWithGoogle() {
-            const btn = document.getElementById('login-btn');
-            btn.innerHTML = `<svg class="animate-spin h-5 w-5 text-indigo-600" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
-            try { await firebase.auth().signInWithPopup(provider); } 
-            catch (e) { 
-                console.error(e); 
-                btn.innerHTML = `SIGN IN WITH GOOGLE`;
-                document.getElementById('login-msg').innerText = "FAILED TO CONNECT";
-                document.getElementById('login-msg').classList.remove('opacity-0');
-            }
+            try { await firebase.auth().signInWithPopup(provider); } catch (e) { console.error(e); }
         }
 
         async function handleInit() {
@@ -205,7 +179,6 @@
             if (venue) {
                 document.getElementById('month-select').value = "ALL";
                 document.getElementById('customer-search').value = decodeURIComponent(venue);
-                setStatusFilter('ALL');
             } else { setToday(); }
             updateDashboard();
         }
@@ -223,8 +196,7 @@
                     cachedRows = data.values || [];
                 }
                 
-                let html = ''; let lCount = 0; let lGross = 0; let lPax = 0;
-                let mtdNett = 0;
+                let html = ''; let lCount = 0; let lGross = 0; let lPax = 0; let mtdNett = 0;
 
                 for (let i = 26; i < cachedRows.length; i++) {
                     const r = cachedRows[i]; if (!r || !r[9] || !r[13]) continue;
@@ -247,15 +219,18 @@
                         let isTent = sStat.includes("TENTATIVE");
                         let cCol = sStat.includes("DONE") ? 'text-indigo-300 bg-indigo-500/30' : (sStat.includes("CONFIRM") ? 'text-emerald-400 bg-emerald-500/20' : (isTent ? 'text-amber-400 bg-amber-500/20' : 'text-slate-400 bg-slate-500/10'));
                         
+                        // BADGE FOLLOW UP (HANYA UNTUK TENTATIVE)
+                        let followUpBadge = isTent ? `<span class="follow-up-badge">FOLLOW UP</span>` : '';
+
                         html += `<div class="bg-white/[0.04] border border-white/10 rounded-xl p-2.5 relative ${isTent ? 'tentative-glow' : ''}">
                             <div class="absolute top-0 right-0 flex items-center z-10 text-[6px] font-black uppercase">
                                 <span class="bg-indigo-500/10 text-indigo-200 px-1.5 py-0.5">${r[9]}</span>
                                 <span class="bg-white/10 px-1.5 py-0.5">${(r[15]||'TBD')}</span>
-                                <span class="${cCol} px-1.5 py-0.5">${sStat}</span>
+                                <span class="${cCol} px-1.5 py-0.5">${sStat}${followUpBadge}</span>
                             </div>
-                            <p class="text-indigo-300 text-[10px] font-bold uppercase truncate pr-20 mb-1 relative z-10 tracking-tight">${r[10]}</p>
+                            <p class="text-indigo-300 text-[10px] font-bold uppercase truncate pr-20 mb-1 relative z-10">${r[10]}</p>
                             <div class="flex justify-between items-end leading-none relative z-10">
-                                <p class="text-xl font-black text-white">${r[11]||'0'}<span class="text-[7px] text-slate-500 ml-0.5 uppercase">Pax</span></p>
+                                <p class="text-xl font-black text-white">${r[11]||'0'}<span class="text-[7px] text-slate-500 ml-0.5">PAX</span></p>
                                 <p class="text-emerald-400 text-xs font-black">${formatRp(gVal)}</p>
                             </div>
                         </div>`;
@@ -267,7 +242,7 @@
                 else { for (let j = 88; j <= 99; j++) tBud += cleanVal(cachedRows[j]?.[1]); }
 
                 const ach = tBud > 0 ? Math.round((mtdNett / tBud) * 100) : 0;
-                container.innerHTML = lCount > 0 ? html : `<div class="py-10 opacity-20 text-center text-[10px] font-black uppercase">No Reservations Found</div>`;
+                container.innerHTML = lCount > 0 ? html : `<div class="py-10 opacity-20 text-center text-[10px] font-black uppercase">No Data Found</div>`;
                 document.getElementById('daily-pax').innerText = lPax.toLocaleString('id-ID');
                 document.getElementById('daily-count').innerText = lCount;
                 document.getElementById('daily-gross').innerText = formatRp(lGross);
@@ -276,18 +251,6 @@
                 document.getElementById('mtd-ach').innerText = ach + "%";
                 document.getElementById('progress-bar').style.width = Math.min(ach, 100) + "%";
             } catch (e) { console.error(e); }
-        }
-
-        // --- CORE FUNCTIONS (V.8.9 STEADY) ---
-        async function refreshData() { 
-            const btn = document.getElementById('btn-refresh'); 
-            btn.classList.add('animate-spin'); 
-            cachedRows = []; 
-            document.getElementById('customer-search').value = ""; 
-            setStatusFilter('ALL'); 
-            setToday(); 
-            await updateDashboard(); 
-            setTimeout(() => btn.classList.remove('animate-spin'), 600); 
         }
 
         function cleanVal(s) { return parseFloat((s||"0").toString().replace(/[^0-9,-]+/g, "").replace(",", ".")) || 0; }
@@ -301,6 +264,7 @@
         function toggleHighValue() { isHighValueMode = !isHighValueMode; updateDashboard(); }
         function toggleNightMode() { const isNight = document.body.classList.toggle('night-mode'); localStorage.setItem('nightMode', isNight ? 'enabled' : 'disabled'); document.getElementById('night-btn').innerText = isNight ? '☀️' : '🌙'; }
         function filterAllTentative() { isGlobalTentative = !isGlobalTentative; if(isGlobalTentative) { document.getElementById('month-select').value = "ALL"; resetDateOnly(); setStatusFilter('TENTATIVE'); } else { setToday(); setStatusFilter('ALL'); updateDashboard(); } }
+        async function refreshData() { const btn = document.getElementById('btn-refresh'); btn.classList.add('animate-spin'); cachedRows = []; document.getElementById('customer-search').value = ""; setStatusFilter('ALL'); setToday(); await updateDashboard(); setTimeout(() => btn.classList.remove('animate-spin'), 600); }
     </script>
 </body>
 </html>
