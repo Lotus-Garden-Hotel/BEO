@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Banquet Dashboard - V.9.3 Ultra</title>
+    <title>Banquet Dashboard - V.9.4 Precision</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -31,6 +31,10 @@
         #event-container { overflow-y: auto; scrollbar-width: none; flex: 1; min-height: 0; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
+        /* Copy Feedback Style */
+        .copy-toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #6366f1; color: white; padding: 6px 16px; border-radius: 20px; font-size: 10px; font-weight: 800; z-index: 1000; animation: fadeInUp 0.3s ease-out; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
         #login-gate { background: var(--gate-bg); transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1); z-index: 999; }
         .lux-card { background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 2rem; }
         .google-btn { background: #ffffff; color: #1f2937; font-weight: 700; border: 1px solid #e5e7eb; }
@@ -49,7 +53,7 @@
                 <h2 class="text-2xl font-black tracking-tight text-white italic uppercase">Access Point</h2>
                 <p class="text-[9px] font-bold text-slate-500 tracking-[0.4em] uppercase">Lotus Garden Kediri</p>
             </div>
-            <button onclick="loginWithGoogle()" class="google-btn w-full py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl hover:scale-[1.02] transition-transform">
+            <button onclick="loginWithGoogle()" class="google-btn w-full py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl">
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5">
                 <span class="text-sm tracking-tight uppercase font-black">Authorize System</span>
             </button>
@@ -57,7 +61,7 @@
     </div>
 
     <div class="flex justify-between items-center px-1 flex-none">
-        <div><h1 class="text-[12px] font-black italic uppercase text-indigo-400">Banquet Dashboard</h1><p class="text-[6px] font-bold text-slate-500 tracking-widest uppercase text-left">Kediri V.9.3 [Precision Layout]</p></div>
+        <div><h1 class="text-[12px] font-black italic uppercase text-indigo-400">Banquet Dashboard</h1><p class="text-[6px] font-bold text-slate-500 tracking-widest uppercase text-left">Kediri V.9.4 [Precision Mode]</p></div>
         <div class="flex gap-2">
             <button onclick="toggleNightMode()" id="night-btn" class="btn-top bg-slate-800 border border-slate-700">🌙</button>
             <button onclick="logoutManual()" class="btn-top btn-logout">
@@ -102,11 +106,14 @@
     <div class="card-base flex-1 flex flex-col overflow-hidden min-h-0">
         <div id="event-container" class="space-y-1.5 no-scrollbar pt-1"></div>
         
-        <div class="mt-2 pt-2 border-t border-white/5 grid grid-cols-4 gap-1 flex-none text-center bg-black/10 rounded-lg py-2">
-            <div><p class="text-[6px] font-bold text-slate-500 uppercase tracking-tighter">Pax</p><p id="daily-pax" class="text-[10px] font-black text-amber-400 leading-none">0</p></div>
-            <div class="border-l border-white/5"><p class="text-[6px] font-bold text-slate-500 uppercase tracking-tighter">Events</p><p id="daily-count" class="text-[10px] font-black text-slate-200 leading-none">0</p></div>
-            <div class="border-l border-white/5"><p class="text-[6px] font-bold text-slate-500 uppercase tracking-tighter">Gross</p><p id="daily-gross" class="text-[10px] font-black text-emerald-400 leading-none">0</p></div>
-            <div class="border-l border-white/5"><p class="text-[6px] font-bold text-indigo-400 uppercase tracking-tighter">Nett</p><p id="daily-nett" class="text-[10px] font-black text-indigo-300 leading-none">0</p></div>
+        <div class="mt-2 pt-2 border-t border-white/5 grid grid-cols-4 gap-0.5 flex-none text-center bg-black/20 rounded-lg py-2">
+            <div><p class="text-[6px] font-bold text-slate-500 uppercase">Pax</p><p id="daily-pax" class="text-[10px] font-black text-amber-400">0</p></div>
+            <div class="border-l border-white/5"><p class="text-[6px] font-bold text-slate-500 uppercase">Events</p><p id="daily-count" class="text-[10px] font-black text-slate-200">0</p></div>
+            <div class="border-l border-white/5 px-0.5"><p class="text-[6px] font-bold text-slate-500 uppercase">Gross</p><p id="daily-gross" class="text-[8.5px] font-black text-emerald-400 leading-tight">Rp0</p></div>
+            <div class="border-l border-white/5 px-0.5 cursor-pointer active:scale-95 transition-transform" onclick="copyNettToClipboard()">
+                <p class="text-[6px] font-bold text-indigo-400 uppercase">Nett (Copy)</p>
+                <p id="daily-nett" class="text-[8.5px] font-black text-indigo-300 leading-tight">Rp0</p>
+            </div>
         </div>
     </div>
 
@@ -114,10 +121,10 @@
         <div class="card-base bg-gradient-to-br from-indigo-950/40 to-black/40 border-indigo-500/20 p-3">
             <div class="flex justify-between items-end mb-2">
                 <div class="flex flex-col">
-                    <p id="mtd-label" class="text-[7px] font-black text-indigo-300 tracking-[0.2em] uppercase leading-none">Performance</p>
+                    <p id="mtd-label" class="text-[7px] font-black text-indigo-300 tracking-[0.2em] uppercase">PERFORMANCE</p>
                     <p class="text-[6px] font-bold text-slate-500 uppercase mt-0.5">Realized Revenue (Nett)</p>
                 </div>
-                <h2 id="mtd-onhand" class="text-xl font-black tracking-tighter leading-none text-white">Rp0</h2>
+                <h2 id="mtd-onhand" class="text-xl font-black tracking-tighter text-white">Rp0</h2>
             </div>
             
             <div class="relative w-full h-2.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
@@ -125,23 +132,15 @@
             </div>
 
             <div class="flex justify-between mt-2.5 px-0.5">
-                <div class="flex flex-col">
-                    <span class="text-[6px] font-bold text-slate-500 uppercase tracking-widest">Budget</span>
-                    <span id="mtd-budget" class="text-[10px] font-black text-white leading-none mt-1">Rp0</span>
-                </div>
-                <div class="flex flex-col items-center">
-                    <span class="text-[6px] font-bold text-slate-500 uppercase tracking-widest">Achievement</span>
-                    <span id="mtd-ach" class="text-[10px] font-black text-indigo-300 leading-none mt-1">0%</span>
-                </div>
-                <div class="flex flex-col items-end">
-                    <span class="text-[6px] font-bold text-slate-500 uppercase tracking-widest">Variance</span>
-                    <span id="mtd-gap" class="text-[10px] font-black leading-none mt-1">Rp0</span>
-                </div>
+                <div class="flex flex-col"><span class="text-[6px] font-bold text-slate-500 uppercase">Budget</span><span id="mtd-budget" class="text-[10px] font-black text-white mt-0.5">Rp0</span></div>
+                <div class="flex flex-col items-center"><span class="text-[6px] font-bold text-slate-500 uppercase">Ach.</span><span id="mtd-ach" class="text-[10px] font-black text-indigo-300 mt-0.5">0%</span></div>
+                <div class="flex flex-col items-end"><span class="text-[6px] font-bold text-slate-500 uppercase">Variance</span><span id="mtd-gap" class="text-[10px] font-black mt-0.5">Rp0</span></div>
             </div>
         </div>
     </div>
 
     <script>
+        // Firebase Config
         const firebaseConfig = { apiKey: "AIzaSyCX0--DGM_tp_2y7hBbrGiMfeVyToVD4zM", authDomain: "banquet-dashboard-kediri.firebaseapp.com", projectId: "banquet-dashboard-kediri", storageBucket: "banquet-dashboard-kediri.firebasestorage.app", messagingSenderId: "716626784276", appId: "1:716626784276:web:4f7d4d51dace341d21b701" };
         firebase.initializeApp(firebaseConfig);
         const provider = new firebase.auth.GoogleAuthProvider();
@@ -149,7 +148,7 @@
 
         const API_KEY = 'AIzaSyBZjSmOA81ftVsIJT5etEL19NjPdYTVSQk';
         const SHEET_ID = '1MXwfVXORuTd125BCkKYP_mHC_6O_Z1mZcGno2VCGOeE';
-        let cachedRows = []; let currentStatusFilter = 'ALL'; let isHighValueMode = false; let isGlobalTentative = false;
+        let cachedRows = []; let currentStatusFilter = 'ALL'; let isHighValueMode = false; let currentNettRaw = 0;
 
         firebase.auth().onAuthStateChanged((user) => {
             const gate = document.getElementById('login-gate');
@@ -165,9 +164,22 @@
         async function loginWithGoogle() { try { await firebase.auth().signInWithPopup(provider); } catch (e) { console.error(e); } }
         function logoutManual() { if(confirm("Logout dari sistem?")) firebase.auth().signOut(); }
 
+        // Populate Month Dropdown
         const monthNames = ["-- SEMUA --", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
         const s = document.getElementById('month-select');
         monthNames.forEach((m, i) => { let o = document.createElement('option'); o.value = i === 0 ? "ALL" : i; o.text = m.toUpperCase(); s.add(o); });
+
+        // Fitur Copy to Clipboard
+        function copyNettToClipboard() {
+            const rawValue = Math.round(currentNettRaw).toString();
+            navigator.clipboard.writeText(rawValue).then(() => {
+                const toast = document.createElement('div');
+                toast.className = 'copy-toast';
+                toast.innerText = 'NETT COPIED TO CLIPBOARD';
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 2000);
+            });
+        }
 
         async function updateDashboard() {
             if (!firebase.auth().currentUser) return;
@@ -221,6 +233,7 @@
                     }
                 }
 
+                currentNettRaw = lGross / 1.21;
                 document.getElementById('mtd-label').innerText = monthVal === "ALL" ? "PERFORMANCE OVERALL" : `PERFORMANCE ${monthNames[parseInt(monthVal)].toUpperCase()}`;
                 let tBud = monthVal !== "ALL" ? cleanVal(cachedRows[88 + (parseInt(monthVal) - 1)]?.[1]) : 0;
                 if(monthVal === "ALL") { for (let j = 88; j <= 99; j++) tBud += cleanVal(cachedRows[j]?.[1]); }
@@ -229,12 +242,12 @@
                 container.innerHTML = lCount > 0 ? html : `<div class="py-10 opacity-20 text-center text-[8px] font-black uppercase">Data Kosong</div>`;
                 document.getElementById('daily-pax').innerText = lPax.toLocaleString('id-ID');
                 document.getElementById('daily-count').innerText = lCount;
-                document.getElementById('daily-gross').innerText = formatShort(lGross);
-                document.getElementById('daily-nett').innerText = formatShort(lGross / 1.21);
+                document.getElementById('daily-gross').innerText = formatRp(lGross);
+                document.getElementById('daily-nett').innerText = formatRp(currentNettRaw);
                 document.getElementById('mtd-onhand').innerText = formatRp(mtdNett);
                 document.getElementById('mtd-budget').innerText = formatRp(tBud);
                 document.getElementById('mtd-gap').innerText = formatRp(gap);
-                document.getElementById('mtd-gap').className = `text-[10px] font-black leading-none mt-1 ${gap < 0 ? 'text-rose-500' : 'text-emerald-400'}`;
+                document.getElementById('mtd-gap').className = `text-[10px] font-black mt-0.5 ${gap < 0 ? 'text-rose-500' : 'text-emerald-400'}`;
                 document.getElementById('mtd-ach').innerText = ach + "%";
                 document.getElementById('progress-bar').style.width = Math.min(ach, 100) + "%";
             } catch (e) { console.error(e); }
@@ -242,7 +255,6 @@
 
         function cleanVal(s) { return parseFloat((s||"0").toString().replace(/[^0-9,-]+/g, "").replace(",", ".")) || 0; }
         function formatRp(n) { return "Rp" + Math.round(n).toLocaleString('id-ID'); }
-        function formatShort(n) { return (n/1000000).toFixed(1) + "M"; }
         function setToday() { let n = new Date(); document.getElementById('date-input').value = new Date(n.getTime() - (n.getTimezoneOffset()*60000)).toISOString().split('T')[0]; document.getElementById('month-select').value = (n.getMonth() + 1).toString(); }
         function resetDateOnly() { document.getElementById('date-input').value = ""; updateDashboard(); }
         function syncMonthFromDate() { let v = document.getElementById('date-input').value; if(v) document.getElementById('month-select').value = parseInt(v.split('-')[1]).toString(); updateDashboard(); }
@@ -251,7 +263,7 @@
         function setStatusFilter(s) { currentStatusFilter = s; document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); document.getElementById('btn-' + s).classList.add('active'); updateDashboard(); }
         function toggleHighValue() { isHighValueMode = !isHighValueMode; updateDashboard(); }
         function toggleNightMode() { const isNight = document.body.classList.toggle('night-mode'); document.getElementById('night-btn').innerText = isNight ? '☀️' : '🌙'; }
-        function filterAllTentative() { isGlobalTentative = !isGlobalTentative; if(isGlobalTentative) { document.getElementById('month-select').value = "ALL"; resetDateOnly(); setStatusFilter('TENTATIVE'); } else { setToday(); setStatusFilter('ALL'); updateDashboard(); } }
+        function filterAllTentative() { if(confirm("Check Status Tentative untuk di Followup.")) { document.getElementById('month-select').value = "ALL"; resetDateOnly(); setStatusFilter('TENTATIVE'); } }
         async function refreshData() { const btn = document.getElementById('btn-refresh'); btn.classList.add('animate-spin'); cachedRows = []; document.getElementById('customer-search').value = ""; setStatusFilter('ALL'); setToday(); await updateDashboard(); setTimeout(() => btn.classList.remove('animate-spin'), 600); }
         function handleInit() { const v = new URLSearchParams(window.location.search).get('venue'); if (v) { document.getElementById('month-select').value = "ALL"; document.getElementById('customer-search').value = decodeURIComponent(v); } else { setToday(); } updateDashboard(); }
     </script>
