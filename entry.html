@@ -3,17 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Banquet System Pro V.3.8</title>
+    <title>Banquet System Pro V.3.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
         :root { --bg: #020617; }
-        html, body { height: 100vh; overflow: hidden; background: var(--bg); font-family: 'Plus Jakarta Sans', sans-serif; color: #f8fafc; margin: 0; padding: 0; }
-        .viewport-wrapper { height: 100vh; display: flex; flex-direction: column; padding: 8px 12px; }
-        .glass-card { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(20px); border: 2px solid rgba(255,255,255,0.08); border-radius: 1.2rem; padding: 16px; flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; }
-        input, select { background: rgba(15, 23, 42, 0.7); border: 1.5px solid rgba(255,255,255,0.12); border-radius: 0.8rem; padding: 12px; color: white; width: 100%; outline: none; font-size: 14px; font-weight: 600; }
-        label { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #94a3b8; margin-bottom: 4px; display: block; }
-        .btn-sync { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; border-radius: 0.9rem; font-weight: 800; font-size: 11px; height: 50px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        
+        /* FIX ANDROID: Struktur Flex agar Footer tetap terlihat */
+        html, body { 
+            height: 100vh; 
+            background: var(--bg); 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            color: #f8fafc; 
+            margin: 0; padding: 0; 
+            overflow: hidden; 
+        }
+
+        .viewport-wrapper { 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            padding: 10px 12px;
+            box-sizing: border-box;
+        }
+
+        .glass-card { 
+            background: rgba(255, 255, 255, 0.02); 
+            backdrop-filter: blur(20px); 
+            border: 2px solid rgba(255,255,255,0.08); 
+            border-radius: 1.2rem; 
+            padding: 16px; 
+            flex: 1 1 auto; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-evenly;
+            overflow-y: auto;
+        }
+
+        input, select { background: rgba(15, 23, 42, 0.7); border: 1.5px solid rgba(255,255,255,0.12); border-radius: 0.8rem; padding: 10px; color: white; width: 100%; outline: none; font-size: 13px; font-weight: 600; }
+        label { font-size: 9px; font-weight: 800; text-transform: uppercase; color: #94a3b8; margin-bottom: 2px; display: block; }
+        
+        .btn-sync { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; border-radius: 0.9rem; font-weight: 800; font-size: 11px; height: 48px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         
         /* Modal & Tab Style */
         #tentative-modal { position: fixed; inset: 0; background: rgba(2, 6, 23, 0.95); backdrop-filter: blur(8px); z-index: 50; display: none; align-items: center; justify-content: center; padding: 20px; }
@@ -23,8 +53,8 @@
         .tab-inactive { background: rgba(255,255,255,0.05); color: #64748b; }
 
         /* Footer Deeplink */
-        .footer-link { margin-top: 8px; padding: 12px; border-radius: 12px; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); text-align: center; text-decoration: none; transition: all 0.2s; }
-        .footer-link:active { transform: scale(0.98); background: rgba(99, 102, 241, 0.2); }
+        .footer-area { flex: 0 0 auto; padding-top: 10px; padding-bottom: env(safe-area-inset-bottom); }
+        .footer-link { padding: 12px; border-radius: 12px; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); text-align: center; display: block; text-decoration: none; }
     </style>
 </head>
 <body>
@@ -48,7 +78,7 @@
         <div class="flex items-center justify-between mb-2">
             <div>
                 <h1 class="text-xl font-black italic text-indigo-400">BANQUET <span class="text-white">PRO</span></h1>
-                <p class="text-[7px] font-bold text-slate-500 tracking-[0.2em]">V.3.8 FINAL DEEPLINK</p>
+                <p class="text-[7px] font-bold text-slate-500 tracking-[0.2em]">V.3.9 ANDROID OPTIMIZED</p>
             </div>
             <div class="flex gap-2">
                 <button onclick="openTentativeModal()" class="p-2 bg-white/5 rounded-lg border border-white/10 relative">
@@ -59,8 +89,8 @@
             </div>
         </div>
 
-        <div id="main-card" class="glass-card">
-            <div class="grid grid-cols-2 gap-4">
+        <div class="glass-card">
+            <div class="grid grid-cols-2 gap-3">
                 <div><label>📅 Tanggal</label><input type="date" id="input-date" onchange="checkAvailability()"></div>
                 <div><label>🏛️ Venue</label><select id="input-venue" onchange="checkAvailability()">
                     <option value="">-- PILIH --</option>
@@ -71,11 +101,11 @@
                 </select></div>
             </div>
 
-            <div id="avail-status" class="hidden w-full py-2.5 rounded-lg text-[10px] font-black border text-center uppercase"></div>
+            <div id="avail-status" class="hidden w-full py-2 rounded-lg text-[9px] font-black border text-center uppercase"></div>
 
-            <div id="form-details" class="space-y-3 opacity-20 pointer-events-none">
+            <div id="form-details" class="space-y-2 opacity-20 pointer-events-none">
                 <div><label>👤 Customer</label><input type="text" id="input-customer"></div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-2 gap-3">
                     <div><label>⚡ Status</label><select id="input-status" onchange="updateStatusUI()">
                         <option value="">-- PILIH --</option>
                         <option value="TENTATIVE">TENTATIVE</option>
@@ -83,7 +113,7 @@
                         <option value="DONE">DONE</option>
                     </select></div>
                     <div><label>📦 Package</label><select id="input-package">
-                        <<option value="FULL BOARD">FULL BOARD</option>
+                        <option value="FULL BOARD">FULL BOARD</option>
                     <option value="HALF DAY">HALF DAY</option>
                     <option value="FULL DAY">FULL DAY</option>
                     <option value="WEDDING">WEDDING</option>
@@ -95,30 +125,32 @@
                     <option value="LUNCH">LUNCH</option>
                     </select></div>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-2 gap-3">
                     <div><label>💼 PIC</label><select id="input-sales"><option value="DWI">DWI</option><option value="TINA">TINA</option></select></div>
                     <div><label>🕒 Waktu</label><input type="text" id="input-time" placeholder="08:00 - 13:00"></div>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-2 gap-3">
                     <div><label>👥 Pax</label><input type="number" id="input-pax" oninput="calcTotal()"></div>
                     <div><label>💰 Harga</label><input type="text" id="input-price-display" oninput="formatCurrency(this)"><input type="hidden" id="input-price"></div>
                 </div>
-                <div class="bg-indigo-500/10 border border-indigo-500/20 p-3.5 rounded-xl">
-                    <p class="text-[8px] font-black text-indigo-400 uppercase">Estimasi Revenue</p>
-                    <p id="display-total" class="text-xl font-black text-emerald-400">Rp 0</p>
+                <div class="bg-indigo-500/10 border border-indigo-500/20 p-3 rounded-xl">
+                    <p class="text-[7px] font-black text-indigo-400 uppercase">Estimasi Revenue</p>
+                    <p id="display-total" class="text-lg font-black text-emerald-400">Rp 0</p>
                 </div>
                 <div id="action-area" class="grid grid-cols-1 gap-2">
-                    <button id="btn-delete" onclick="deleteData()" class="hidden bg-red-500/10 border border-red-500/20 text-red-500 py-3 rounded-xl font-bold text-[11px]">🗑️ DELETE DATA</button>
+                    <button id="btn-delete" onclick="deleteData()" class="hidden bg-red-500/10 border border-red-500/20 text-red-500 py-3 rounded-xl font-bold text-[10px]">🗑️ DELETE DATA</button>
                     <button id="btn-save" onclick="submitData()" class="btn-sync">🚀 SYNC TO CLOUD</button>
                 </div>
             </div>
         </div>
 
-        <a href="https://lotus-garden-hotel.github.io/BEO-Lotus-Garden-Hotel/" target="_blank" class="footer-link block">
-            <p class="text-[9px] font-black text-indigo-400 uppercase flex items-center justify-center gap-2">
-                📂 OPEN BEO DASHBOARD <span class="text-white">↗</span>
-            </p>
-        </a>
+        <div class="footer-area">
+            <a href="https://lotus-garden-hotel.github.io/BEO-Lotus-Garden-Hotel/" target="_blank" class="footer-link">
+                <p class="text-[9px] font-black text-indigo-400 uppercase flex items-center justify-center gap-2">
+                    📂 OPEN BEO DASHBOARD <span class="text-white">↗</span>
+                </p>
+            </a>
+        </div>
     </div>
 
     <script>
@@ -148,7 +180,7 @@
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.replace('tab-active', 'tab-inactive'));
             const activeId = filterType === 'TENTATIVE' ? 'tab-tentative' : (filterType === 'CONFIRM' ? 'tab-confirm' : 'tab-nostatus');
             document.getElementById(activeId).classList.replace('tab-inactive', 'tab-active');
-            container.innerHTML = '<p class="text-center text-[10px] animate-pulse py-10 text-slate-500 font-black">SCANNING...</p>';
+            container.innerHTML = '<p class="text-center text-[10px] animate-pulse py-10 text-slate-500 font-black uppercase">Scanning...</p>';
             try {
                 const now = new Date();
                 const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${monthNames[now.getMonth()]}!A8:D132?key=${API_KEY}`);
@@ -171,7 +203,7 @@
                         <p class="text-[11px] font-black text-white uppercase">${r[2]}</p>
                         <p class="text-[8px] text-slate-500 font-bold uppercase">${r.dateRef} • ${r[1]}</p>
                     </div>`;
-                }).join('') || '<p class="text-center py-10 text-slate-500 text-[10px]">TIDAK ADA DATA</p>';
+                }).join('') || '<p class="text-center py-10 text-slate-500 text-[10px] font-black uppercase tracking-widest">Kosong</p>';
             } catch (e) { container.innerHTML = 'Error!'; }
         }
 
@@ -189,7 +221,7 @@
             if (!dVal || !vVal) return;
             const statusDiv = document.getElementById('avail-status');
             statusDiv.innerHTML = "MENCARI DATA...";
-            statusDiv.className = "w-full py-2.5 rounded-lg text-[10px] font-black border text-center animate-pulse bg-white/5";
+            statusDiv.className = "w-full py-2 rounded-lg text-[9px] font-black border text-center animate-pulse bg-white/5";
             statusDiv.classList.remove('hidden');
             try {
                 const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${monthNames[new Date(dVal).getMonth()]}!A8:M132?key=${API_KEY}`);
@@ -205,11 +237,11 @@
                 statusDiv.classList.remove('animate-pulse');
                 if (found) {
                     statusDiv.innerHTML = `⚠️ TERISI: ${found[3] || 'NO STATUS'}`;
-                    statusDiv.className = "w-full py-2.5 rounded-lg text-[10px] font-black border text-center bg-amber-500/10 text-amber-400 border-amber-500/20";
+                    statusDiv.className = "w-full py-2 rounded-lg text-[9px] font-black border text-center bg-amber-500/10 text-amber-400 border-amber-500/20";
                     populateForm(found);
                 } else {
                     statusDiv.innerHTML = "✅ TERSEDIA";
-                    statusDiv.className = "w-full py-2.5 rounded-lg text-[10px] font-black border text-center bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+                    statusDiv.className = "w-full py-2 rounded-lg text-[9px] font-black border text-center bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
                     clearDetailsOnly();
                 }
                 updateStatusUI();
@@ -254,6 +286,7 @@
 
         async function sendRequest(payload) {
             const btnS = document.getElementById('btn-save'); const btnD = document.getElementById('btn-delete');
+            btnS.disabled = true; btnD.disabled = true;
             try {
                 const res = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) });
                 const txt = await res.text();
@@ -275,7 +308,7 @@
 
         function submitData() {
             const dVal = document.getElementById('input-date').value;
-            if(!dateVal) return alert("Pilih tanggal!");
+            if(!dVal) return alert("Pilih tanggal!");
             document.getElementById('btn-save').innerHTML = "SYNCING...";
             sendRequest({
                 action: "UPDATE", sheetName: monthNames[new Date(dVal).getMonth()], date: dVal,
