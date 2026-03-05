@@ -110,13 +110,15 @@
         <div class="glass-card">
             <div class="grid grid-cols-2 gap-3">
                 <div><label>📅 Tanggal</label><input type="date" id="input-date" onchange="checkAvailability()"></div>
-                <div><label>🏛️ Venue</label><select id="input-venue" onchange="checkAvailability()">
-                    <option value="">-- PILIH --</option>
-                    <option value="Ball Room">BALL ROOM</option>
-                    <option value="VIP Room">VIP ROOM</option>
-                    <option value="Teratai Room">TERATAI ROOM</option>
-                    <option value="Fox Steak House">FOX STEAK HOUSE</option>
-                </select></div>
+                div><label>🏛️ Venue</label>
+    <select id="input-venue" onchange="checkAvailability()">
+        <option value="">-- PILIH --</option>
+        <option value="BALL ROOM">BALL ROOM</option>
+        <option value="VIP ROOM">VIP ROOM</option>
+        <option value="TERATAI ROOM">TERATAI ROOM</option>
+        <option value="FOX STEAK HOUSE">FOX STEAK HOUSE</option>
+    </select>
+</div>
             </div>
 
             <div id="avail-status" class="hidden w-full py-2 rounded-xl text-[9px] font-black border text-center uppercase tracking-widest"></div>
