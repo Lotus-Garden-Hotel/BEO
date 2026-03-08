@@ -711,12 +711,12 @@ function logoutUser() {
 // ─── CONFIG (dari Master Config) ───────────────────────────────────────────
 const CONFIG_KEY = 'banquet_elite_config';
 const DEFAULT_CFG = {
-  gasUrl:    'https://script.google.com/macros/s/AKfycbwjfndDj0xAqQxG0V4ZcHFDgZs0YhvyrB-2eLpqAGimEOC6aUFS7BzBuxx43iyqE94W/exec',
+  gasUrl:    'https://script.google.com/macros/s/AKfycbxGa8HVDrxGgXQDaiU570HdqaDqNmthRaPhEF7x_fPG6fgiNqtdTslngxExTY54K08g/exec',
   venues:    ['Ball Room','VIP Room','Teratai Room','Fox Steak House'],
   packages:  ['Full Board','Half Day','Full Day','Wedding','Akad Nikah','Arisan','Ulang Tahun','Table Maner','Dinner','Lunch'],
   sales:     ['Dwi','Tina'],
-  brand:     'LOTUS GARDEN HOTEL',
-  version:   'Training Edition',
+  brand:     'BANQUET ELITE',
+  version:   'V.5.3 · Gold Edition',
   dashboard: 'https://lotus-garden-hotel.github.io/BEO-Lotus-Garden-Hotel/'
 };
 
@@ -1044,7 +1044,7 @@ function switchTab(t) {
   loadScanner(t);
 }
 
-async function loadScanner(filter) {
+async function loadScanner(filter, filterDate) {
   const body = document.getElementById('scanner-list');
   body.innerHTML = '<div class="empty-state"><span class="spinner spinner-light"></span></div>';
   try {
@@ -1056,20 +1056,28 @@ async function loadScanner(filter) {
     const badge = document.getElementById('notif-badge');
     badge.textContent = cnt; cnt > 0 ? badge.classList.remove('hidden') : badge.classList.add('hidden');
 
-    const filtered = res.rows.filter(r => {
+    let filtered = res.rows.filter(r => {
       if (filter==='TENTATIVE') return r.status==='TENTATIVE';
       if (filter==='CONFIRM')   return r.status==='CONFIRM';
       return r.customer && !r.status;
     });
+    // ✅ FIX Bug 1: filter by tanggal spesifik jika ada filterDate
+    if (filterDate) {
+      const filterDay = parseInt(filterDate.split('-')[2], 10);
+      filtered = filtered.filter(r => r.day === filterDay);
+    }
     if (!filtered.length) { body.innerHTML = '<div class="empty-state">— Tidak ada data —</div>'; return; }
 
-    const mo = (now.getMonth()+1).toString().padStart(2,'0');
+    const mo  = (now.getMonth()+1).toString().padStart(2,'0');
+    const yr  = now.getFullYear();
+    const shn = MONTHS[now.getMonth()];
+
     body.innerHTML = filtered.map(r => {
-      // ✅ FIX Bug 1: pakai r.day (angka hari dari GAS) bukan regex parse dateLabel
       const dNum = r.day ? String(r.day).padStart(2,'0') : (r.dateLabel.match(/\d+/)||['1'])[0].padStart(2,'0');
-      const iso  = now.getFullYear() + '-' + mo + '-' + dNum;
+      const iso  = yr + '-' + mo + '-' + dNum;
       const cls  = r.status==='TENTATIVE' ? 's-tentative' : r.status==='CONFIRM' ? 's-confirm' : 's-none';
-      return `<div class="event-card" onclick="pickEvent('${iso}','${r.venue}')">
+      // ✅ FIX Bug 1: pakai row number untuk direct lookup, bukan cuma date+venue
+      return `<div class="event-card" onclick="pickEvent('${iso}','${r.venue}','${shn}',${r.row||0})">
         <div class="event-name">${r.customer||'—'}</div>
         <div class="event-meta">${r.dateLabel} · ${r.venue}</div>
         <span class="event-status ${cls}">${r.status||'No Status'}</span>
@@ -1078,10 +1086,41 @@ async function loadScanner(filter) {
   } catch(e) { body.innerHTML = '<div class="empty-state">✗ ' + e.message + '</div>'; }
 }
 
-function pickEvent(date, venue) {
-  // ✅ FIX Bug 1: pakai venue as-is dari sheet (Title Case), tidak perlu toUpperCase
-  set('f-date', date); set('f-venue', venue);
-  closeScanner(); onDateVenueChange();
+async function pickEvent(date, venue, sheetName, rowNum) {
+  // ✅ FIX Bug 1: kalau ada rowNum → GET_ROW langsung, tidak pakai CHECK by date+venue
+  set('f-date', date);
+  set('f-venue', venue);
+  closeScanner();
+
+  if (rowNum && rowNum > 0 && sheetName) {
+    // Load data langsung by row number — akurat meski venue sama di tanggal sama
+    const banner = document.getElementById('avail-banner');
+    banner.className = 'status-banner occupied';
+    banner.textContent = '⏳ Memuat data...';
+    try {
+      const res = await gas({ action:'GET_ROW', sheetName, row: rowNum });
+      if (res.ok && res.data) {
+        const d = res.data;
+        set('f-customer', d.customer);
+        set('f-status',   d.status);
+        set('f-package',  d.package);
+        set('f-sales',    d.sales);
+        set('f-time',     d.time);
+        set('f-pax',      d.pax);
+        setPrice(d.price);
+        editMode = true;
+        currentRow = rowNum;
+        banner.textContent = '▲ TERISI — ' + d.status;
+        document.getElementById('btn-duplicate') && document.getElementById('btn-duplicate').classList.remove('hidden');
+        onStatusChange(); updateRevenue();
+      }
+    } catch(e) {
+      // fallback ke CHECK biasa kalau GET_ROW gagal
+      onDateVenueChange();
+    }
+  } else {
+    onDateVenueChange();
+  }
 }
 
 // ─── UI HELPERS ────────────────────────────────────────────────────────────
@@ -1226,10 +1265,12 @@ async function checkRange() {
       res.rows.forEach(r => {
         if (!r.day) return;
         const key = year + '-' + String(monthIdx+1).padStart(2,'0') + '-' + String(r.day).padStart(2,'0');
-        // ✅ FIX: Hanya simpan data untuk tanggal >= hari ini
+        // ✅ FIX Bug 2: simpan array of events per slot, bukan overwrite
         if (key < todayStr) return;
         if (!allRows[key]) allRows[key] = {};
-        allRows[key][r.venue] = { status: r.status, customer: r.customer };
+        const vk = r.venue;
+        if (!allRows[key][vk]) allRows[key][vk] = [];
+        allRows[key][vk].push({ status: r.status, customer: r.customer, row: r.row });
       });
     }
   } catch(e) {
@@ -1264,22 +1305,32 @@ async function checkRange() {
       </td>`;
 
     venues.forEach(venue => {
-      const slot     = dayData[venue];
-      const status   = slot ? slot.status.toUpperCase() : '';
-      const customer = slot ? slot.customer : '';
+      const events  = (dayData[venue] || []);
+      const hasData = events.length > 0 && events.some(e => e.customer);
 
-      if (!slot || !customer) {
+      if (!hasData) {
+        // KOSONG
         cntEmpty++;
         html += `<td onclick="pickSlotFromRange('${iso}','${venue}')" style="cursor:pointer">
-          <div class="slot-empty">✓ FREE<span class="slot-name">Tap isi</span></div></td>`;
-      } else if (status === 'TENTATIVE') {
-        cntTent++;
-        html += `<td onclick="pickSlotFromRange('${iso}','${venue}')" style="cursor:pointer">
-          <div class="slot-tentative">⚡ TENT<span class="slot-name">${customer}</span></div></td>`;
+          <div class="slot-empty">✓ VACANT<span class="slot-name">Tap isi</span></div></td>`;
       } else {
-        // CONFIRM (DONE tidak akan muncul karena filter tanggal lampau)
-        cntConf++;
-        html += `<td><div class="slot-confirm">✔ CONF<span class="slot-name">${customer}</span></div></td>`;
+        // Ada 1 atau lebih event
+        const allTent  = events.every(e => e.status === 'TENTATIVE');
+        const hasConf  = events.some(e => e.status === 'CONFIRM' || e.status === 'DONE');
+        const count    = events.filter(e => e.customer).length;
+        const label    = count > 1 ? count + ' EVENT' : events[0].customer;
+
+        if (allTent) {
+          cntTent += count;
+          // Tentative: klik langsung ke slot pertama
+          html += `<td onclick="pickSlotFromRange('${iso}','${venue}')" style="cursor:pointer">
+            <div class="slot-tentative">⚡ TENT<span class="slot-name">${label}</span></div></td>`;
+        } else {
+          cntConf += count;
+          // ✅ FIX Bug 2: CONF → klik buka scanner filter tanggal ini
+          html += `<td onclick="openScannerByDate('${iso}')" style="cursor:pointer" title="Klik untuk lihat detail event">
+            <div class="slot-confirm">✔ ${count > 1 ? count+' EVT' : 'CONF'}<span class="slot-name">${label}</span></div></td>`;
+        }
       }
     });
 
@@ -1303,12 +1354,28 @@ async function checkRange() {
 }
 
 function pickSlotFromRange(iso, venue) {
-  // Isi form utama lalu tutup popup
   document.getElementById('f-date').value  = iso;
   document.getElementById('f-venue').value = venue;
   closeRangePopup();
-  onDateVenueChange(); // trigger cek availability
+  onDateVenueChange();
   toast('📅 Slot dipilih: ' + venue + ' · ' + iso, 'success');
+}
+
+// ✅ FIX Bug 2: Buka scanner filter ke tanggal tertentu
+function openScannerByDate(iso) {
+  closeRangePopup();
+  // Set filter date di form dulu
+  document.getElementById('f-date').value = iso;
+  // Buka scanner tab CONFIRM, user bisa lihat semua event di hari itu
+  openScanner();
+  setTimeout(() => {
+    // Switch ke tab CONFIRM
+    document.querySelectorAll('.scanner-tab').forEach(t => t.classList.remove('active'));
+    const confirmTab = document.querySelector('.scanner-tab[data-tab="CONFIRM"]');
+    if (confirmTab) { confirmTab.classList.add('active'); activeTab = 'CONFIRM'; }
+    loadScanner('CONFIRM', iso); // ✅ kirim iso sbg filterDate
+    toast('📅 Event CONFIRM tgl ' + iso.split('-')[2] + ' ditampilkan', 'info', 3000);
+  }, 300);
 }
 </script>
 <!-- ─── RANGE AVAILABILITY POPUP ─────────────────────────── -->
