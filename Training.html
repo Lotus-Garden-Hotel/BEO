@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Banquet Elite — Gold Edition</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <style>
+    :root {
+      --black:   #080706;
+      --dark:    #100f0d;
+      --surface: #161410;
+      --card:    #1c1a17;
+      --border:  rgba(201,168,76,0.18);
+      --gold:    #C9A84C;
+      --gold2:   #E8C94F;
+      --gold3:   #F5E09A;
+      --dim:     #7a6a45;
+      --text:    #EDE8D8;
+      --muted:   #7a7060;
+      --red:     #c0392b;
+      --green:   #2ecc71;
+      --blue:    #3498db;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%; height: -webkit-fill-available;
+      background: var(--black); font-family: 'DM Sans', sans-serif;
+      color: var(--text); overflow: hidden;
+    }
+    body::before {
+      content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      opacity:.5;
+    }
+    @keyframes shimmer  { 0%{background-position:-200% center}100%{background-position:200% center} }
+    @keyframes fadeUp   { from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)} }
+    @keyframes fadeIn   { from{opacity:0}to{opacity:1} }
+    @keyframes slideUp  { from{transform:translateY(100%)}to{transform:translateY(0)} }
+    @keyframes pulse-gold { 0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,.3)}50%{box-shadow:0 0 0 6px rgba(201,168,76,0)} }
+    @keyframes spin     { to{transform:rotate(360deg)} }
+
+    /* ── Shell ── */
+    .shell {
+      position:relative; z-index:1; display:flex; flex-direction:column;
+      height:100vh; height:-webkit-fill-available;
+      padding:14px 14px calc(14px + env(safe-area-inset-bottom)); gap:10px;
+    }
+
+    /* ── Header ── */
+    .header { display:flex; align-items:center; justify-content:space-between; animation:fadeUp .5s ease both; }
+    .brand-name {
+      font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:700; letter-spacing:.08em;
+      background:linear-gradient(90deg,var(--gold) 0%,var(--gold3) 40%,var(--gold) 100%);
+      background-size:200% auto; -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      animation:shimmer 4s linear infinite; line-height:1;
+    }
+    .brand-sub { font-size:7px; font-weight:500; letter-spacing:.35em; color:var(--dim); text-transform:uppercase; }
+    .header-actions { display:flex; gap:8px; align-items:center; }
+    .btn-icon {
+      width:36px; height:36px; border-radius:10px; background:var(--card); border:1px solid var(--border);
+      display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative;
+      transition:border-color .2s; font-size:15px;
+    }
+    .btn-icon:active { transform:scale(.93); }
+    .btn-icon:hover  { border-color:var(--gold); }
+    .notif-badge {
+      position:absolute; top:-4px; right:-4px; min-width:16px; height:16px; padding:0 4px;
+      background:var(--gold); color:var(--black); border-radius:8px; font-size:8px; font-weight:700;
+      display:flex; align-items:center; justify-content:center; animation:pulse-gold 2s infinite;
+    }
+    .notif-badge.hidden { display:none; }
+    .btn-reset {
+      height:36px; padding:0 12px; border-radius:10px;
+      background:rgba(192,57,43,.08); border:1px solid rgba(192,57,43,.2);
+      color:#e74c3c; font-size:9px; font-weight:600; letter-spacing:.1em;
+      text-transform:uppercase; cursor:pointer; transition:all .2s;
+    }
+
+    /* ── Card ── */
+    .card {
+      background:var(--card); border:1px solid var(--border); border-radius:20px;
+      padding:16px; flex:1; display:flex; flex-direction:column; gap:10px;
+      min-height:0; animation:fadeUp .5s .1s ease both; overflow:hidden;
+    }
+    .gold-line { height:1px; background:linear-gradient(90deg,transparent,var(--gold),transparent); opacity:.3; flex-shrink:0; }
+    .row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .field { display:flex; flex-direction:column; gap:4px; }
+    label { font-size:8px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--dim); }
+    input, select {
+      background:var(--surface); border:1px solid var(--border); border-radius:10px;
+      padding:9px 12px; color:var(--text); font-family:'DM Sans',sans-serif;
+      font-size:13px; font-weight:500; width:100%; outline:none;
+      transition:border-color .2s, box-shadow .2s; -webkit-appearance:none;
+    }
+    input:focus, select:focus { border-color:var(--gold); box-shadow:0 0 0 3px rgba(201,168,76,.1); }
+    input.error, select.error { border-color:var(--red)!important; box-shadow:0 0 0 3px rgba(192,57,43,.12)!important; }
+    input:disabled, select:disabled { opacity:.35; pointer-events:none; }
+    select option { background:#1c1a17; }
+
+    /* ── Status banner ── */
+    .status-banner {
+      border-radius:10px; padding:8px 14px; font-size:9px; font-weight:700;
+      letter-spacing:.15em; text-align:center; text-transform:uppercase; display:none; transition:all .3s;
+    }
+    .status-banner.available { display:block; background:rgba(46,204,113,.07); border:1px solid rgba(46,204,113,.25); color:var(--green); }
+    .status-banner.occupied  { display:block; background:rgba(201,168,76,.07); border:1px solid var(--border); color:var(--gold2); }
+    .status-banner.scanning  { display:block; background:var(--surface); border:1px solid var(--border); color:var(--muted); }
+
+    /* ── Form body ── */
+    .form-body { display:flex; flex-direction:column; gap:10px; opacity:.2; pointer-events:none; transition:opacity .3s; }
+    .form-body.unlocked { opacity:1; pointer-events:all; }
+
+    /* ── Revenue ── */
+    .revenue-box {
+      background:var(--surface); border:1px solid var(--border); border-radius:12px;
+      padding:10px 14px; display:flex; justify-content:space-between; align-items:center;
+    }
+    .rev-label { font-size:7px; font-weight:600; letter-spacing:.2em; color:var(--dim); text-transform:uppercase; }
+    .rev-value {
+      font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:700;
+      background:linear-gradient(90deg,var(--gold),var(--gold3),var(--gold));
+      background-size:200% auto; -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      animation:shimmer 3s linear infinite;
+    }
+
+    /* ── Buttons ── */
+    .btn-gold {
+      width:100%; height:48px; border-radius:14px; border:none;
+      background:linear-gradient(135deg,#C9A84C 0%,#E8C94F 50%,#C9A84C 100%);
+      background-size:200% auto; color:var(--black); font-family:'DM Sans',sans-serif;
+      font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+      cursor:pointer; transition:background-position .4s, transform .15s;
+      display:flex; align-items:center; justify-content:center; gap:8px; flex-shrink:0;
+    }
+    .btn-gold:hover  { background-position:right center; }
+    .btn-gold:active { transform:scale(.97); }
+    .btn-gold:disabled { opacity:.5; cursor:not-allowed; }
+
+    /* ── Feature buttons row ── */
+    .btn-row { display:flex; gap:8px; flex-shrink:0; }
+
+    .btn-secondary {
+      flex:1; height:40px; border-radius:12px; border:1px solid var(--border);
+      background:var(--surface); color:var(--gold); font-size:10px; font-weight:600;
+      letter-spacing:.08em; text-transform:uppercase; cursor:pointer;
+      display:none; align-items:center; justify-content:center; gap:5px;
+      transition:border-color .2s, background .2s;
+    }
+    .btn-secondary.visible { display:flex; }
+    .btn-secondary:hover { border-color:var(--gold); background:rgba(201,168,76,.06); }
+
+    .btn-force {
+      flex:1; height:40px; border-radius:12px;
+      background:rgba(52,152,219,.07); border:1px solid rgba(52,152,219,.25);
+      color:#3498db; font-size:10px; font-weight:600; letter-spacing:.08em;
+      text-transform:uppercase; cursor:pointer;
+      display:none; align-items:center; justify-content:center; gap:5px;
+      transition:all .2s;
+    }
+    .btn-force.visible { display:flex; }
+    .btn-force:hover { background:rgba(52,152,219,.12); }
+
+    .btn-danger {
+      width:100%; height:40px; border-radius:12px;
+      background:rgba(192,57,43,.07); border:1px solid rgba(192,57,43,.25);
+      color:#e74c3c; font-size:10px; font-weight:600; letter-spacing:.08em;
+      text-transform:uppercase; cursor:pointer;
+      display:none; align-items:center; justify-content:center; gap:6px;
+      transition:background .2s;
+    }
+    .btn-danger.visible { display:flex; }
+    .btn-danger:hover { background:rgba(192,57,43,.12); }
+
+    .spinner { width:14px; height:14px; border-radius:50%; border:2px solid rgba(0,0,0,.3); border-top-color:var(--black); animation:spin .7s linear infinite; display:inline-block; }
+    .spinner-light { border:2px solid rgba(255,255,255,.15); border-top-color:var(--text); }
+
+    /* ── Footer ── */
+    .footer { flex-shrink:0; animation:fadeUp .5s .2s ease both; }
+    .footer a {
+      display:block; padding:10px; background:var(--card); border:1px solid var(--border);
+      border-radius:12px; text-align:center; text-decoration:none;
+      font-size:9px; font-weight:600; letter-spacing:.2em; color:var(--gold); text-transform:uppercase;
+      transition:border-color .2s;
+    }
+    .footer a:hover { border-color:var(--gold); }
+
+    /* ── Toast ── */
+    .toast {
+      position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(20px);
+      background:var(--card); border:1px solid var(--border); border-radius:14px;
+      padding:10px 18px; font-size:12px; font-weight:500; color:var(--text);
+      white-space:nowrap; z-index:999; opacity:0; pointer-events:none;
+      transition:all .3s cubic-bezier(.34,1.56,.64,1); max-width:90vw; text-align:center;
+    }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    .toast.success { border-color:rgba(46,204,113,.4); color:var(--green); }
+    .toast.error   { border-color:rgba(192,57,43,.4);  color:#e74c3c; }
+    .toast.info    { border-color:rgba(52,152,219,.4);  color:#3498db; }
+
+    /* ── Bottom Sheet (shared) ── */
+    .sheet-overlay {
+      position:fixed; inset:0; z-index:200; background:rgba(8,7,6,.95);
+      backdrop-filter:blur(16px); display:none; align-items:flex-end;
+    }
+    .sheet-overlay.open { display:flex; animation:fadeIn .2s ease; }
+    .bottom-sheet {
+      background:var(--dark); border:1px solid var(--border); border-bottom:none;
+      border-radius:24px 24px 0 0; width:100%; max-height:88vh;
+      display:flex; flex-direction:column; padding:20px 16px 16px;
+      animation:slideUp .3s cubic-bezier(.34,1.2,.64,1);
+    }
+    .sheet-handle { width:36px; height:3px; border-radius:2px; background:var(--border); margin:0 auto 16px; }
+    .sheet-title  { font-family:'Cormorant Garamond',serif; font-size:18px; font-weight:700; color:var(--gold2); margin-bottom:4px; }
+    .sheet-sub    { font-size:10px; color:var(--muted); margin-bottom:14px; letter-spacing:.05em; }
+
+    /* ── Scanner tabs ── */
+    .tabs { display:flex; gap:6px; margin-bottom:14px; background:var(--surface); padding:4px; border-radius:12px; }
+    .tab  { flex:1; padding:8px 4px; border-radius:9px; font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; cursor:pointer; text-align:center; transition:all .2s; color:var(--muted); border:1px solid transparent; }
+    .tab.active { background:var(--card); border-color:var(--border); color:var(--gold); }
+    .list-scroll { flex:1; overflow-y:auto; }
+
+    /* ── Event cards (scanner) ── */
+    .event-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom:8px; cursor:pointer; transition:border-color .2s, transform .15s; }
+    .event-card:active { transform:scale(.98); }
+    .event-card:hover  { border-color:var(--gold); }
+    .event-name { font-size:12px; font-weight:600; color:var(--text); }
+    .event-meta { font-size:9px; color:var(--muted); margin-top:3px; letter-spacing:.05em; }
+    .event-status { display:inline-block; font-size:7px; font-weight:700; letter-spacing:.15em; padding:2px 7px; border-radius:5px; margin-top:5px; text-transform:uppercase; }
+    .s-tentative { background:rgba(201,168,76,.1);   color:var(--gold);   border:1px solid rgba(201,168,76,.2); }
+    .s-confirm   { background:rgba(46,204,113,.08);  color:var(--green);  border:1px solid rgba(46,204,113,.2); }
+    .s-none      { background:rgba(192,57,43,.08);   color:#e74c3c;        border:1px solid rgba(192,57,43,.2); }
+
+    /* ── Force Venue slot cards ── */
+    .slot-card {
+      background:var(--surface); border:1px solid var(--border); border-radius:12px;
+      padding:14px; margin-bottom:8px; cursor:pointer; transition:all .2s; position:relative;
+    }
+    .slot-card:hover  { border-color:var(--blue); }
+    .slot-card:active { transform:scale(.98); }
+    .slot-card.occupied-slot { opacity:.45; cursor:not-allowed; }
+    .slot-card.occupied-slot:hover { border-color:var(--border); }
+    .slot-venue { font-size:13px; font-weight:600; color:var(--text); }
+    .slot-info  { font-size:9px; color:var(--muted); margin-top:3px; }
+    .slot-badge {
+      position:absolute; top:10px; right:10px; font-size:7px; font-weight:700;
+      letter-spacing:.1em; padding:3px 8px; border-radius:6px; text-transform:uppercase;
+    }
+    .slot-badge.free     { background:rgba(46,204,113,.1);  color:var(--green); border:1px solid rgba(46,204,113,.2); }
+    .slot-badge.taken    { background:rgba(192,57,43,.08);  color:#e74c3c;       border:1px solid rgba(192,57,43,.2); }
+    .slot-badge.selected { background:rgba(52,152,219,.12); color:#3498db;      border:1px solid rgba(52,152,219,.3); }
+
+    .empty-state { text-align:center; padding:40px 0; font-size:11px; color:var(--muted); letter-spacing:.1em; }
+
+    /* ── Confirm dialog overlay ── */
+    .confirm-overlay {
+      position:fixed; inset:0; z-index:300; background:rgba(8,7,6,.97);
+      backdrop-filter:blur(20px); display:none; align-items:center; justify-content:center; padding:20px;
+    }
+    .confirm-overlay.open { display:flex; animation:fadeIn .2s ease; }
+    .confirm-box {
+      background:var(--card); border:1px solid var(--border); border-radius:20px;
+      padding:28px 22px; max-width:340px; width:100%; text-align:center;
+      animation:fadeUp .25s ease;
+    }
+    .confirm-icon  { font-size:36px; margin-bottom:12px; }
+    .confirm-title { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:700; color:var(--gold2); margin-bottom:8px; }
+    .confirm-msg   { font-size:12px; color:var(--muted); line-height:1.6; margin-bottom:20px; }
+    .confirm-msg strong { color:var(--text); font-weight:600; }
+    .confirm-btns  { display:flex; gap:10px; }
+    .confirm-no    { flex:1; height:44px; border-radius:12px; background:var(--surface); border:1px solid var(--border); color:var(--muted); font-size:11px; font-weight:600; cursor:pointer; }
+    .confirm-yes   { flex:1; height:44px; border-radius:12px; background:rgba(52,152,219,.12); border:1px solid rgba(52,152,219,.3); color:#3498db; font-size:11px; font-weight:700; cursor:pointer; transition:background .2s; }
+    .confirm-yes:hover { background:rgba(52,152,219,.2); }
+    .confirm-yes.danger { background:rgba(192,57,43,.1); border-color:rgba(192,57,43,.3); color:#e74c3c; }
+    .confirm-yes.danger:hover { background:rgba(192,57,43,.18); }
+
+    ::-webkit-scrollbar { width:3px; }
+    ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+    /* ── Range Availability Popup ── */
+    #range-popup {
+      position:fixed; inset:0; z-index:400;
+      background:var(--black);
+      display:flex; flex-direction:column;
+      transform:translateY(100%);
+      transition:transform .4s cubic-bezier(.4,0,.2,1);
+    }
+    #range-popup.open { transform:translateY(0); }
+
+    .range-header {
+      padding:16px; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between;
+      flex-shrink:0; background:var(--dark);
+    }
+    .range-title {
+      font-family:'Cormorant Garamond',serif; font-size:18px; font-weight:700;
+      background:linear-gradient(90deg,var(--gold),var(--gold3));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    }
+    .range-close {
+      width:36px; height:36px; border-radius:10px;
+      background:rgba(231,76,60,.08); border:1px solid rgba(231,76,60,.2);
+      color:var(--red); font-size:16px; cursor:pointer; transition:all .2s;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .range-close:hover { background:rgba(231,76,60,.15); }
+
+    .range-inputs {
+      padding:14px 16px; border-bottom:1px solid var(--border);
+      background:var(--dark); flex-shrink:0;
+    }
+    .range-row { display:grid; grid-template-columns:1fr 1fr auto; gap:8px; align-items:flex-end; }
+    .range-field label { display:block; font-size:8px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--dim); margin-bottom:5px; }
+    .range-field input[type=date] {
+      width:100%; background:var(--surface); border:1px solid var(--border);
+      border-radius:10px; padding:9px 10px; color:var(--text);
+      font-size:12px; font-weight:500; outline:none; transition:border-color .2s;
+      -webkit-appearance:none;
+    }
+    .range-field input:focus { border-color:var(--gold); }
+    .btn-range-check {
+      height:38px; padding:0 16px; border-radius:10px; border:none;
+      background:linear-gradient(135deg,var(--gold),var(--gold2));
+      color:var(--black); font-size:10px; font-weight:800;
+      letter-spacing:.1em; text-transform:uppercase; cursor:pointer;
+      white-space:nowrap; transition:opacity .2s;
+    }
+    .btn-range-check:hover   { opacity:.85; }
+    .btn-range-check:disabled{ opacity:.5; cursor:not-allowed; }
+
+    /* Legend */
+    .range-legend {
+      padding:8px 16px; display:flex; gap:12px; flex-shrink:0;
+      border-bottom:1px solid var(--border); background:var(--dark);
+    }
+    .legend-item { display:flex; align-items:center; gap:5px; font-size:9px; color:var(--muted); }
+    .legend-dot { width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+
+    /* Table container */
+    .range-body { flex:1; overflow:auto; padding:12px 16px 30px; }
+
+    .avail-table { width:100%; border-collapse:collapse; min-width:340px; }
+    .avail-table th {
+      position:sticky; top:0; z-index:10;
+      background:var(--dark); border-bottom:2px solid var(--border);
+      padding:8px 6px; font-size:9px; font-weight:700; letter-spacing:.1em;
+      text-transform:uppercase; color:var(--dim); text-align:center;
+    }
+    .avail-table th:first-child { text-align:left; min-width:80px; }
+    .avail-table td {
+      padding:6px; border-bottom:1px solid rgba(201,168,76,.06);
+      font-size:10px; text-align:center; vertical-align:middle;
+    }
+    .avail-table tr:hover td { background:rgba(201,168,76,.03); }
+    .td-date { text-align:left; font-weight:600; color:var(--muted); font-size:10px; white-space:nowrap; }
+    .td-date .day-num { font-size:15px; font-weight:800; color:var(--text); display:block; line-height:1; }
+    .td-date .day-name { font-size:8px; color:var(--dim); }
+
+    /* Slot cells */
+    .slot-empty {
+      background:rgba(46,204,113,.08); border:1px solid rgba(46,204,113,.2);
+      border-radius:7px; padding:5px 4px; color:var(--green);
+      font-size:8px; font-weight:700; letter-spacing:.05em; cursor:pointer;
+      transition:all .15s;
+    }
+    .slot-empty:hover { background:rgba(46,204,113,.18); transform:scale(1.05); }
+    .slot-tentative {
+      background:rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.3);
+      border-radius:7px; padding:5px 4px; color:#f59e0b;
+      font-size:8px; font-weight:700; cursor:pointer; transition:all .15s;
+    }
+    .slot-tentative:hover { background:rgba(245,158,11,.18); transform:scale(1.05); }
+    .slot-confirm {
+      background:rgba(99,102,241,.08); border:1px solid rgba(99,102,241,.25);
+      border-radius:7px; padding:5px 4px; color:#818cf8;
+      font-size:8px; font-weight:700;
+    }
+    .slot-done {
+      background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06);
+      border-radius:7px; padding:5px 4px; color:var(--dim);
+      font-size:8px;
+    }
+    .slot-empty  .slot-name,
+    .slot-tentative .slot-name { font-size:7px; display:block; margin-top:2px; opacity:.8; max-width:70px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .slot-confirm .slot-name,
+    .slot-done    .slot-name   { font-size:7px; display:block; margin-top:2px; opacity:.7; }
+
+    .range-empty { text-align:center; padding:40px 16px; color:var(--muted); font-size:12px; }
+    .range-loading { text-align:center; padding:40px 16px; color:var(--gold); font-size:12px; }
+
+    /* Summary bar */
+    .range-summary {
+      padding:10px 16px; background:var(--dark); border-top:1px solid var(--border);
+      display:flex; gap:16px; flex-shrink:0; font-size:10px;
+    }
+    .sum-item { display:flex; flex-direction:column; align-items:center; }
+    .sum-val { font-size:16px; font-weight:800; }
+    .sum-lbl { font-size:8px; color:var(--dim); text-transform:uppercase; letter-spacing:.1em; }
+
+    /* Range trigger button */
+    .btn-range-open {
+      height:36px; padding:0 12px; border-radius:10px;
+      background:rgba(201,168,76,.08); border:1px solid var(--border);
+      color:var(--gold); font-size:9px; font-weight:700;
+      letter-spacing:.08em; text-transform:uppercase; cursor:pointer;
+      transition:all .2s; display:flex; align-items:center; gap:5px;
+    }
+    .btn-range-open:hover { background:rgba(201,168,76,.15); border-color:var(--gold); }
+
+    /* ── Login Gate ── */
+    #login-gate {
+      position:fixed; inset:0; z-index:500;
+      background: radial-gradient(ellipse at 60% 20%, rgba(201,168,76,0.08) 0%, var(--black) 70%);
+      display:flex; align-items:center; justify-content:center; padding:24px;
+      transition: transform .8s cubic-bezier(.4,0,.2,1), opacity .6s ease;
+    }
+    #login-gate.hide {
+      transform: translateY(-100%);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .login-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 28px; padding: 40px 28px;
+      width: 100%; max-width: 360px; text-align: center;
+    }
+    .login-icon {
+      width: 64px; height: 64px; border-radius: 18px; margin: 0 auto 20px;
+      background: linear-gradient(135deg, #C9A84C, #E8C94F);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; box-shadow: 0 8px 32px rgba(201,168,76,.25);
+    }
+    .login-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 26px; font-weight: 700; letter-spacing: .06em;
+      background: linear-gradient(90deg,var(--gold),var(--gold3),var(--gold));
+      background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      animation: shimmer 4s linear infinite; margin-bottom: 6px;
+    }
+    .login-sub { font-size: 8px; letter-spacing:.35em; color:var(--dim); text-transform:uppercase; margin-bottom: 32px; }
+    .btn-google {
+      width: 100%; height: 52px; border-radius: 14px;
+      background: #ffffff; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+      font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700;
+      color: #1f2937; letter-spacing: .05em;
+      box-shadow: 0 4px 20px rgba(0,0,0,.4); transition: transform .15s, box-shadow .2s;
+    }
+    .btn-google:hover  { box-shadow: 0 6px 28px rgba(0,0,0,.5); }
+    .btn-google:active { transform: scale(.97); }
+    .btn-google img { width: 20px; height: 20px; }
+    .login-error {
+      margin-top: 14px; padding: 10px 14px; border-radius: 10px;
+      background: rgba(192,57,43,.08); border: 1px solid rgba(192,57,43,.25);
+      color: #e74c3c; font-size: 11px; display: none;
+    }
+    .login-error.show { display: block; }
+
+    /* ── Logout button ── */
+    .btn-logout {
+      height: 36px; padding: 0 10px; border-radius: 10px;
+      background: rgba(192,57,43,.08); border: 1px solid rgba(192,57,43,.2);
+      color: #e74c3c; font-size: 9px; font-weight: 600; letter-spacing: .08em;
+      text-transform: uppercase; cursor: pointer; transition: all .2s;
+      display: none; align-items: center; gap: 5px;
+    }
+    .btn-logout.visible { display: flex; }
+  </style>
+</head>
+<body>
+
+<!-- ─── TOAST ──────────────────────────────────────── -->
+<div id="toast" class="toast"></div>
+
+<!-- ─── SCANNER MODAL ─────────────────────────────── -->
+<div id="modal-scanner" class="sheet-overlay" onclick="closeScanner()">
+  <div class="bottom-sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">✦ Scanner Engine</div>
+    <div class="tabs">
+      <div class="tab active" id="tab-t" onclick="switchTab('TENTATIVE')">Tentative</div>
+      <div class="tab"        id="tab-c" onclick="switchTab('CONFIRM')">Confirm</div>
+      <div class="tab"        id="tab-n" onclick="switchTab('NONE')">No Status</div>
+    </div>
+    <div class="list-scroll" id="scanner-list"></div>
+  </div>
+</div>
+
+<!-- ─── FORCE VENUE MODAL ─────────────────────────── -->
+<div id="modal-force" class="sheet-overlay" onclick="closeForce()">
+  <div class="bottom-sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">⚡ Paksa Venue</div>
+    <div class="sheet-sub" id="force-sub">Pilih slot kosong untuk dijadikan venue yang sama</div>
+    <div class="list-scroll" id="force-list"></div>
+  </div>
+</div>
+
+<!-- ─── CONFIRM DIALOG ────────────────────────────── -->
+<div id="confirm-overlay" class="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-icon" id="conf-icon">⚡</div>
+    <div class="confirm-title" id="conf-title">Konfirmasi</div>
+    <div class="confirm-msg"   id="conf-msg"></div>
+    <div class="confirm-btns">
+      <button class="confirm-no"  onclick="resolveConfirm(false)">Batal</button>
+      <button class="confirm-yes" id="conf-yes" onclick="resolveConfirm(true)">Ya, Lanjutkan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── LOGIN GATE ────────────────────────────────── -->
+<div id="login-gate">
+  <div class="login-card">
+    <div class="login-icon">✦</div>
+    <div class="login-title">BANQUET ELITE</div>
+    <div class="login-sub">Lotus Garden · Kediri</div>
+    <button class="btn-google" onclick="loginWithGoogle()">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg">
+      <span>Masuk dengan Google</span>
+    </button>
+    <div id="login-error" class="login-error">⚠ Akun tidak diizinkan akses sistem ini.</div>
+  </div>
+</div>
+
+<!-- ─── MAIN SHELL ────────────────────────────────── -->
+<div class="shell">
+
+  <div class="header">
+    <div>
+      <div class="brand-name" id="ui-brand">BANQUET ELITE</div>
+      <div class="brand-sub"  id="ui-version">V.5.3 · Gold Edition</div>
+    </div>
+    <div class="header-actions">
+      <div class="btn-icon" onclick="openScanner()">
+        🔔
+        <span id="notif-badge" class="notif-badge hidden">0</span>
+      </div>
+      <button class="btn-reset" onclick="resetForm(true)">✕ Reset</button>
+      <button class="btn-range-open" onclick="openRangePopup()">📅 Cek Range</button>
+      <button class="btn-logout" id="btn-logout" onclick="logoutUser()">⎋ Keluar</button>
+    </div>
+  </div>
+
+  <div class="card">
+
+    <div class="row2">
+      <div class="field">
+        <label>📅 Tanggal</label>
+        <input type="date" id="f-date" onchange="onDateVenueChange()">
+      </div>
+      <div class="field">
+        <label>🏛 Venue</label>
+        <select id="f-venue" onchange="onDateVenueChange()">
+          <option value="">— Pilih —</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="avail-banner" class="status-banner"></div>
+
+    <div class="gold-line"></div>
+
+    <div id="form-body" class="form-body" style="overflow-y:auto;flex:1;gap:10px;display:flex;flex-direction:column;">
+
+      <div class="field">
+        <label>👤 Nama Customer</label>
+        <input type="text" id="f-customer" placeholder="Masukkan nama...">
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>⚡ Status</label>
+          <select id="f-status" onchange="onStatusChange()">
+            <option value="">— Pilih —</option>
+            <option value="TENTATIVE">Tentative</option>
+            <option value="CONFIRM">Confirm</option>
+            <option value="DONE">Done</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>📦 Package</label>
+          <select id="f-package">
+            <option value="">— Pilih —</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>💼 PIC Sales</label>
+          <select id="f-sales">
+            <option value="">— Pilih —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>🕒 Waktu</label>
+          <input type="text" id="f-time" placeholder="08:00–13:00">
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>👥 Pax</label>
+          <input type="number" id="f-pax" placeholder="0" oninput="calcRevenue()">
+        </div>
+        <div class="field">
+          <label>💰 Harga / Pax</label>
+          <input type="text" id="f-price-display" placeholder="Rp 0" oninput="onPriceInput(this)">
+          <input type="hidden" id="f-price">
+        </div>
+      </div>
+
+      <div class="revenue-box">
+        <div>
+          <div class="rev-label">Estimasi Revenue</div>
+          <div id="rev-display" class="rev-value">Rp 0</div>
+        </div>
+        <div style="font-size:20px;opacity:.7;">◆</div>
+      </div>
+
+      <!-- Action buttons -->
+      <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;">
+
+        <!-- Sync -->
+        <button id="btn-sync" class="btn-gold" onclick="submitData()">✦ Sync to Cloud</button>
+
+        <!-- Feature row: Duplicate + Force Venue -->
+        <div class="btn-row">
+          <button id="btn-duplicate" class="btn-secondary" onclick="duplicateBooking()">📋 Duplikat</button>
+          <button id="btn-force"     class="btn-force"     onclick="openForceVenue()">⚡ Paksa Slot Lain</button>
+        </div>
+
+        <!-- Delete -->
+        <button id="btn-delete" class="btn-danger" onclick="deleteData()">🗑 Hapus Data Ini</button>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="footer">
+    <a id="ui-dashboard" href="#" target="_blank">◆ Open Dashboard ↗</a>
+  </div>
+</div>
+
+<script>
+// ─── FIREBASE AUTH ─────────────────────────────────────────────────────────
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyCX0--DGM_tp_2y7hBbrGiMfeVyToVD4zM",
+  authDomain:        "banquet-dashboard-kediri.firebaseapp.com",
+  projectId:         "banquet-dashboard-kediri",
+  storageBucket:     "banquet-dashboard-kediri.firebasestorage.app",
+  messagingSenderId: "716626784276",
+  appId:             "1:716626784276:web:4f7d4d51dace341d21b701"
+};
+
+const ALLOWED_EMAILS = [
+  "it.lotusgardenbywh@gmail.com",
+  "sm.lotusgardenbywh@gmail.com",
+  "hrd.lotusgardenbywh@gmail.com",
+  "kang.d14n@gmail.com",
+  "abdullah.junaidi73@gmail.com",
+  "kustianadwi83@gmail.com",
+  "danangaditianggara@gmail.com",
+  "munarsihagustina@gmail.com",
+  "agussuryadi197878@gmail.com",
+  "gm.lotusgardenbywh@gmail.com"
+];
+
+firebase.initializeApp(FIREBASE_CONFIG);
+const _auth     = firebase.auth();
+const _provider = new firebase.auth.GoogleAuthProvider();
+
+_auth.onAuthStateChanged(user => {
+  const gate = document.getElementById('login-gate');
+  const logoutBtn = document.getElementById('btn-logout');
+  if (user && ALLOWED_EMAILS.includes(user.email)) {
+    // ✅ Login berhasil & email diizinkan
+    gate.classList.add('hide');
+    setTimeout(() => { gate.style.display = 'none'; }, 800);
+    logoutBtn.classList.add('visible');
+    document.getElementById('login-error').classList.remove('show');
+  } else {
+    // ❌ Tidak login atau email tidak diizinkan
+    if (user) {
+      _auth.signOut();
+      document.getElementById('login-error').classList.add('show');
+    }
+    gate.style.display = 'flex';
+    gate.classList.remove('hide');
+    logoutBtn.classList.remove('visible');
+  }
+});
+
+async function loginWithGoogle() {
+  try {
+    await _auth.signInWithPopup(_provider);
+  } catch(e) {
+    document.getElementById('login-error').textContent = '⚠ Gagal login: ' + e.message;
+    document.getElementById('login-error').classList.add('show');
+  }
+}
+
+function logoutUser() {
+  if (confirm('Keluar dari sistem?')) _auth.signOut();
+}
+
+// ─── CONFIG (dari Master Config) ───────────────────────────────────────────
+const CONFIG_KEY = 'banquet_elite_config';
+const DEFAULT_CFG = {
+  gasUrl:    'https://script.google.com/macros/s/AKfycbxGa8HVDrxGgXQDaiU570HdqaDqNmthRaPhEF7x_fPG6fgiNqtdTslngxExTY54K08g/exec',
+  venues:    ['Ball Room','VIP Room','Teratai Room','Fox Steak House'],
+  packages:  ['Full Board','Half Day','Full Day','Wedding','Akad Nikah','Arisan','Ulang Tahun','Table Maner','Dinner','Lunch'],
+  sales:     ['Dwi','Tina'],
+  brand:     'LOTUS GARDEN HOTEL',
+  version:   'V.5.3 · Gold Edition',
+  dashboard: 'https://lotus-garden-hotel.github.io/BEO-Lotus-Garden-Hotel/'
+};
+
+function getConfig() {
+  try { return JSON.parse(localStorage.getItem(CONFIG_KEY)) || DEFAULT_CFG; }
+  catch(_) { return DEFAULT_CFG; }
+}
+
+function applyConfig() {
+  const c = getConfig();
+  // GAS URL
+  window._GAS = c.gasUrl || DEFAULT_CFG.gasUrl;
+  // Header
+  document.getElementById('ui-brand').textContent   = c.brand   || DEFAULT_CFG.brand;
+  document.getElementById('ui-version').textContent = c.version || DEFAULT_CFG.version;
+  // Dashboard
+  document.getElementById('ui-dashboard').href = c.dashboard || DEFAULT_CFG.dashboard;
+  // Venue dropdown
+  const vSel = document.getElementById('f-venue');
+  vSel.innerHTML = '<option value="">— Pilih —</option>' +
+    (c.venues || DEFAULT_CFG.venues).map(v => `<option value="${v}">${v}</option>`).join('');
+  // Package dropdown
+  const pSel = document.getElementById('f-package');
+  pSel.innerHTML = '<option value="">— Pilih —</option>' +
+    (c.packages || DEFAULT_CFG.packages).map(p => `<option value="${p}">${p}</option>`).join('');
+  // Sales dropdown
+  const sSel = document.getElementById('f-sales');
+  sSel.innerHTML = '<option value="">— Pilih —</option>' +
+    (c.sales || DEFAULT_CFG.sales).map(s => `<option value="${s}">${s}</option>`).join('');
+}
+
+const MONTHS = ["JANUARI","FEBRUARI","MARET","APRIL","MEI","JUNI","JULI","AGUSTUS","SEPTEMBER","OKTOBER","NOVEMBER","DESEMBER"];
+const TIMEOUT_MS = 12000;
+// GAS URL diambil dari config (window._GAS), di-set saat applyConfig()
+const GAS_FN = () => window._GAS;
+
+let origDate = "", origVenue = "", editMode = false, activeTab = "TENTATIVE";
+let isDuplicateMode = false; // ✅ FIX Bug 1: flag agar field tidak terhapus saat duplicate
+let _confirmResolve = null;
+
+// ─── UTILS ─────────────────────────────────────────────────────────────────
+function monthName(d) { return MONTHS[parseInt(d.split('-')[1],10)-1]; }
+
+async function gas(params) {
+  const ctrl  = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  try {
+    const res = await fetch(GAS_FN() + '?' + new URLSearchParams(params), { redirect:'follow', signal:ctrl.signal });
+    return await res.json();
+  } catch(e) {
+    if (e.name === 'AbortError') throw new Error('Timeout — periksa koneksi internet');
+    throw e;
+  } finally { clearTimeout(timer); }
+}
+
+function toast(msg, type='success', dur=3000) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'toast ' + type + ' show';
+  setTimeout(() => el.className = 'toast', dur);
+}
+
+function setBtn(id, loading, label) {
+  const b = document.getElementById(id);
+  b.disabled = loading;
+  b.innerHTML = loading ? `<span class="spinner${id==='btn-sync'?'':' spinner-light'}"></span>` : label;
+}
+
+// ─── PROMISE-BASED CONFIRM DIALOG ──────────────────────────────────────────
+function showConfirm({ icon='⚡', title='Konfirmasi', msg='', yesLabel='Ya, Lanjutkan', dangerous=false }) {
+  return new Promise(resolve => {
+    _confirmResolve = resolve;
+    document.getElementById('conf-icon').textContent  = icon;
+    document.getElementById('conf-title').textContent = title;
+    document.getElementById('conf-msg').innerHTML     = msg;
+    const yesBtn = document.getElementById('conf-yes');
+    yesBtn.textContent = yesLabel;
+    yesBtn.className   = 'confirm-yes' + (dangerous ? ' danger' : '');
+    document.getElementById('confirm-overlay').classList.add('open');
+  });
+}
+function resolveConfirm(val) {
+  document.getElementById('confirm-overlay').classList.remove('open');
+  if (_confirmResolve) { _confirmResolve(val); _confirmResolve = null; }
+}
+
+// ─── VALIDASI ──────────────────────────────────────────────────────────────
+function validate() {
+  const rules = [
+    { id:'f-date',     msg:'Tanggal wajib diisi' },
+    { id:'f-venue',    msg:'Venue wajib dipilih' },
+    { id:'f-customer', msg:'Nama customer wajib diisi' },
+    { id:'f-status',   msg:'Status wajib dipilih' },
+    { id:'f-package',  msg:'Package wajib dipilih' },
+  ];
+  rules.forEach(r => document.getElementById(r.id).classList.remove('error'));
+  for (const r of rules) {
+    if (!document.getElementById(r.id).value.trim()) {
+      document.getElementById(r.id).classList.add('error');
+      toast('⚠ ' + r.msg, 'error'); return false;
+    }
+  }
+  return true;
+}
+
+// ─── CHECK VENUE ───────────────────────────────────────────────────────────
+async function onDateVenueChange() {
+  const d = val('f-date'), v = val('f-venue');
+  const banner = document.getElementById('avail-banner');
+  const body   = document.getElementById('form-body');
+  if (!d || !v) return;
+
+  banner.textContent = '⟳  Scanning cloud...';
+  banner.className   = 'status-banner scanning';
+
+  try {
+    const res = await gas({ action:'CHECK', date:d, venue:v });
+    body.classList.add('unlocked');
+    if (res.occupied && res.data) {
+      banner.textContent = '⚠  Terisi — ' + (res.data.status || 'TENTATIVE');
+      banner.className   = 'status-banner occupied';
+      fillForm(res.data, d, v);
+      show('btn-force');
+    } else {
+      banner.textContent = '✓  Venue Tersedia';
+      banner.className   = 'status-banner available';
+      hide('btn-force');
+      // ✅ FIX Bug 1: jangan hapus field saat mode duplikat aktif
+      if (!editMode && !isDuplicateMode) clearFields();
+    }
+  } catch(e) {
+    banner.textContent = '✗ Offline — ' + e.message;
+    banner.className   = 'status-banner occupied';
+  }
+}
+
+// ─── FILL FORM ─────────────────────────────────────────────────────────────
+function fillForm(data, date, venue) {
+  origDate = date; origVenue = venue; editMode = true;
+  set('f-customer', data.customer || '');
+  set('f-status',   (data.status  || '').toUpperCase());
+  set('f-package',  (data.package || '').toUpperCase());
+  set('f-sales',    (data.sales   || '').toUpperCase());
+  set('f-time',     data.time     || '');
+  set('f-pax',      data.pax      || '');
+  set('f-price',    data.price    || '');
+  document.getElementById('f-price-display').value =
+    data.price > 0 ? 'Rp ' + fmt(data.price) : '';
+  calcRevenue(); onStatusChange();
+  show('btn-duplicate');
+}
+
+// ─── FEATURE 1: DUPLICATE BOOKING ──────────────────────────────────────────
+function duplicateBooking() {
+  // Snapshot semua data form saat ini
+  const snap = {
+    customer: val('f-customer'), status:  val('f-status'),
+    package:  val('f-package'), sales:   val('f-sales'),
+    time:     val('f-time'),    pax:     val('f-pax'),
+    price:    val('f-price'),   priceDisplay: document.getElementById('f-price-display').value
+  };
+
+  // Reset tanggal + venue saja → user harus pilih sendiri
+  set('f-date', ''); set('f-venue', '');
+  document.getElementById('avail-banner').className = 'status-banner';
+
+  // Restore semua data lain
+  set('f-customer', snap.customer); set('f-status',  snap.status);
+  set('f-package',  snap.package);  set('f-sales',   snap.sales);
+  set('f-time',     snap.time);     set('f-pax',     snap.pax);
+  set('f-price',    snap.price);
+  document.getElementById('f-price-display').value = snap.priceDisplay;
+
+  // Tandai sebagai NEW booking (bukan edit) + aktifkan duplicate mode
+  editMode = false; origDate = ''; origVenue = '';
+  isDuplicateMode = true; // ✅ FIX Bug 1: cegah clearFields saat pilih venue baru
+  hide('btn-duplicate'); hide('btn-force'); hide('btn-delete');
+
+  // Form tetap unlocked, user tinggal pilih tanggal+venue baru
+  document.getElementById('form-body').classList.add('unlocked');
+  calcRevenue();
+
+  toast('📋 Data disalin — pilih Tanggal & Venue baru', 'info', 4000);
+
+  // Scroll ke atas agar input tanggal terlihat
+  document.getElementById('f-date').scrollIntoView({ behavior:'smooth', block:'center' });
+  document.getElementById('f-date').focus();
+}
+
+// ─── FEATURE 2: FORCE VENUE ────────────────────────────────────────────────
+let _forceSlots = [];
+
+async function openForceVenue() {
+  const d = val('f-date'), v = val('f-venue');
+  if (!d || !v) return toast('Pilih tanggal & venue dulu', 'error');
+
+  document.getElementById('force-sub').textContent =
+    'Pilih slot kosong untuk dijadikan ' + v + ' pada ' + d;
+  document.getElementById('force-list').innerHTML =
+    '<div class="empty-state"><span class="spinner spinner-light"></span></div>';
+  document.getElementById('modal-force').classList.add('open');
+
+  try {
+    const res = await gas({ action:'GET_DAY_SLOTS', date:d });
+    if (!res.ok) { document.getElementById('force-list').innerHTML = '<div class="empty-state">✗ ' + res.msg + '</div>'; return; }
+
+    _forceSlots = res.slots;
+    // Sembunyikan slot yang sudah merupakan venue yang dipilih user (kecuali yang occupied)
+    const html = res.slots.map(s => {
+      const isSameVenue = s.venueUpper === v.toUpperCase();
+      const cls = s.occupied ? 'slot-card occupied-slot' : 'slot-card';
+      const badge = s.occupied
+        ? `<span class="slot-badge taken">Terisi</span>`
+        : (isSameVenue
+            ? `<span class="slot-badge selected">Venue Ini</span>`
+            : `<span class="slot-badge free">Kosong ✓</span>`);
+      const info = s.occupied ? ('Terisi: ' + s.customer + (s.status ? ' · ' + s.status : '')) : 'Slot kosong — bisa dipakai';
+      const onclick = s.occupied ? '' : `onclick="pickForceSlot(${s.row})"`;
+      return `<div class="${cls}" ${onclick}>
+        <div class="slot-venue">${s.venueOriginal}</div>
+        <div class="slot-info">Baris ${s.row} &nbsp;·&nbsp; ${info}</div>
+        ${badge}
+      </div>`;
+    }).join('');
+
+    document.getElementById('force-list').innerHTML = html ||
+      '<div class="empty-state">— Tidak ada slot ditemukan —</div>';
+  } catch(e) {
+    document.getElementById('force-list').innerHTML = '<div class="empty-state">✗ ' + e.message + '</div>';
+  }
+}
+
+async function pickForceSlot(targetRow) {
+  const slot = _forceSlots.find(s => s.row === targetRow);
+  if (!slot || slot.occupied) return;
+
+  const d = val('f-date'), v = val('f-venue');
+
+  closeForce();
+
+  const ok = await showConfirm({
+    icon:  '⚡',
+    title: 'Paksa Venue?',
+    msg:   `Slot <strong>${slot.venueOriginal}</strong> (baris ${targetRow}) akan diubah namanya menjadi <strong>${v}</strong> dan diisi dengan booking ini.<br><br>Aksi ini mengubah data struktur spreadsheet.`,
+    yesLabel: 'Ya, Paksa Sekarang',
+    dangerous: false
+  });
+
+  if (!ok) return;
+  if (!validate()) return;
+
+  setBtn('btn-sync', true);
+  try {
+    const res = await gas({
+      action:      'FORCE_VENUE',
+      sheetName:   monthName(d),
+      targetRow:   targetRow,
+      forceVenue:  v,
+      customer:    val('f-customer'), status:  val('f-status'),
+      package:     val('f-package'),  sales:   val('f-sales'),
+      time:        val('f-time'),     pax:     val('f-pax'),
+      price:       val('f-price')
+    });
+    if (res.ok) { toast('⚡ ' + res.msg, 'success'); resetForm(true); isDuplicateMode=false; }
+    else        { toast('✗ ' + res.msg, 'error', 5000); }
+  } catch(e) {
+    toast('✗ ' + e.message, 'error', 5000);
+  } finally {
+    setBtn('btn-sync', false, '✦ Sync to Cloud');
+  }
+}
+
+function closeForce() { document.getElementById('modal-force').classList.remove('open'); }
+
+// ─── SUBMIT ────────────────────────────────────────────────────────────────
+async function submitData() {
+  if (!validate()) return;
+  setBtn('btn-sync', true);
+  const d = val('f-date'), v = val('f-venue');
+  try {
+    const res = await gas({
+      action:'UPDATE', sheetName:monthName(d), date:d, venue:v,
+      oldSheetName: origDate ? monthName(origDate) : '',
+      oldDate:origDate, oldVenue:origVenue,
+      isMoveEvent: String(editMode && (d!==origDate || v!==origVenue)),
+      customer:val('f-customer'), status:val('f-status'),
+      package:val('f-package'),   sales:val('f-sales'),
+      time:val('f-time'),         pax:val('f-pax'), price:val('f-price')
+    });
+    if (res.ok) { toast('✦ ' + res.msg, 'success'); resetForm(true); }
+    else        { toast('✗ ' + res.msg, 'error', 5000); }
+  } catch(e) { toast('✗ ' + e.message, 'error', 5000); }
+  finally { setBtn('btn-sync', false, '✦ Sync to Cloud'); }
+}
+
+// ─── DELETE ────────────────────────────────────────────────────────────────
+async function deleteData() {
+  const d = val('f-date'), v = val('f-venue');
+  if (!d || !v) return toast('Pilih tanggal & venue dahulu', 'error');
+  const name = val('f-customer') || 'data ini';
+  const ok = await showConfirm({
+    icon:'🗑', title:'Hapus Booking?',
+    msg:`Booking <strong>${name}</strong> akan dihapus secara permanen.<br><br>Aksi ini tidak dapat dibatalkan.`,
+    yesLabel:'Ya, Hapus', dangerous:true
+  });
+  if (!ok) return;
+  setBtn('btn-delete', true);
+  try {
+    const res = await gas({ action:'DELETE', sheetName:monthName(d), date:d, venue:v });
+    if (res.ok) { toast('🗑 ' + res.msg, 'success'); resetForm(true); }
+    else        { toast('✗ ' + res.msg, 'error', 5000); }
+  } catch(e) { toast('✗ ' + e.message, 'error', 5000); }
+  finally { setBtn('btn-delete', false, '🗑 Hapus Data Ini'); }
+}
+
+// ─── SCANNER ───────────────────────────────────────────────────────────────
+function openScanner() {
+  document.getElementById('modal-scanner').classList.add('open');
+  loadScanner(activeTab);
+}
+function closeScanner() { document.getElementById('modal-scanner').classList.remove('open'); }
+function switchTab(t) {
+  activeTab = t;
+  ['t','c','n'].forEach(x => document.getElementById('tab-'+x).classList.remove('active'));
+  document.getElementById('tab-' + {TENTATIVE:'t',CONFIRM:'c',NONE:'n'}[t]).classList.add('active');
+  loadScanner(t);
+}
+
+async function loadScanner(filter) {
+  const body = document.getElementById('scanner-list');
+  body.innerHTML = '<div class="empty-state"><span class="spinner spinner-light"></span></div>';
+  try {
+    const now = new Date();
+    const res = await gas({ action:'READ_MONTH', sheetName: MONTHS[now.getMonth()] });
+    if (!res.ok) { body.innerHTML = '<div class="empty-state">✗ ' + res.msg + '</div>'; return; }
+
+    const cnt = res.rows.filter(r => r.status === 'TENTATIVE').length;
+    const badge = document.getElementById('notif-badge');
+    badge.textContent = cnt; cnt > 0 ? badge.classList.remove('hidden') : badge.classList.add('hidden');
+
+    const filtered = res.rows.filter(r => {
+      if (filter==='TENTATIVE') return r.status==='TENTATIVE';
+      if (filter==='CONFIRM')   return r.status==='CONFIRM';
+      return r.customer && !r.status;
+    });
+    if (!filtered.length) { body.innerHTML = '<div class="empty-state">— Tidak ada data —</div>'; return; }
+
+    const mo = (now.getMonth()+1).toString().padStart(2,'0');
+    body.innerHTML = filtered.map(r => {
+      // ✅ FIX Bug 1: pakai r.day (angka hari dari GAS) bukan regex parse dateLabel
+      const dNum = r.day ? String(r.day).padStart(2,'0') : (r.dateLabel.match(/\d+/)||['1'])[0].padStart(2,'0');
+      const iso  = now.getFullYear() + '-' + mo + '-' + dNum;
+      const cls  = r.status==='TENTATIVE' ? 's-tentative' : r.status==='CONFIRM' ? 's-confirm' : 's-none';
+      return `<div class="event-card" onclick="pickEvent('${iso}','${r.venue}')">
+        <div class="event-name">${r.customer||'—'}</div>
+        <div class="event-meta">${r.dateLabel} · ${r.venue}</div>
+        <span class="event-status ${cls}">${r.status||'No Status'}</span>
+      </div>`;
+    }).join('');
+  } catch(e) { body.innerHTML = '<div class="empty-state">✗ ' + e.message + '</div>'; }
+}
+
+function pickEvent(date, venue) {
+  // ✅ FIX Bug 1: pakai venue as-is dari sheet (Title Case), tidak perlu toUpperCase
+  set('f-date', date); set('f-venue', venue);
+  closeScanner(); onDateVenueChange();
+}
+
+// ─── UI HELPERS ────────────────────────────────────────────────────────────
+function onStatusChange() {
+  const s = val('f-status');
+  const del = document.getElementById('btn-delete');
+  editMode && s !== 'CONFIRM' && s !== 'DONE' ? del.classList.add('visible') : del.classList.remove('visible');
+}
+
+function onPriceInput(el) {
+  const raw = el.value.replace(/[^0-9]/g,'');
+  el.value = raw ? 'Rp ' + fmt(raw) : '';
+  set('f-price', raw || '0'); calcRevenue();
+}
+
+function calcRevenue() {
+  const t = (parseFloat(val('f-pax'))||0) * (parseFloat(val('f-price'))||0);
+  document.getElementById('rev-display').textContent = 'Rp ' + t.toLocaleString('id-ID');
+}
+
+function resetForm(full) {
+  if (full) {
+    set('f-date',''); set('f-venue','');
+    document.getElementById('avail-banner').className = 'status-banner';
+    document.getElementById('form-body').classList.remove('unlocked');
+    hide('btn-delete'); hide('btn-duplicate'); hide('btn-force');
+    editMode=false; origDate=''; origVenue=''; isDuplicateMode=false;
+  }
+  clearFields();
+}
+
+function clearFields() {
+  ['f-customer','f-status','f-package','f-time','f-pax','f-price','f-price-display'].forEach(id=>set(id,''));
+  document.getElementById('rev-display').textContent = 'Rp 0';
+}
+
+function show(id) { document.getElementById(id).classList.add('visible'); }
+function hide(id) { document.getElementById(id).classList.remove('visible'); }
+function val(id)  { return document.getElementById(id).value; }
+function set(id,v){ document.getElementById(id).value = v; }
+function fmt(n)   { return new Intl.NumberFormat('id-ID').format(n); }
+
+// Preload badge on startup
+window.addEventListener('load', async () => {
+  applyConfig(); // ✅ Load config dari Master Config
+  try {
+    const res = await gas({ action:'READ_MONTH', sheetName: MONTHS[new Date().getMonth()] });
+    if (!res.ok) return;
+    const cnt = res.rows.filter(r=>r.status==='TENTATIVE').length;
+    const b = document.getElementById('notif-badge');
+    if (cnt>0) { b.textContent=cnt; b.classList.remove('hidden'); }
+  } catch(_) {}
+});
+
+// ─── RANGE AVAILABILITY ────────────────────────────────────────────────────
+
+function openRangePopup() {
+  // Default: hari ini s/d 7 hari ke depan
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const todayStr = fmtDate(today);
+  const toDate   = new Date(today);
+  toDate.setDate(toDate.getDate() + 7);
+
+  // Set min = hari ini agar tidak bisa pilih masa lalu
+  document.getElementById('range-from').min   = todayStr;
+  document.getElementById('range-from').value = todayStr;
+  document.getElementById('range-to').min     = todayStr;
+  document.getElementById('range-to').value   = fmtDate(toDate);
+
+  // Reset info & body
+  document.getElementById('range-info').textContent  = 'Maksimal 31 hari per pencarian.';
+  document.getElementById('range-info').style.color  = 'var(--muted)';
+  document.getElementById('range-body').innerHTML    = '<div class="range-empty">Pilih rentang tanggal dan klik 🔍 Cek</div>';
+  document.getElementById('range-summary').style.display = 'none';
+  document.getElementById('range-popup').classList.add('open');
+}
+
+function closeRangePopup() {
+  document.getElementById('range-popup').classList.remove('open');
+}
+
+function fmtDate(d) {
+  return d.getFullYear() + '-' +
+    String(d.getMonth()+1).padStart(2,'0') + '-' +
+    String(d.getDate()).padStart(2,'0');
+}
+
+function dateRange(from, to) {
+  const dates = [], cur = new Date(from);
+  const end   = new Date(to);
+  while (cur <= end) { dates.push(new Date(cur)); cur.setDate(cur.getDate()+1); }
+  return dates;
+}
+
+async function checkRange() {
+  const fromVal = document.getElementById('range-from').value;
+  const toVal   = document.getElementById('range-to').value;
+  const body    = document.getElementById('range-body');
+  const summary = document.getElementById('range-summary');
+  const btn     = document.getElementById('btn-range-check');
+  const info    = document.getElementById('range-info');
+
+  const todayStr = fmtDate(new Date());
+
+  if (!fromVal || !toVal) { info.textContent = '⚠ Pilih tanggal dari & sampai dulu.'; info.style.color='var(--red)'; return; }
+
+  // ✅ FIX: Tidak boleh pilih tanggal lampau
+  if (fromVal < todayStr) {
+    document.getElementById('range-from').value = todayStr;
+    info.textContent = '⚠ Tanggal mulai tidak boleh sebelum hari ini.';
+    info.style.color = 'var(--red)'; return;
+  }
+  if (fromVal > toVal) { info.textContent = '⚠ Tanggal "Dari" harus lebih awal.'; info.style.color='var(--red)'; return; }
+
+  const dates = dateRange(fromVal, toVal);
+  if (dates.length > 31) { info.textContent = '⚠ Maksimal 31 hari per pencarian.'; info.style.color='var(--red)'; return; }
+
+  info.textContent = `Mengecek ${dates.length} hari...`;
+  info.style.color = 'var(--gold)';
+  btn.disabled = true;
+  btn.textContent = '⏳';
+  body.innerHTML = `<div class="range-loading">🔍 Mengambil data dari cloud...</div>`;
+  summary.style.display = 'none';
+
+  // Kumpulkan bulan unik yang perlu diambil
+  const monthsNeeded = {};
+  dates.forEach(d => {
+    const mn = MONTHS[d.getMonth()];
+    if (!monthsNeeded[mn]) monthsNeeded[mn] = [];
+    monthsNeeded[mn].push(d);
+  });
+
+  // Fetch READ_MONTH untuk setiap bulan yang dibutuhkan
+  const allRows = {};
+  try {
+    for (const [monthName] of Object.entries(monthsNeeded)) {
+      const res = await gas({ action:'READ_MONTH', sheetName: monthName });
+      if (!res.ok) continue;
+      const year     = monthsNeeded[monthName][0].getFullYear();
+      const monthIdx = MONTHS.indexOf(monthName);
+      res.rows.forEach(r => {
+        if (!r.day) return;
+        const key = year + '-' + String(monthIdx+1).padStart(2,'0') + '-' + String(r.day).padStart(2,'0');
+        // ✅ FIX: Hanya simpan data untuk tanggal >= hari ini
+        if (key < todayStr) return;
+        if (!allRows[key]) allRows[key] = {};
+        allRows[key][r.venue] = { status: r.status, customer: r.customer };
+      });
+    }
+  } catch(e) {
+    body.innerHTML = `<div class="range-empty">✗ Error: ${e.message}</div>`;
+    btn.disabled = false; btn.textContent = '🔍 Cek'; return;
+  }
+
+  // Ambil daftar venue dari config
+  const cfg    = getConfig();
+  const venues = cfg.venues || ['Ball Room','VIP Room','Teratai Room','Fox Steak House'];
+
+  const DAY_NAMES = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+
+  let cntEmpty=0, cntTent=0, cntConf=0;
+
+  let html = `<table class="avail-table">
+    <thead><tr>
+      <th>Tanggal</th>
+      ${venues.map(v => `<th>${v}</th>`).join('')}
+    </tr></thead>
+    <tbody>`;
+
+  dates.forEach(d => {
+    const iso      = fmtDate(d);
+    const dayData  = allRows[iso] || {};
+    const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+
+    html += `<tr style="${isWeekend ? 'background:rgba(201,168,76,.025)' : ''}">
+      <td class="td-date">
+        <span class="day-num">${String(d.getDate()).padStart(2,'0')}</span>
+        <span class="day-name">${DAY_NAMES[d.getDay()]} ${d.toLocaleDateString('id-ID',{month:'short'})}</span>
+      </td>`;
+
+    venues.forEach(venue => {
+      const slot     = dayData[venue];
+      const status   = slot ? slot.status.toUpperCase() : '';
+      const customer = slot ? slot.customer : '';
+
+      if (!slot || !customer) {
+        cntEmpty++;
+        html += `<td onclick="pickSlotFromRange('${iso}','${venue}')" style="cursor:pointer">
+          <div class="slot-empty">✓ FREE<span class="slot-name">Tap isi</span></div></td>`;
+      } else if (status === 'TENTATIVE') {
+        cntTent++;
+        html += `<td onclick="pickSlotFromRange('${iso}','${venue}')" style="cursor:pointer">
+          <div class="slot-tentative">⚡ TENT<span class="slot-name">${customer}</span></div></td>`;
+      } else {
+        // CONFIRM (DONE tidak akan muncul karena filter tanggal lampau)
+        cntConf++;
+        html += `<td><div class="slot-confirm">✔ CONF<span class="slot-name">${customer}</span></div></td>`;
+      }
+    });
+
+    html += `</tr>`;
+  });
+
+  html += `</tbody></table>`;
+  body.innerHTML = html;
+
+  document.getElementById('sum-empty').textContent = cntEmpty;
+  document.getElementById('sum-tent').textContent  = cntTent;
+  document.getElementById('sum-conf').textContent  = cntConf;
+  document.getElementById('sum-done').textContent  = '—';
+  document.getElementById('sum-days').textContent  = dates.length;
+  summary.style.display = 'flex';
+
+  info.textContent = `✓ ${dates.length} hari · ${cntEmpty} slot kosong tersedia`;
+  info.style.color = 'var(--green)';
+  btn.disabled = false;
+  btn.textContent = '🔍 Cek';
+}
+
+function pickSlotFromRange(iso, venue) {
+  // Isi form utama lalu tutup popup
+  document.getElementById('f-date').value  = iso;
+  document.getElementById('f-venue').value = venue;
+  closeRangePopup();
+  onDateVenueChange(); // trigger cek availability
+  toast('📅 Slot dipilih: ' + venue + ' · ' + iso, 'success');
+}
+</script>
+<!-- ─── RANGE AVAILABILITY POPUP ─────────────────────────── -->
+<div id="range-popup">
+
+  <div class="range-header">
+    <div>
+      <div class="range-title">📅 Cek Ketersediaan</div>
+      <div style="font-size:9px;color:var(--dim);letter-spacing:.1em;margin-top:2px;">RANGE DATE · SEMUA VENUE</div>
+    </div>
+    <button class="range-close" onclick="closeRangePopup()">✕</button>
+  </div>
+
+  <div class="range-inputs">
+    <div class="range-row">
+      <div class="range-field">
+        <label>Dari Tanggal</label>
+        <input type="date" id="range-from" min="">
+      </div>
+      <div class="range-field">
+        <label>Sampai Tanggal</label>
+        <input type="date" id="range-to" min="">
+      </div>
+      <button class="btn-range-check" id="btn-range-check" onclick="checkRange()">🔍 Cek</button>
+    </div>
+    <div style="font-size:9px;color:var(--muted);margin-top:8px;" id="range-info">Maksimal 31 hari per pencarian.</div>
+  </div>
+
+  <div class="range-legend">
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(46,204,113,.5);border:1px solid var(--green)"></div>Kosong — klik untuk isi</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(245,158,11,.5);border:1px solid #f59e0b"></div>Tentative</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(99,102,241,.5);border:1px solid #818cf8"></div>Confirm</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(255,255,255,.08)"></div>Done</div>
+  </div>
+
+  <div class="range-body" id="range-body">
+    <div class="range-empty">Pilih rentang tanggal dan klik 🔍 Cek</div>
+  </div>
+
+  <div class="range-summary" id="range-summary" style="display:none">
+    <div class="sum-item"><span class="sum-val" id="sum-empty" style="color:var(--green)">0</span><span class="sum-lbl">Kosong</span></div>
+    <div class="sum-item"><span class="sum-val" id="sum-tent"  style="color:#f59e0b">0</span><span class="sum-lbl">Tentative</span></div>
+    <div class="sum-item"><span class="sum-val" id="sum-conf"  style="color:#818cf8">0</span><span class="sum-lbl">Confirm</span></div>
+    <div class="sum-item"><span class="sum-val" id="sum-done"  style="color:var(--dim)">0</span><span class="sum-lbl">Done</span></div>
+    <div class="sum-item" style="margin-left:auto"><span class="sum-val" id="sum-days"  style="color:var(--text)">0</span><span class="sum-lbl">Hari</span></div>
+  </div>
+
+</div>
+
+</body>
+</html>
