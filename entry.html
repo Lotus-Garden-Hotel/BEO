@@ -280,6 +280,136 @@
     ::-webkit-scrollbar { width:3px; }
     ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
 
+    /* ── Range Availability Popup ── */
+    #range-popup {
+      position:fixed; inset:0; z-index:400;
+      background:var(--black);
+      display:flex; flex-direction:column;
+      transform:translateY(100%);
+      transition:transform .4s cubic-bezier(.4,0,.2,1);
+    }
+    #range-popup.open { transform:translateY(0); }
+
+    .range-header {
+      padding:16px; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between;
+      flex-shrink:0; background:var(--dark);
+    }
+    .range-title {
+      font-family:'Cormorant Garamond',serif; font-size:18px; font-weight:700;
+      background:linear-gradient(90deg,var(--gold),var(--gold3));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    }
+    .range-close {
+      width:36px; height:36px; border-radius:10px;
+      background:rgba(231,76,60,.08); border:1px solid rgba(231,76,60,.2);
+      color:var(--red); font-size:16px; cursor:pointer; transition:all .2s;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .range-close:hover { background:rgba(231,76,60,.15); }
+
+    .range-inputs {
+      padding:14px 16px; border-bottom:1px solid var(--border);
+      background:var(--dark); flex-shrink:0;
+    }
+    .range-row { display:grid; grid-template-columns:1fr 1fr auto; gap:8px; align-items:flex-end; }
+    .range-field label { display:block; font-size:8px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--dim); margin-bottom:5px; }
+    .range-field input[type=date] {
+      width:100%; background:var(--surface); border:1px solid var(--border);
+      border-radius:10px; padding:9px 10px; color:var(--text);
+      font-size:12px; font-weight:500; outline:none; transition:border-color .2s;
+      -webkit-appearance:none;
+    }
+    .range-field input:focus { border-color:var(--gold); }
+    .btn-range-check {
+      height:38px; padding:0 16px; border-radius:10px; border:none;
+      background:linear-gradient(135deg,var(--gold),var(--gold2));
+      color:var(--black); font-size:10px; font-weight:800;
+      letter-spacing:.1em; text-transform:uppercase; cursor:pointer;
+      white-space:nowrap; transition:opacity .2s;
+    }
+    .btn-range-check:hover   { opacity:.85; }
+    .btn-range-check:disabled{ opacity:.5; cursor:not-allowed; }
+
+    /* Legend */
+    .range-legend {
+      padding:8px 16px; display:flex; gap:12px; flex-shrink:0;
+      border-bottom:1px solid var(--border); background:var(--dark);
+    }
+    .legend-item { display:flex; align-items:center; gap:5px; font-size:9px; color:var(--muted); }
+    .legend-dot { width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+
+    /* Table container */
+    .range-body { flex:1; overflow:auto; padding:12px 16px 30px; }
+
+    .avail-table { width:100%; border-collapse:collapse; min-width:340px; }
+    .avail-table th {
+      position:sticky; top:0; z-index:10;
+      background:var(--dark); border-bottom:2px solid var(--border);
+      padding:8px 6px; font-size:9px; font-weight:700; letter-spacing:.1em;
+      text-transform:uppercase; color:var(--dim); text-align:center;
+    }
+    .avail-table th:first-child { text-align:left; min-width:80px; }
+    .avail-table td {
+      padding:6px; border-bottom:1px solid rgba(201,168,76,.06);
+      font-size:10px; text-align:center; vertical-align:middle;
+    }
+    .avail-table tr:hover td { background:rgba(201,168,76,.03); }
+    .td-date { text-align:left; font-weight:600; color:var(--muted); font-size:10px; white-space:nowrap; }
+    .td-date .day-num { font-size:15px; font-weight:800; color:var(--text); display:block; line-height:1; }
+    .td-date .day-name { font-size:8px; color:var(--dim); }
+
+    /* Slot cells */
+    .slot-empty {
+      background:rgba(46,204,113,.08); border:1px solid rgba(46,204,113,.2);
+      border-radius:7px; padding:5px 4px; color:var(--green);
+      font-size:8px; font-weight:700; letter-spacing:.05em; cursor:pointer;
+      transition:all .15s;
+    }
+    .slot-empty:hover { background:rgba(46,204,113,.18); transform:scale(1.05); }
+    .slot-tentative {
+      background:rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.3);
+      border-radius:7px; padding:5px 4px; color:#f59e0b;
+      font-size:8px; font-weight:700; cursor:pointer; transition:all .15s;
+    }
+    .slot-tentative:hover { background:rgba(245,158,11,.18); transform:scale(1.05); }
+    .slot-confirm {
+      background:rgba(99,102,241,.08); border:1px solid rgba(99,102,241,.25);
+      border-radius:7px; padding:5px 4px; color:#818cf8;
+      font-size:8px; font-weight:700;
+    }
+    .slot-done {
+      background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06);
+      border-radius:7px; padding:5px 4px; color:var(--dim);
+      font-size:8px;
+    }
+    .slot-empty  .slot-name,
+    .slot-tentative .slot-name { font-size:7px; display:block; margin-top:2px; opacity:.8; max-width:70px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .slot-confirm .slot-name,
+    .slot-done    .slot-name   { font-size:7px; display:block; margin-top:2px; opacity:.7; }
+
+    .range-empty { text-align:center; padding:40px 16px; color:var(--muted); font-size:12px; }
+    .range-loading { text-align:center; padding:40px 16px; color:var(--gold); font-size:12px; }
+
+    /* Summary bar */
+    .range-summary {
+      padding:10px 16px; background:var(--dark); border-top:1px solid var(--border);
+      display:flex; gap:16px; flex-shrink:0; font-size:10px;
+    }
+    .sum-item { display:flex; flex-direction:column; align-items:center; }
+    .sum-val { font-size:16px; font-weight:800; }
+    .sum-lbl { font-size:8px; color:var(--dim); text-transform:uppercase; letter-spacing:.1em; }
+
+    /* Range trigger button */
+    .btn-range-open {
+      height:36px; padding:0 12px; border-radius:10px;
+      background:rgba(201,168,76,.08); border:1px solid var(--border);
+      color:var(--gold); font-size:9px; font-weight:700;
+      letter-spacing:.08em; text-transform:uppercase; cursor:pointer;
+      transition:all .2s; display:flex; align-items:center; gap:5px;
+    }
+    .btn-range-open:hover { background:rgba(201,168,76,.15); border-color:var(--gold); }
+
     /* ── Login Gate ── */
     #login-gate {
       position:fixed; inset:0; z-index:500;
@@ -410,6 +540,7 @@
         <span id="notif-badge" class="notif-badge hidden">0</span>
       </div>
       <button class="btn-reset" onclick="resetForm(true)">✕ Reset</button>
+      <button class="btn-range-open" onclick="openRangePopup()">📅 Cek Range</button>
       <button class="btn-logout" id="btn-logout" onclick="logoutUser()">⎋ Keluar</button>
     </div>
   </div>
@@ -580,12 +711,12 @@ function logoutUser() {
 // ─── CONFIG (dari Master Config) ───────────────────────────────────────────
 const CONFIG_KEY = 'banquet_elite_config';
 const DEFAULT_CFG = {
-  gasUrl:    'https://script.google.com/macros/s/AKfycbxGa8HVDrxGgXQDaiU570HdqaDqNmthRaPhEF7x_fPG6fgiNqtdTslngxExTY54K08g/exec',
+  gasUrl:    'https://script.google.com/macros/s/AKfycbxNHZ8c9InTWqwNSRGkEgWQNnYeI5vMjZ_hXEIVLG21-e5e2hQmODnIGTNojV-E4Frd/exec',
   venues:    ['Ball Room','VIP Room','Teratai Room','Fox Steak House'],
   packages:  ['FULL BOARD','HALF DAY','FULL DAY','WEDDING','AKAD NIKAH','ARISAN','ULANG TAHUN','TABLE MANER','DINNER','LUNCH'],
   sales:     ['DWI','TINA'],
-  brand:     'BANQUET ELITE LOTUS',
-  version:   'V.5.3 · Gold Edition',
+  brand:     'BANQUET ELITE',
+  version:   'V.5.9 · Live Edition',
   dashboard: 'https://lotus-garden-hotel.github.io/BEO-Lotus-Garden-Hotel/'
 };
 
@@ -913,7 +1044,7 @@ function switchTab(t) {
   loadScanner(t);
 }
 
-async function loadScanner(filter) {
+async function loadScanner(filter, filterDate) {
   const body = document.getElementById('scanner-list');
   body.innerHTML = '<div class="empty-state"><span class="spinner spinner-light"></span></div>';
   try {
@@ -925,20 +1056,28 @@ async function loadScanner(filter) {
     const badge = document.getElementById('notif-badge');
     badge.textContent = cnt; cnt > 0 ? badge.classList.remove('hidden') : badge.classList.add('hidden');
 
-    const filtered = res.rows.filter(r => {
+    let filtered = res.rows.filter(r => {
       if (filter==='TENTATIVE') return r.status==='TENTATIVE';
       if (filter==='CONFIRM')   return r.status==='CONFIRM';
       return r.customer && !r.status;
     });
+    // ✅ FIX Bug 1: filter by tanggal spesifik jika ada filterDate
+    if (filterDate) {
+      const filterDay = parseInt(filterDate.split('-')[2], 10);
+      filtered = filtered.filter(r => r.day === filterDay);
+    }
     if (!filtered.length) { body.innerHTML = '<div class="empty-state">— Tidak ada data —</div>'; return; }
 
-    const mo = (now.getMonth()+1).toString().padStart(2,'0');
+    const mo  = (now.getMonth()+1).toString().padStart(2,'0');
+    const yr  = now.getFullYear();
+    const shn = MONTHS[now.getMonth()];
+
     body.innerHTML = filtered.map(r => {
-      // ✅ FIX Bug 1: pakai r.day (angka hari dari GAS) bukan regex parse dateLabel
       const dNum = r.day ? String(r.day).padStart(2,'0') : (r.dateLabel.match(/\d+/)||['1'])[0].padStart(2,'0');
-      const iso  = now.getFullYear() + '-' + mo + '-' + dNum;
+      const iso  = yr + '-' + mo + '-' + dNum;
       const cls  = r.status==='TENTATIVE' ? 's-tentative' : r.status==='CONFIRM' ? 's-confirm' : 's-none';
-      return `<div class="event-card" onclick="pickEvent('${iso}','${r.venue}')">
+      // ✅ FIX Bug 1: pakai row number untuk direct lookup, bukan cuma date+venue
+      return `<div class="event-card" onclick="pickEvent('${iso}','${r.venue}','${shn}',${r.row||0})">
         <div class="event-name">${r.customer||'—'}</div>
         <div class="event-meta">${r.dateLabel} · ${r.venue}</div>
         <span class="event-status ${cls}">${r.status||'No Status'}</span>
@@ -947,10 +1086,41 @@ async function loadScanner(filter) {
   } catch(e) { body.innerHTML = '<div class="empty-state">✗ ' + e.message + '</div>'; }
 }
 
-function pickEvent(date, venue) {
-  // ✅ FIX Bug 1: pakai venue as-is dari sheet (Title Case), tidak perlu toUpperCase
-  set('f-date', date); set('f-venue', venue);
-  closeScanner(); onDateVenueChange();
+async function pickEvent(date, venue, sheetName, rowNum) {
+  // ✅ FIX Bug 1: kalau ada rowNum → GET_ROW langsung, tidak pakai CHECK by date+venue
+  set('f-date', date);
+  set('f-venue', venue);
+  closeScanner();
+
+  if (rowNum && rowNum > 0 && sheetName) {
+    // Load data langsung by row number — akurat meski venue sama di tanggal sama
+    const banner = document.getElementById('avail-banner');
+    banner.className = 'status-banner occupied';
+    banner.textContent = '⏳ Memuat data...';
+    try {
+      const res = await gas({ action:'GET_ROW', sheetName, row: rowNum });
+      if (res.ok && res.data) {
+        const d = res.data;
+        set('f-customer', d.customer);
+        set('f-status',   d.status);
+        set('f-package',  d.package);
+        set('f-sales',    d.sales);
+        set('f-time',     d.time);
+        set('f-pax',      d.pax);
+        setPrice(d.price);
+        editMode = true;
+        currentRow = rowNum;
+        banner.textContent = '▲ TERISI — ' + d.status;
+        document.getElementById('btn-duplicate') && document.getElementById('btn-duplicate').classList.remove('hidden');
+        onStatusChange(); updateRevenue();
+      }
+    } catch(e) {
+      // fallback ke CHECK biasa kalau GET_ROW gagal
+      onDateVenueChange();
+    }
+  } else {
+    onDateVenueChange();
+  }
 }
 
 // ─── UI HELPERS ────────────────────────────────────────────────────────────
@@ -1004,6 +1174,256 @@ window.addEventListener('load', async () => {
     if (cnt>0) { b.textContent=cnt; b.classList.remove('hidden'); }
   } catch(_) {}
 });
+
+// ─── RANGE AVAILABILITY ────────────────────────────────────────────────────
+
+function openRangePopup() {
+  // Default: hari ini s/d 7 hari ke depan
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const todayStr = fmtDate(today);
+  const toDate   = new Date(today);
+  toDate.setDate(toDate.getDate() + 7);
+
+  // Set min = hari ini agar tidak bisa pilih masa lalu
+  document.getElementById('range-from').min   = todayStr;
+  document.getElementById('range-from').value = todayStr;
+  document.getElementById('range-to').min     = todayStr;
+  document.getElementById('range-to').value   = fmtDate(toDate);
+
+  // Reset info & body
+  document.getElementById('range-info').textContent  = 'Maksimal 31 hari per pencarian.';
+  document.getElementById('range-info').style.color  = 'var(--muted)';
+  document.getElementById('range-body').innerHTML    = '<div class="range-empty">Pilih rentang tanggal dan klik 🔍 Cek</div>';
+  document.getElementById('range-summary').style.display = 'none';
+  document.getElementById('range-popup').classList.add('open');
+}
+
+function closeRangePopup() {
+  document.getElementById('range-popup').classList.remove('open');
+}
+
+function fmtDate(d) {
+  return d.getFullYear() + '-' +
+    String(d.getMonth()+1).padStart(2,'0') + '-' +
+    String(d.getDate()).padStart(2,'0');
+}
+
+function dateRange(from, to) {
+  const dates = [], cur = new Date(from);
+  const end   = new Date(to);
+  while (cur <= end) { dates.push(new Date(cur)); cur.setDate(cur.getDate()+1); }
+  return dates;
+}
+
+async function checkRange() {
+  const fromVal = document.getElementById('range-from').value;
+  const toVal   = document.getElementById('range-to').value;
+  const body    = document.getElementById('range-body');
+  const summary = document.getElementById('range-summary');
+  const btn     = document.getElementById('btn-range-check');
+  const info    = document.getElementById('range-info');
+
+  const todayStr = fmtDate(new Date());
+
+  if (!fromVal || !toVal) { info.textContent = '⚠ Pilih tanggal dari & sampai dulu.'; info.style.color='var(--red)'; return; }
+
+  // ✅ FIX: Tidak boleh pilih tanggal lampau
+  if (fromVal < todayStr) {
+    document.getElementById('range-from').value = todayStr;
+    info.textContent = '⚠ Tanggal mulai tidak boleh sebelum hari ini.';
+    info.style.color = 'var(--red)'; return;
+  }
+  if (fromVal > toVal) { info.textContent = '⚠ Tanggal "Dari" harus lebih awal.'; info.style.color='var(--red)'; return; }
+
+  const dates = dateRange(fromVal, toVal);
+  if (dates.length > 31) { info.textContent = '⚠ Maksimal 31 hari per pencarian.'; info.style.color='var(--red)'; return; }
+
+  info.textContent = `Mengecek ${dates.length} hari...`;
+  info.style.color = 'var(--gold)';
+  btn.disabled = true;
+  btn.textContent = '⏳';
+  body.innerHTML = `<div class="range-loading">🔍 Mengambil data dari cloud...</div>`;
+  summary.style.display = 'none';
+
+  // Kumpulkan bulan unik yang perlu diambil
+  const monthsNeeded = {};
+  dates.forEach(d => {
+    const mn = MONTHS[d.getMonth()];
+    if (!monthsNeeded[mn]) monthsNeeded[mn] = [];
+    monthsNeeded[mn].push(d);
+  });
+
+  // Fetch READ_MONTH untuk setiap bulan yang dibutuhkan
+  const allRows = {};
+  try {
+    for (const [monthName] of Object.entries(monthsNeeded)) {
+      const res = await gas({ action:'READ_MONTH', sheetName: monthName });
+      if (!res.ok) continue;
+      const year     = monthsNeeded[monthName][0].getFullYear();
+      const monthIdx = MONTHS.indexOf(monthName);
+      res.rows.forEach(r => {
+        if (!r.day) return;
+        const key = year + '-' + String(monthIdx+1).padStart(2,'0') + '-' + String(r.day).padStart(2,'0');
+        // ✅ FIX Bug 2: simpan array of events per slot, bukan overwrite
+        if (key < todayStr) return;
+        if (!allRows[key]) allRows[key] = {};
+        const vk = r.venue;
+        if (!allRows[key][vk]) allRows[key][vk] = [];
+        allRows[key][vk].push({ status: r.status, customer: r.customer, row: r.row });
+      });
+    }
+  } catch(e) {
+    body.innerHTML = `<div class="range-empty">✗ Error: ${e.message}</div>`;
+    btn.disabled = false; btn.textContent = '🔍 Cek'; return;
+  }
+
+  // Ambil daftar venue dari config
+  const cfg    = getConfig();
+  const venues = cfg.venues || ['Ball Room','VIP Room','Teratai Room','Fox Steak House'];
+
+  const DAY_NAMES = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+
+  let cntEmpty=0, cntTent=0, cntConf=0;
+
+  let html = `<table class="avail-table">
+    <thead><tr>
+      <th>Tanggal</th>
+      ${venues.map(v => `<th>${v}</th>`).join('')}
+    </tr></thead>
+    <tbody>`;
+
+  dates.forEach(d => {
+    const iso      = fmtDate(d);
+    const dayData  = allRows[iso] || {};
+    const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+
+    html += `<tr style="${isWeekend ? 'background:rgba(201,168,76,.025)' : ''}">
+      <td class="td-date">
+        <span class="day-num">${String(d.getDate()).padStart(2,'0')}</span>
+        <span class="day-name">${DAY_NAMES[d.getDay()]} ${d.toLocaleDateString('id-ID',{month:'short'})}</span>
+      </td>`;
+
+    venues.forEach(venue => {
+      const events  = (dayData[venue] || []);
+      const hasData = events.length > 0 && events.some(e => e.customer);
+
+      if (!hasData) {
+        // KOSONG
+        cntEmpty++;
+        html += `<td onclick="pickSlotFromRange('${iso}','${venue}')" style="cursor:pointer">
+          <div class="slot-empty">✓ VACANT<span class="slot-name">Tap isi</span></div></td>`;
+      } else {
+        // Ada 1 atau lebih event
+        const allTent  = events.every(e => e.status === 'TENTATIVE');
+        const hasConf  = events.some(e => e.status === 'CONFIRM' || e.status === 'DONE');
+        const count    = events.filter(e => e.customer).length;
+        const label    = count > 1 ? count + ' EVENT' : events[0].customer;
+
+        if (allTent) {
+          cntTent += count;
+          // Tentative: klik langsung ke slot pertama
+          html += `<td onclick="pickSlotFromRange('${iso}','${venue}')" style="cursor:pointer">
+            <div class="slot-tentative">⚡ TENT<span class="slot-name">${label}</span></div></td>`;
+        } else {
+          cntConf += count;
+          // ✅ FIX Bug 2: CONF → klik buka scanner filter tanggal ini
+          html += `<td onclick="openScannerByDate('${iso}')" style="cursor:pointer" title="Klik untuk lihat detail event">
+            <div class="slot-confirm">✔ ${count > 1 ? count+' EVT' : 'CONF'}<span class="slot-name">${label}</span></div></td>`;
+        }
+      }
+    });
+
+    html += `</tr>`;
+  });
+
+  html += `</tbody></table>`;
+  body.innerHTML = html;
+
+  document.getElementById('sum-empty').textContent = cntEmpty;
+  document.getElementById('sum-tent').textContent  = cntTent;
+  document.getElementById('sum-conf').textContent  = cntConf;
+  document.getElementById('sum-done').textContent  = '—';
+  document.getElementById('sum-days').textContent  = dates.length;
+  summary.style.display = 'flex';
+
+  info.textContent = `✓ ${dates.length} hari · ${cntEmpty} slot kosong tersedia`;
+  info.style.color = 'var(--green)';
+  btn.disabled = false;
+  btn.textContent = '🔍 Cek';
+}
+
+function pickSlotFromRange(iso, venue) {
+  document.getElementById('f-date').value  = iso;
+  document.getElementById('f-venue').value = venue;
+  closeRangePopup();
+  onDateVenueChange();
+  toast('📅 Slot dipilih: ' + venue + ' · ' + iso, 'success');
+}
+
+// ✅ FIX Bug 2: Buka scanner filter ke tanggal tertentu
+function openScannerByDate(iso) {
+  closeRangePopup();
+  // Set filter date di form dulu
+  document.getElementById('f-date').value = iso;
+  // Buka scanner tab CONFIRM, user bisa lihat semua event di hari itu
+  openScanner();
+  setTimeout(() => {
+    // Switch ke tab CONFIRM
+    document.querySelectorAll('.scanner-tab').forEach(t => t.classList.remove('active'));
+    const confirmTab = document.querySelector('.scanner-tab[data-tab="CONFIRM"]');
+    if (confirmTab) { confirmTab.classList.add('active'); activeTab = 'CONFIRM'; }
+    loadScanner('CONFIRM', iso); // ✅ kirim iso sbg filterDate
+    toast('📅 Event CONFIRM tgl ' + iso.split('-')[2] + ' ditampilkan', 'info', 3000);
+  }, 300);
+}
 </script>
+<!-- ─── RANGE AVAILABILITY POPUP ─────────────────────────── -->
+<div id="range-popup">
+
+  <div class="range-header">
+    <div>
+      <div class="range-title">📅 Cek Ketersediaan</div>
+      <div style="font-size:9px;color:var(--dim);letter-spacing:.1em;margin-top:2px;">RANGE DATE · SEMUA VENUE</div>
+    </div>
+    <button class="range-close" onclick="closeRangePopup()">✕</button>
+  </div>
+
+  <div class="range-inputs">
+    <div class="range-row">
+      <div class="range-field">
+        <label>Dari Tanggal</label>
+        <input type="date" id="range-from" min="">
+      </div>
+      <div class="range-field">
+        <label>Sampai Tanggal</label>
+        <input type="date" id="range-to" min="">
+      </div>
+      <button class="btn-range-check" id="btn-range-check" onclick="checkRange()">🔍 Cek</button>
+    </div>
+    <div style="font-size:9px;color:var(--muted);margin-top:8px;" id="range-info">Maksimal 31 hari per pencarian.</div>
+  </div>
+
+  <div class="range-legend">
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(46,204,113,.5);border:1px solid var(--green)"></div>Kosong — klik untuk isi</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(245,158,11,.5);border:1px solid #f59e0b"></div>Tentative</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(99,102,241,.5);border:1px solid #818cf8"></div>Confirm</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(255,255,255,.08)"></div>Done</div>
+  </div>
+
+  <div class="range-body" id="range-body">
+    <div class="range-empty">Pilih rentang tanggal dan klik 🔍 Cek</div>
+  </div>
+
+  <div class="range-summary" id="range-summary" style="display:none">
+    <div class="sum-item"><span class="sum-val" id="sum-empty" style="color:var(--green)">0</span><span class="sum-lbl">Kosong</span></div>
+    <div class="sum-item"><span class="sum-val" id="sum-tent"  style="color:#f59e0b">0</span><span class="sum-lbl">Tentative</span></div>
+    <div class="sum-item"><span class="sum-val" id="sum-conf"  style="color:#818cf8">0</span><span class="sum-lbl">Confirm</span></div>
+    <div class="sum-item"><span class="sum-val" id="sum-done"  style="color:var(--dim)">0</span><span class="sum-lbl">Done</span></div>
+    <div class="sum-item" style="margin-left:auto"><span class="sum-val" id="sum-days"  style="color:var(--text)">0</span><span class="sum-lbl">Hari</span></div>
+  </div>
+
+</div>
+
 </body>
 </html>
