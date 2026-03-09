@@ -762,7 +762,7 @@ const _provider = new firebase.auth.GoogleAuthProvider();
   const c = (function() {
     try { return JSON.parse(localStorage.getItem('banquet_elite_config')) || null; } catch(_) { return null; }
   })();
-  const DEFAULT_GAS = "https://script.google.com/macros/s/AKfycbxmtK1kUg1MBKSwzS6vG1D4J0NoomrgDzoAMRh74DO0kUoz5Dqr5Kt2IuY5Qgc7qSQM/exec";
+  const DEFAULT_GAS = "https://script.google.com/macros/s/AKfycbzSBF-mIzoVjlVgi48PjWVMqktOGh3btnHPN6DgXwbRSWR-EqphlkHakYiF_2gM0k4A/exec";
   window._GAS = (c && c.gasUrl) ? c.gasUrl : DEFAULT_GAS;
 })();
 
