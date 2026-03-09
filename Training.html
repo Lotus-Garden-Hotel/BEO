@@ -748,41 +748,88 @@ const FIREBASE_CONFIG = {
   appId:             "1:716626784276:web:4f7d4d51dace341d21b701"
 };
 
-const ALLOWED_EMAILS = [
-  "it.lotusgardenbywh@gmail.com",
-  "sm.lotusgardenbywh@gmail.com",
-  "hrd.lotusgardenbywh@gmail.com",
-  "kang.d14n@gmail.com",
-  "abdullah.junaidi73@gmail.com",
-  "kustianadwi83@gmail.com",
-  "danangaditianggara@gmail.com",
-  "munarsihagustina@gmail.com",
-  "agussuryadi197878@gmail.com",
-  "gm.lotusgardenbywh@gmail.com"
-];
+// [SEC-01] ALLOWED_EMAILS dihapus dari sini — whitelist sekarang ada di GAS backend saja.
+// Frontend tidak boleh tahu/menyimpan daftar email staf.
 
 firebase.initializeApp(FIREBASE_CONFIG);
 const _auth     = firebase.auth();
 const _provider = new firebase.auth.GoogleAuthProvider();
 
-_auth.onAuthStateChanged(user => {
-  const gate = document.getElementById('login-gate');
+// [BUG-FIX #2] applyConfig() HARUS jalan dulu sebelum onAuthStateChanged
+// agar window._GAS sudah terisi ketika _gasRaw() dipanggil untuk CHECK_ACCESS.
+// Sebelumnya applyConfig() baru dipanggil di window.load — terlambat.
+(function initConfig() {
+  const c = (function() {
+    try { return JSON.parse(localStorage.getItem('banquet_elite_config')) || null; } catch(_) { return null; }
+  })();
+  const DEFAULT_GAS = "https://script.google.com/macros/s/AKfycbxmtK1kUg1MBKSwzS6vG1D4J0NoomrgDzoAMRh74DO0kUoz5Dqr5Kt2IuY5Qgc7qSQM/exec";
+  window._GAS = (c && c.gasUrl) ? c.gasUrl : DEFAULT_GAS;
+})();
+
+// [SEC-02] Auth state: verifikasi akses dilakukan ke backend, bukan cek lokal
+_auth.onAuthStateChanged(async user => {
+  const gate      = document.getElementById('login-gate');
   const logoutBtn = document.getElementById('btn-logout');
-  if (user && ALLOWED_EMAILS.includes(user.email)) {
-    // ✅ Login berhasil & email diizinkan
-    gate.classList.add('hide');
-    setTimeout(() => { gate.style.display = 'none'; }, 800);
-    logoutBtn.style.display = 'flex';
-    document.getElementById('login-error').classList.remove('show');
-  } else {
-    // ❌ Tidak login atau email tidak diizinkan
-    if (user) {
-      _auth.signOut();
-      document.getElementById('login-error').classList.add('show');
-    }
+  const errEl     = document.getElementById('login-error');
+
+  if (!user) {
     gate.style.display = 'flex';
     gate.classList.remove('hide');
     logoutBtn.style.display = 'none';
+    return;
+  }
+
+  // Minta backend verifikasi — backend yang pegang whitelist
+  try {
+    const idToken = await user.getIdToken(/* forceRefresh */ true);
+
+    // [BUG-FIX #1] Kirim CHECK_ACCESS ke backend.
+    // Jika GAS belum diupdate ke v6.0 dan belum punya action CHECK_ACCESS,
+    // backend akan balas { ok: false, msg: "..." } — kita tangani di bawah.
+    let res;
+    try {
+      res = await _gasRaw({ action: 'CHECK_ACCESS', idToken });
+    } catch(netErr) {
+      // Koneksi gagal total (timeout / offline) — jangan paksa logout,
+      // tapi juga jangan buka akses. Tampilkan pesan retry.
+      errEl.textContent = '⚠ Tidak dapat terhubung ke server. Periksa internet lalu refresh halaman.';
+      errEl.classList.add('show');
+      gate.style.display = 'flex';
+      gate.classList.remove('hide');
+      logoutBtn.style.display = 'none';
+      return;
+    }
+
+    if (res.ok && res.allowed) {
+      // ✅ Akses diizinkan oleh backend
+      window._cachedToken    = idToken;
+      window._tokenFetchedAt = Date.now();
+      gate.classList.add('hide');
+      setTimeout(() => { gate.style.display = 'none'; }, 800);
+      logoutBtn.style.display = 'flex';
+      errEl.classList.remove('show');
+    } else if (res.msg && res.msg.includes('tidak terdaftar')) {
+      // ❌ Email tidak ada di whitelist
+      _auth.signOut();
+      errEl.textContent = '⚠ Akun tidak diizinkan akses sistem ini.';
+      errEl.classList.add('show');
+      gate.style.display = 'flex';
+      gate.classList.remove('hide');
+      logoutBtn.style.display = 'none';
+    } else {
+      // ❌ Respons tidak dikenal (termasuk GAS belum update ke v6.0)
+      _auth.signOut();
+      errEl.textContent = '⚠ Verifikasi gagal. Pastikan GAS backend sudah diupdate ke v6.0.';
+      errEl.classList.add('show');
+      gate.style.display = 'flex';
+      gate.classList.remove('hide');
+      logoutBtn.style.display = 'none';
+    }
+  } catch(_e) {
+    // Error tak terduga — paksa logout
+    _auth.signOut();
+    errEl.textContent = '⚠ Gagal verifikasi sesi. Coba lagi.';
+    errEl.classList.add('show');
   }
 });
 
@@ -790,19 +837,25 @@ async function loginWithGoogle() {
   try {
     await _auth.signInWithPopup(_provider);
   } catch(e) {
-    document.getElementById('login-error').textContent = '⚠ Gagal login: ' + e.message;
-    document.getElementById('login-error').classList.add('show');
+    // [SEC-05] Jangan tampilkan pesan teknis Firebase ke user
+    const errEl = document.getElementById('login-error');
+    errEl.textContent = '⚠ Gagal login. Periksa koneksi internet dan coba lagi.';
+    errEl.classList.add('show');
   }
 }
 
 function logoutUser() {
-  if (confirm('Keluar dari sistem?')) _auth.signOut();
+  if (confirm('Keluar dari sistem?')) {
+    window._cachedToken    = null;
+    window._tokenFetchedAt = 0;
+    _auth.signOut();
+  }
 }
 
 // ─── CONFIG (dari Master Config) ───────────────────────────────────────────
 const CONFIG_KEY = 'banquet_elite_config';
 const DEFAULT_CFG = {
-  "gasUrl": "https://script.google.com/macros/s/AKfycbwf6NtaVb6dRJHMWOW9b0Z0C95Pr_lPWptefGbKrxXFSokOxPdHNwW8lkJ8TUaIOoHn/exec",
+  "gasUrl": "https://script.google.com/macros/s/AKfycbz_YKCXm4q-JwGKkzuH6QNUPUNgF2oPtyy7A5RU9nSsxGHFYLzrFtg1cdlGmHKVPtV-/exec",
   "venues": [
     "Ball Room",
     "VIP Room",
@@ -826,8 +879,10 @@ const DEFAULT_CFG = {
     "TINA"
   ],
   "brand": "LOTUS GARDEN HOTEL",
-  "version": "TRAINING EDITION V.6.1",
-  "dashboard": "https://lotus-garden-hotel.github.io/BEO-Lotus-Garden-Hotel/"
+  "version": "TRAINING  EDITION V.6.1 BEO",
+  "dashboard": "https://lotus-garden-hotel.github.io/BEO-Lotus-Garden-Hotel/",
+  "casePackage": "upper",
+  "caseSales": "upper"
 };
 
 function getConfig() {
@@ -842,20 +897,23 @@ function applyConfig() {
   // Header
   document.getElementById('ui-brand').textContent   = c.brand   || DEFAULT_CFG.brand;
   document.getElementById('ui-version').textContent = c.version || DEFAULT_CFG.version;
-  // Dashboard
-  document.getElementById('ui-dashboard').href = c.dashboard || DEFAULT_CFG.dashboard;
+  // Dashboard — URL dari config, jangan inject ke innerHTML langsung
+  const dashLink = document.getElementById('ui-dashboard');
+  const dashUrl  = c.dashboard || DEFAULT_CFG.dashboard;
+  // Validasi URL sebelum set href
+  dashLink.href = /^https?:\/\//.test(dashUrl) ? dashUrl : '#';
   // Venue dropdown
   const vSel = document.getElementById('f-venue');
   vSel.innerHTML = '<option value="">— Pilih —</option>' +
-    (c.venues || DEFAULT_CFG.venues).map(v => `<option value="${v}">${v}</option>`).join('');
+    (c.venues || DEFAULT_CFG.venues).map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
   // Package dropdown
   const pSel = document.getElementById('f-package');
   pSel.innerHTML = '<option value="">— Pilih —</option>' +
-    (c.packages || DEFAULT_CFG.packages).map(p => `<option value="${p}">${p}</option>`).join('');
+    (c.packages || DEFAULT_CFG.packages).map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
   // Sales dropdown
   const sSel = document.getElementById('f-sales');
   sSel.innerHTML = '<option value="">— Pilih —</option>' +
-    (c.sales || DEFAULT_CFG.sales).map(s => `<option value="${s}">${s}</option>`).join('');
+    (c.sales || DEFAULT_CFG.sales).map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
 }
 
 const MONTHS = ["JANUARI","FEBRUARI","MARET","APRIL","MEI","JUNI","JULI","AGUSTUS","SEPTEMBER","OKTOBER","NOVEMBER","DESEMBER"];
@@ -863,15 +921,51 @@ const TIMEOUT_MS = 12000;
 // GAS URL diambil dari config (window._GAS), di-set saat applyConfig()
 const GAS_FN = () => window._GAS;
 
-// ─── ACTIVITY LOGGER ───────────────────────────────────────────────────────
-// Fire-and-forget: kirim log ke GAS tanpa tunggu response
-function writeActivityLog(logAction, params, detail) {
+// ─── [SEC-03] TOKEN MANAGEMENT ─────────────────────────────────────────────
+// Cache token selama 55 menit (Firebase token valid 1 jam)
+const TOKEN_TTL_MS = 55 * 60 * 1000;
+
+async function getIdToken() {
+  const user = _auth.currentUser;
+  if (!user) throw new Error('Sesi habis. Silakan login ulang.');
+
+  const now = Date.now();
+  if (window._cachedToken && (now - (window._tokenFetchedAt || 0)) < TOKEN_TTL_MS) {
+    return window._cachedToken;
+  }
+  // Refresh token
+  const fresh = await user.getIdToken(true);
+  window._cachedToken    = fresh;
+  window._tokenFetchedAt = now;
+  return fresh;
+}
+
+// Request ke GAS TANPA token (hanya untuk CHECK_ACCESS saat auth state change)
+async function _gasRaw(params) {
+  const ctrl  = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try {
-    const user = (typeof _auth !== 'undefined' && _auth.currentUser)
-      ? _auth.currentUser.email
-      : 'anonymous';
+    const res = await fetch(GAS_FN() + '?' + new URLSearchParams(params), { redirect:'follow', signal:ctrl.signal });
+    return await res.json();
+  } catch(e) {
+    if (e.name === 'AbortError') throw new Error('Timeout — periksa koneksi internet');
+    throw e;
+  } finally { clearTimeout(timer); }
+}
+
+// [SEC-03] Semua request ke GAS otomatis inject idToken
+async function gas(params) {
+  const idToken = await getIdToken();
+  return _gasRaw({ ...params, idToken });
+}
+
+// ─── ACTIVITY LOGGER ───────────────────────────────────────────────────────
+// Fire-and-forget: kirim log ke GAS (idToken otomatis disertakan lewat gas())
+async function writeActivityLog(logAction, params, detail) {
+  try {
+    const user = (_auth.currentUser) ? _auth.currentUser.email : 'anonymous';
     const p = params || {};
-    const logParams = {
+    gas({
       action:    'WRITE_LOG',
       logAction: logAction,
       userEmail: user,
@@ -882,32 +976,32 @@ function writeActivityLog(logAction, params, detail) {
       package:   p.package  || val('f-package')  || '—',
       pax:       p.pax      || val('f-pax')      || '—',
       price:     p.price    || val('f-price')    || '—',
-      detail:    detail     || '—',
-      info:      navigator.userAgent.substring(0, 80)
-    };
-    // Fire-and-forget — tidak tunggu response
-    fetch(GAS_FN() + '?' + new URLSearchParams(logParams), { redirect:'follow' })
-      .catch(() => {}); // silent fail, jangan ganggu UX
+      detail:    detail     || '—'
+      // [SEC-04] Hapus navigator.userAgent — tidak perlu, bisa dipakai fingerprinting
+    }).catch(() => {}); // silent fail, jangan ganggu UX
   } catch(_) {}
 }
 
 let origDate = "", origVenue = "", editMode = false, activeTab = "TENTATIVE";
-let isDuplicateMode = false; // ✅ FIX Bug 1: flag agar field tidak terhapus saat duplicate
+let isDuplicateMode = false; // flag agar field tidak terhapus saat duplicate
 let _confirmResolve = null;
 
-// ─── UTILS ─────────────────────────────────────────────────────────────────
-function monthName(d) { return MONTHS[parseInt(d.split('-')[1],10)-1]; }
+// ─── [PERF-01] IN-MEMORY CACHE untuk READ_MONTH ────────────────────────────
+const CACHE_TTL_MS = 60 * 1000;
+const _monthCache  = {};
 
-async function gas(params) {
-  const ctrl  = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
-  try {
-    const res = await fetch(GAS_FN() + '?' + new URLSearchParams(params), { redirect:'follow', signal:ctrl.signal });
-    return await res.json();
-  } catch(e) {
-    if (e.name === 'AbortError') throw new Error('Timeout — periksa koneksi internet');
-    throw e;
-  } finally { clearTimeout(timer); }
+async function getMonthData(sheetName) {
+  const now    = Date.now();
+  const cached = _monthCache[sheetName];
+  if (cached && (now - cached.ts) < CACHE_TTL_MS) return cached.data;
+  const res = await gas({ action: 'READ_MONTH', sheetName });
+  if (!res.ok) throw new Error(res.msg || 'Gagal memuat data bulan.');
+  _monthCache[sheetName] = { data: res, ts: now };
+  return res;
+}
+
+function invalidateMonthCache(sheetName) {
+  if (sheetName && _monthCache[sheetName]) delete _monthCache[sheetName];
 }
 
 function toast(msg, type='success', dur=3000) {
@@ -923,12 +1017,14 @@ function setBtn(id, loading, label) {
 }
 
 // ─── PROMISE-BASED CONFIRM DIALOG ──────────────────────────────────────────
+// [SEC-06] msg boleh mengandung <strong> untuk emphasis, tapi field dari server harus di-esc() oleh caller
 function showConfirm({ icon='⚡', title='Konfirmasi', msg='', yesLabel='Ya, Lanjutkan', dangerous=false }) {
   return new Promise(resolve => {
     _confirmResolve = resolve;
     document.getElementById('conf-icon').textContent  = icon;
     document.getElementById('conf-title').textContent = title;
-    document.getElementById('conf-msg').innerHTML     = msg;
+    // msg boleh berisi HTML terbatas (<strong>, <br>) — caller bertanggung jawab escape data server
+    document.getElementById('conf-msg').innerHTML = msg;
     const yesBtn = document.getElementById('conf-yes');
     yesBtn.textContent = yesLabel;
     yesBtn.className   = 'confirm-yes' + (dangerous ? ' danger' : '');
@@ -1058,23 +1154,25 @@ async function openForceVenue() {
 
   try {
     const res = await gas({ action:'GET_DAY_SLOTS', date:d });
-    if (!res.ok) { document.getElementById('force-list').innerHTML = '<div class="empty-state">✗ ' + res.msg + '</div>'; return; }
+    if (!res.ok) { document.getElementById('force-list').innerHTML = '<div class="empty-state">✗ Gagal memuat slot.</div>'; return; }
 
     _forceSlots = res.slots;
-    // Sembunyikan slot yang sudah merupakan venue yang dipilih user (kecuali yang occupied)
     const html = res.slots.map(s => {
       const isSameVenue = s.venueUpper === v.toUpperCase();
-      const cls = s.occupied ? 'slot-card occupied-slot' : 'slot-card';
+      const cls  = s.occupied ? 'slot-card occupied-slot' : 'slot-card';
       const badge = s.occupied
         ? `<span class="slot-badge taken">Terisi</span>`
         : (isSameVenue
             ? `<span class="slot-badge selected">Venue Ini</span>`
             : `<span class="slot-badge free">Kosong ✓</span>`);
-      const info = s.occupied ? ('Terisi: ' + s.customer + (s.status ? ' · ' + s.status : '')) : 'Slot kosong — bisa dipakai';
-      const onclick = s.occupied ? '' : `onclick="pickForceSlot(${s.row})"`;
+      // [SEC-06] Gunakan esc() untuk semua data dari server
+      const info = s.occupied
+        ? 'Terisi: ' + esc(s.customer) + (s.status ? ' · ' + esc(s.status) : '')
+        : 'Slot kosong — bisa dipakai';
+      const onclick = s.occupied ? '' : `onclick="pickForceSlot(${parseInt(s.row,10)})"`;
       return `<div class="${cls}" ${onclick}>
-        <div class="slot-venue">${s.venueOriginal}</div>
-        <div class="slot-info">Baris ${s.row} &nbsp;·&nbsp; ${info}</div>
+        <div class="slot-venue">${esc(s.venueOriginal)}</div>
+        <div class="slot-info">Baris ${parseInt(s.row,10)} &nbsp;·&nbsp; ${info}</div>
         ${badge}
       </div>`;
     }).join('');
@@ -1082,7 +1180,7 @@ async function openForceVenue() {
     document.getElementById('force-list').innerHTML = html ||
       '<div class="empty-state">— Tidak ada slot ditemukan —</div>';
   } catch(e) {
-    document.getElementById('force-list').innerHTML = '<div class="empty-state">✗ ' + e.message + '</div>';
+    document.getElementById('force-list').innerHTML = '<div class="empty-state">✗ Gagal memuat data. Coba lagi.</div>';
   }
 }
 
@@ -1097,7 +1195,7 @@ async function pickForceSlot(targetRow) {
   const ok = await showConfirm({
     icon:  '⚡',
     title: 'Paksa Venue?',
-    msg:   `Slot <strong>${slot.venueOriginal}</strong> (baris ${targetRow}) akan diubah namanya menjadi <strong>${v}</strong> dan diisi dengan booking ini.<br><br>Aksi ini mengubah data struktur spreadsheet.`,
+    msg:   `Slot <strong>${esc(slot.venueOriginal)}</strong> (baris ${parseInt(targetRow,10)}) akan diubah namanya menjadi <strong>${esc(v)}</strong> dan diisi dengan booking ini.<br><br>Aksi ini mengubah data struktur spreadsheet.`,
     yesLabel: 'Ya, Paksa Sekarang',
     dangerous: false
   });
@@ -1120,6 +1218,7 @@ async function pickForceSlot(targetRow) {
     if (res.ok) {
       writeActivityLog('FORCE_VENUE', { date:d, venue:v },
         `Force venue ke baris ${targetRow} (venue asli: ${slot.venueOriginal})`);
+      invalidateMonthCache(monthName(d)); // [PERF-01] buang cache agar data fresh
       toast('⚡ ' + res.msg, 'success'); resetForm(true); isDuplicateMode=false;
     }
     else { toast('✗ ' + res.msg, 'error', 5000); }
@@ -1158,6 +1257,7 @@ async function submitData() {
       else if (isMove && isMoveDate) { logAction = 'CHANGE_DATE'; detail = `Tanggal: ${origDate} → ${d}`; }
       else if (isMove) { logAction = 'MOVE'; detail = `Move: ${origDate}/${origVenue} → ${d}/${v}`; }
       writeActivityLog(logAction, { date:d, venue:v }, detail);
+      invalidateMonthCache(monthName(d)); // [PERF-01] buang cache setelah write
       toast('✦ ' + res.msg, 'success'); resetForm(true);
     }
     else { toast('✗ ' + res.msg, 'error', 5000); }
@@ -1172,7 +1272,7 @@ async function deleteData() {
   const name = val('f-customer') || 'data ini';
   const ok = await showConfirm({
     icon:'🗑', title:'Hapus Booking?',
-    msg:`Booking <strong>${name}</strong> akan dihapus secara permanen.<br><br>Aksi ini tidak dapat dibatalkan.`,
+    msg:`Booking <strong>${esc(name)}</strong> akan dihapus secara permanen.<br><br>Aksi ini tidak dapat dibatalkan.`,
     yesLabel:'Ya, Hapus', dangerous:true
   });
   if (!ok) return;
@@ -1181,6 +1281,7 @@ async function deleteData() {
     const res = await gas({ action:'DELETE', sheetName:monthName(d), date:d, venue:v });
     if (res.ok) {
       writeActivityLog('DELETE', { date:d, venue:v, customer:name }, `Hapus booking: ${name}`);
+      invalidateMonthCache(monthName(d)); // [PERF-01] buang cache setelah delete
       toast('🗑 ' + res.msg, 'success'); resetForm(true);
     }
     else { toast('✗ ' + res.msg, 'error', 5000); }
@@ -1206,8 +1307,8 @@ async function loadScanner(filter, filterDate) {
   body.innerHTML = '<div class="empty-state"><span class="spinner spinner-light"></span></div>';
   try {
     const now = new Date();
-    const res = await gas({ action:'READ_MONTH', sheetName: MONTHS[now.getMonth()] });
-    if (!res.ok) { body.innerHTML = '<div class="empty-state">✗ ' + res.msg + '</div>'; return; }
+    const res = await getMonthData(MONTHS[now.getMonth()]); // [PERF-01] pakai cache
+    // error dilempar oleh getMonthData sebagai exception
 
     const cnt = res.rows.filter(r => r.status === 'TENTATIVE').length;
     const badge = document.getElementById('notif-badge');
@@ -1218,7 +1319,6 @@ async function loadScanner(filter, filterDate) {
       if (filter==='CONFIRM')   return r.status==='CONFIRM';
       return r.customer && !r.status;
     });
-    // ✅ FIX Bug 1: filter by tanggal spesifik jika ada filterDate
     if (filterDate) {
       const filterDay = parseInt(filterDate.split('-')[2], 10);
       filtered = filtered.filter(r => r.day === filterDay);
@@ -1229,18 +1329,25 @@ async function loadScanner(filter, filterDate) {
     const yr  = now.getFullYear();
     const shn = MONTHS[now.getMonth()];
 
+    // [SEC-06] Semua data server di-escape sebelum masuk ke innerHTML
     body.innerHTML = filtered.map(r => {
-      const dNum = r.day ? String(r.day).padStart(2,'0') : (r.dateLabel.match(/\d+/)||['1'])[0].padStart(2,'0');
-      const iso  = yr + '-' + mo + '-' + dNum;
-      const cls  = r.status==='TENTATIVE' ? 's-tentative' : r.status==='CONFIRM' ? 's-confirm' : 's-none';
-      // ✅ FIX Bug 1: pakai row number untuk direct lookup, bukan cuma date+venue
-      return `<div class="event-card" onclick="pickEvent('${iso}','${r.venue}','${shn}',${r.row||0})">
-        <div class="event-name">${r.customer||'—'}</div>
-        <div class="event-meta">${r.dateLabel} · ${r.venue}</div>
-        <span class="event-status ${cls}">${r.status||'No Status'}</span>
+      const dNum    = r.day ? String(r.day).padStart(2,'0') : (r.dateLabel.match(/\d+/)||['1'])[0].padStart(2,'0');
+      const iso     = yr + '-' + mo + '-' + dNum;
+      const cls     = r.status==='TENTATIVE' ? 's-tentative' : r.status==='CONFIRM' ? 's-confirm' : 's-none';
+      const rowNum  = parseInt(r.row, 10) || 0;
+      // Gunakan data-* attribute untuk pass parameter, bukan inject langsung ke onclick string
+      return `<div class="event-card" data-iso="${esc(iso)}" data-venue="${esc(r.venue)}" data-shn="${esc(shn)}" data-row="${rowNum}" onclick="pickEventFromCard(this)">
+        <div class="event-name">${esc(r.customer) || '—'}</div>
+        <div class="event-meta">${esc(r.dateLabel)} · ${esc(r.venue)}</div>
+        <span class="event-status ${cls}">${esc(r.status) || 'No Status'}</span>
       </div>`;
     }).join('');
-  } catch(e) { body.innerHTML = '<div class="empty-state">✗ ' + e.message + '</div>'; }
+  } catch(e) { body.innerHTML = '<div class="empty-state">✗ Gagal memuat data. Coba lagi.</div>'; }
+}
+
+// [SEC-06] Wrapper: baca dari data-* bukan dari string parameter yang bisa di-inject
+function pickEventFromCard(el) {
+  pickEvent(el.dataset.iso, el.dataset.venue, el.dataset.shn, parseInt(el.dataset.row, 10));
 }
 
 async function pickEvent(date, venue, sheetName, rowNum) {
@@ -1320,12 +1427,25 @@ function val(id)  { return document.getElementById(id).value; }
 function set(id,v){ document.getElementById(id).value = v; }
 function fmt(n)   { return new Intl.NumberFormat('id-ID').format(n); }
 
+// [SEC-05] Escape HTML — wajib dipakai sebelum inject string dari server ke innerHTML
+function esc(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g,  '&amp;')
+    .replace(/</g,  '&lt;')
+    .replace(/>/g,  '&gt;')
+    .replace(/"/g,  '&quot;')
+    .replace(/'/g,  '&#39;');
+}
+
+// Helper monthName (dipakai di submit/delete/force)
+function monthName(d) { return MONTHS[parseInt(d.split('-')[1],10)-1]; }
+
 // Preload badge on startup
 window.addEventListener('load', async () => {
   applyConfig(); // ✅ Load config dari Master Config
   try {
-    const res = await gas({ action:'READ_MONTH', sheetName: MONTHS[new Date().getMonth()] });
-    if (!res.ok) return;
+    const res = await getMonthData(MONTHS[new Date().getMonth()]); // [PERF-01] cache sekaligus preload
+
     const cnt = res.rows.filter(r=>r.status==='TENTATIVE').length;
     const b = document.getElementById('notif-badge');
     if (cnt>0) { b.textContent=cnt; b.classList.remove('hidden'); }
@@ -1411,27 +1531,30 @@ async function checkRange() {
     monthsNeeded[mn].push(d);
   });
 
-  // Fetch READ_MONTH untuk setiap bulan yang dibutuhkan
+  // [PERF-01+03] Fetch semua bulan PARALEL via Promise.all, pakai cache bila tersedia
   const allRows = {};
   try {
-    for (const [monthName] of Object.entries(monthsNeeded)) {
-      const res = await gas({ action:'READ_MONTH', sheetName: monthName });
-      if (!res.ok) continue;
-      const year     = monthsNeeded[monthName][0].getFullYear();
-      const monthIdx = MONTHS.indexOf(monthName);
+    const monthEntries = Object.entries(monthsNeeded);
+    const results = await Promise.all(
+      monthEntries.map(([mn]) => getMonthData(mn).catch(() => null))
+    );
+    results.forEach((res, idx) => {
+      if (!res || !res.rows) return;
+      const mn       = monthEntries[idx][0];
+      const year     = monthsNeeded[mn][0].getFullYear();
+      const monthIdx = MONTHS.indexOf(mn);
       res.rows.forEach(r => {
         if (!r.day) return;
         const key = year + '-' + String(monthIdx+1).padStart(2,'0') + '-' + String(r.day).padStart(2,'0');
-        // ✅ FIX Bug 2: simpan array of events per slot, bukan overwrite
         if (key < todayStr) return;
         if (!allRows[key]) allRows[key] = {};
         const vk = r.venue;
         if (!allRows[key][vk]) allRows[key][vk] = [];
         allRows[key][vk].push({ status: r.status, customer: r.customer, row: r.row });
       });
-    }
+    });
   } catch(e) {
-    body.innerHTML = `<div class="range-empty">✗ Error: ${e.message}</div>`;
+    body.innerHTML = '<div class="range-empty">✗ Gagal memuat data. Periksa koneksi dan coba lagi.</div>';
     btn.disabled = false; btn.textContent = '🔍 Cek'; return;
   }
 
@@ -1446,19 +1569,19 @@ async function checkRange() {
   let html = `<table class="avail-table">
     <thead><tr>
       <th>Tanggal</th>
-      ${venues.map(v => `<th>${v}</th>`).join('')}
+      ${venues.map(v => `<th>${esc(v)}</th>`).join('')}
     </tr></thead>
     <tbody>`;
 
   dates.forEach(d => {
-    const iso      = fmtDate(d);
-    const dayData  = allRows[iso] || {};
+    const iso       = fmtDate(d);
+    const dayData   = allRows[iso] || {};
     const isWeekend = d.getDay() === 0 || d.getDay() === 6;
 
     html += `<tr style="${isWeekend ? 'background:rgba(201,168,76,.025)' : ''}">
       <td class="td-date">
         <span class="day-num">${String(d.getDate()).padStart(2,'0')}</span>
-        <span class="day-name">${DAY_NAMES[d.getDay()]} ${d.toLocaleDateString('id-ID',{month:'short'})}</span>
+        <span class="day-name">${esc(DAY_NAMES[d.getDay()])} ${esc(d.toLocaleDateString('id-ID',{month:'short'}))}</span>
       </td>`;
 
     venues.forEach(venue => {
@@ -1466,26 +1589,22 @@ async function checkRange() {
       const hasData = events.length > 0 && events.some(e => e.customer);
 
       if (!hasData) {
-        // KOSONG
         cntEmpty++;
-        html += `<td onclick="pickSlotFromRange('${iso}','${venue}')" style="cursor:pointer">
+        // [SEC-06] Gunakan data-* agar tidak ada string injection di onclick
+        html += `<td data-iso="${esc(iso)}" data-venue="${esc(venue)}" onclick="pickSlotFromRangeEl(this)" style="cursor:pointer">
           <div class="slot-empty">✓ VACANT<span class="slot-name">Tap isi</span></div></td>`;
       } else {
-        // Ada 1 atau lebih event
-        const allTent  = events.every(e => e.status === 'TENTATIVE');
-        const hasConf  = events.some(e => e.status === 'CONFIRM' || e.status === 'DONE');
-        const count    = events.filter(e => e.customer).length;
-        const label    = count > 1 ? count + ' EVENT' : events[0].customer;
+        const allTent = events.every(e => e.status === 'TENTATIVE');
+        const count   = events.filter(e => e.customer).length;
+        const label   = esc(count > 1 ? count + ' EVENT' : events[0].customer);
 
         if (allTent) {
           cntTent += count;
-          // Tentative: klik langsung ke slot pertama
-          html += `<td onclick="pickSlotFromRange('${iso}','${venue}')" style="cursor:pointer">
+          html += `<td data-iso="${esc(iso)}" data-venue="${esc(venue)}" onclick="pickSlotFromRangeEl(this)" style="cursor:pointer">
             <div class="slot-tentative">⚡ TENT<span class="slot-name">${label}</span></div></td>`;
         } else {
           cntConf += count;
-          // ✅ FIX Bug 2: CONF → klik buka scanner filter tanggal ini
-          html += `<td onclick="openScannerByDate('${iso}')" style="cursor:pointer" title="Klik untuk lihat detail event">
+          html += `<td data-iso="${esc(iso)}" onclick="openScannerByDateEl(this)" style="cursor:pointer" title="Klik untuk lihat detail event">
             <div class="slot-confirm">✔ ${count > 1 ? count+' EVT' : 'CONF'}<span class="slot-name">${label}</span></div></td>`;
         }
       }
@@ -1518,19 +1637,24 @@ function pickSlotFromRange(iso, venue) {
   toast('📅 Slot dipilih: ' + venue + ' · ' + iso, 'success');
 }
 
-// ✅ FIX Bug 2: Buka scanner filter ke tanggal tertentu
+// [SEC-06] Wrapper untuk tombol range table yang pakai data-* attribute
+function pickSlotFromRangeEl(el) {
+  pickSlotFromRange(el.dataset.iso, el.dataset.venue);
+}
+function openScannerByDateEl(el) {
+  openScannerByDate(el.dataset.iso);
+}
+
+// Buka scanner filter ke tanggal tertentu
 function openScannerByDate(iso) {
   closeRangePopup();
-  // Set filter date di form dulu
   document.getElementById('f-date').value = iso;
-  // Buka scanner tab CONFIRM, user bisa lihat semua event di hari itu
   openScanner();
   setTimeout(() => {
-    // Switch ke tab CONFIRM
     document.querySelectorAll('.scanner-tab').forEach(t => t.classList.remove('active'));
     const confirmTab = document.querySelector('.scanner-tab[data-tab="CONFIRM"]');
     if (confirmTab) { confirmTab.classList.add('active'); activeTab = 'CONFIRM'; }
-    loadScanner('CONFIRM', iso); // ✅ kirim iso sbg filterDate
+    loadScanner('CONFIRM', iso);
     toast('📅 Event CONFIRM tgl ' + iso.split('-')[2] + ' ditampilkan', 'info', 3000);
   }, 300);
 }
@@ -1645,11 +1769,11 @@ async function loadLogs() {
   body.innerHTML = '<div class="range-loading">🔍 Mengambil data logs...</div>';
   try {
     const res = await gas({ action:'READ_LOGS' });
-    if (!res.ok) { body.innerHTML = '<div class="range-empty">✗ ' + res.msg + '</div>'; return; }
+    if (!res.ok) { body.innerHTML = '<div class="range-empty">&#x2717; Gagal mengambil data log.</div>'; return; }
     _logsRaw = res.logs || [];
     renderLogs();
   } catch(e) {
-    body.innerHTML = '<div class="range-empty">✗ ' + e.message + '</div>';
+    body.innerHTML = '<div class="range-empty">&#x2717; Gagal memuat log. Coba refresh.</div>';
   }
 }
 
@@ -1679,15 +1803,16 @@ function renderLogs() {
   if (!logs.length) { body.innerHTML = '<div class="range-empty">— Tidak ada log ditemukan —</div>'; updateLogsSummary(); return; }
 
   body.innerHTML = logs.map(r => {
-    const actionClass = r.action || 'CREATE';
-    const badge = ACTION_LABEL[r.action] || r.action || '—';
+    // [SEC-06] Semua field dari server wajib di-escape
+    const actionClass = /^[A-Z_]+$/.test(r.action || '') ? r.action : 'CREATE'; // whitelist class
+    const badge       = esc(ACTION_LABEL[r.action] || r.action || '—');
     return `<div class="log-item ${actionClass}">
-      <span class="log-time">${r.timestamp||'—'}</span>
+      <span class="log-time">${esc(r.timestamp) || '—'}</span>
       <span class="log-action-badge">${badge}</span>
-      <div class="log-customer">${r.customer||'—'} <span style="font-size:10px;font-weight:400;color:var(--muted)">· ${r.venue||'—'} · ${r.date||'—'}</span></div>
-      <div class="log-meta">Status: ${r.status||'—'} &nbsp;·&nbsp; Package: ${r.package||'—'} &nbsp;·&nbsp; Pax: ${r.pax||'—'} &nbsp;·&nbsp; Price: ${r.price||'—'}</div>
-      ${r.detail && r.detail !== '—' ? `<div class="log-detail">↳ ${r.detail}</div>` : ''}
-      <div class="log-email">👤 ${r.email||'—'}</div>
+      <div class="log-customer">${esc(r.customer) || '—'} <span style="font-size:10px;font-weight:400;color:var(--muted)">· ${esc(r.venue) || '—'} · ${esc(r.date) || '—'}</span></div>
+      <div class="log-meta">Status: ${esc(r.status) || '—'} &nbsp;·&nbsp; Package: ${esc(r.package) || '—'} &nbsp;·&nbsp; Pax: ${esc(r.pax) || '—'} &nbsp;·&nbsp; Price: ${esc(r.price) || '—'}</div>
+      ${r.detail && r.detail !== '—' ? `<div class="log-detail">↳ ${esc(r.detail)}</div>` : ''}
+      <div class="log-email">👤 ${esc(r.email) || '—'}</div>
     </div>`;
   }).join('');
 
