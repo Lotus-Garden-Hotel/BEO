@@ -786,7 +786,7 @@ let _authInFlight = false;
   const c = (function() {
     try { return JSON.parse(localStorage.getItem('banquet_elite_config')) || null; } catch(_) { return null; }
   })();
-  const DEFAULT_GAS = "https://script.google.com/macros/s/AKfycbyFAd5ocogMYSYidbc9ksKTHqKbTXPGAbUUfrLrMJwSm4jOmgz3FF0Yn_zueC2EO4nb/exec";
+  const DEFAULT_GAS = "https://script.google.com/macros/s/AKfycbzcJm9SeulvTWAOedhyPh0gkvOkWf3tD9hf9pJem5iRXcp3GCLXevtvD11Ai_TCl9on/exec";
   window._GAS = (c && c.gasUrl) ? c.gasUrl : DEFAULT_GAS;
 })();
 
@@ -902,7 +902,7 @@ function logoutUser() {
 // ─── CONFIG (dari Master Config) ───────────────────────────────────────────
 const CONFIG_KEY = 'banquet_elite_config';
 const DEFAULT_CFG = {
-  "gasUrl": "https://script.google.com/macros/s/AKfycbzSBF-mIzoVjlVgi48PjWVMqktOGh3btnHPN6DgXwbRSWR-EqphlkHakYiF_2gM0k4A/exec",
+  "gasUrl": "https://script.google.com/macros/s/AKfycbyc69cJctKrYMb03Pt-ExPPh9VP9SSdYBZj5-6bP3Kq8nEDW4sCqiJrUMGGHJ0n1CRE/exec",
   "venues": [
     "Ball Room",
     "VIP Room",
