@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Banquet Elite — Gold Edition</title>
+  <title>Banquet LOTUS GARDEN — LIVE Edition</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -786,7 +786,7 @@ let _authInFlight = false;
   const c = (function() {
     try { return JSON.parse(localStorage.getItem('banquet_elite_config')) || null; } catch(_) { return null; }
   })();
-  const DEFAULT_GAS = "hasBorrowed";
+  const DEFAULT_GAS = "https://script.google.com/macros/s/AKfycbzrt3MecR4phBpHhYAPZxYZuQoRICRLYu1qR_L_P3Y4k_PMSn658b7AY5zUyDCTrdDD/exec";
   window._GAS = (c && c.gasUrl) ? c.gasUrl : DEFAULT_GAS;
 })();
 
@@ -902,7 +902,7 @@ function logoutUser() {
 // ─── CONFIG (dari Master Config) ───────────────────────────────────────────
 const CONFIG_KEY = 'banquet_elite_config';
 const DEFAULT_CFG = {
-  "gasUrl": "https://script.google.com/macros/s/AKfycbz8WS15fdJ6INRjDkLiTUVsaCLIRBotkusXxLyUCi7W4hTivGRIHDr95cMMtXskzfHf/exec",
+  "gasUrl": "https://script.google.com/macros/s/AKfycbzrt3MecR4phBpHhYAPZxYZuQoRICRLYu1qR_L_P3Y4k_PMSn658b7AY5zUyDCTrdDD/exec",
   "venues": [
     "Ball Room",
     "VIP Room",
@@ -926,7 +926,7 @@ const DEFAULT_CFG = {
     "TINA"
   ],
   "brand": "LOTUS GARDEN HOTEL",
-  "version": "LIVE EDITION V.6.1 BEO",
+  "version": "TRAINING EDITION V.6.1 BEO",
   "dashboard": "https://lotus-garden-hotel.github.io/BEO-Lotus-Garden-Hotel/",
   "casePackage": "none",
   "caseSales": "title"
@@ -972,6 +972,27 @@ const GAS_FN = () => window._GAS;
 // Cache token selama 55 menit (Firebase token valid 1 jam)
 const TOKEN_TTL_MS = 55 * 60 * 1000;
 
+// [FIX] Mobile: saat app/tab kembali aktif dari background, invalidate token cache.
+// Browser mobile sering suspend tab → _tokenFetchedAt sudah lama → token bisa expired.
+// Dengan ini, request pertama setelah resume selalu pakai token segar dari Firebase.
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'visible') {
+    const awayMs = Date.now() - (window._tokenFetchedAt || 0);
+    // Kalau sudah > 30 menit tidak aktif → paksa refresh token saat request berikutnya
+    if (awayMs > 30 * 60 * 1000) {
+      window._cachedToken    = null;
+      window._tokenFetchedAt = 0;
+    }
+  }
+});
+// Tambahan untuk Safari iOS yang sering pakai pageshow bukan visibilitychange
+window.addEventListener('pageshow', function(e) {
+  if (e.persisted) { // halaman dari bfcache (back-forward cache)
+    window._cachedToken    = null;
+    window._tokenFetchedAt = 0;
+  }
+});
+
 async function getIdToken() {
   const user = _auth.currentUser;
   if (!user) throw new Error('Sesi habis. Silakan login ulang.');
@@ -1003,7 +1024,25 @@ async function _gasRaw(params) {
 // [SEC-03] Semua request ke GAS otomatis inject idToken
 async function gas(params) {
   const idToken = await getIdToken();
-  return _gasRaw({ ...params, idToken });
+  const res     = await _gasRaw({ ...params, idToken });
+
+  // [FIX] Auto-retry sekali jika GAS mengembalikan error auth.
+  // Skenario mobile: app di-background → token di-cache 55 menit → saat dibuka lagi
+  // token sudah expired tapi cache belum direset → server tolak → retry dengan token fresh.
+  if (!res.ok && !res.rateLimited && res.msg && (
+    res.msg.includes('sesi') ||
+    res.msg.includes('login') ||
+    res.msg.includes('token') ||
+    res.msg.includes('Token') ||
+    res.msg.includes('Verifikasi')
+  )) {
+    // Paksa invalidate cache → ambil token baru dari Firebase
+    window._cachedToken    = null;
+    window._tokenFetchedAt = 0;
+    const freshToken = await getIdToken();
+    return _gasRaw({ ...params, idToken: freshToken });
+  }
+  return res;
 }
 
 // ─── ACTIVITY LOGGER ───────────────────────────────────────────────────────
