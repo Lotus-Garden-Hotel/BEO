@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Banquet Training — Lotus Garden Hotel</title>
+  <title>Banquet Elite — Gold Edition</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -391,6 +391,25 @@
       border-radius:7px; padding:5px 4px; color:var(--dim);
       font-size:8px;
     }
+    /* [BUG-FIX] Slot "dipinjam" via FORCE_VENUE — tampil gray, tidak bisa diklik */
+    .slot-borrowed {
+      background: repeating-linear-gradient(
+        45deg,
+        rgba(255,255,255,.012),
+        rgba(255,255,255,.012) 4px,
+        rgba(255,255,255,.024) 4px,
+        rgba(255,255,255,.024) 8px
+      );
+      border: 1px dashed rgba(255,255,255,.12);
+      border-radius: 7px;
+      padding: 5px 4px;
+      color: var(--muted);
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      cursor: not-allowed;
+    }
+    .slot-borrowed .slot-name { font-size:7px; display:block; margin-top:2px; opacity:.55; }
     .slot-empty  .slot-name,
     .slot-tentative .slot-name { font-size:7px; display:block; margin-top:2px; opacity:.8; max-width:70px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .slot-confirm .slot-name,
@@ -755,6 +774,11 @@ firebase.initializeApp(FIREBASE_CONFIG);
 const _auth     = firebase.auth();
 const _provider = new firebase.auth.GoogleAuthProvider();
 
+// [FIX] Race condition guard — cegah onAuthStateChanged fire ke-2/ke-3
+// membatalkan sesi yang sudah berhasil diverifikasi
+let _authVerified = false;
+let _authInFlight = false;
+
 // [BUG-FIX #2] applyConfig() HARUS jalan dulu sebelum onAuthStateChanged
 // agar window._GAS sudah terisi ketika _gasRaw() dipanggil untuk CHECK_ACCESS.
 // Sebelumnya applyConfig() baru dipanggil di window.load — terlambat.
@@ -762,7 +786,7 @@ const _provider = new firebase.auth.GoogleAuthProvider();
   const c = (function() {
     try { return JSON.parse(localStorage.getItem('banquet_elite_config')) || null; } catch(_) { return null; }
   })();
-  const DEFAULT_GAS = "https://script.google.com/macros/s/AKfycbzSBF-mIzoVjlVgi48PjWVMqktOGh3btnHPN6DgXwbRSWR-EqphlkHakYiF_2gM0k4A/exec";
+  const DEFAULT_GAS = "hasBorrowed";
   window._GAS = (c && c.gasUrl) ? c.gasUrl : DEFAULT_GAS;
 })();
 
@@ -772,44 +796,53 @@ _auth.onAuthStateChanged(async user => {
   const logoutBtn = document.getElementById('btn-logout');
   const errEl     = document.getElementById('login-error');
 
+  // [FIX] Firebase bisa fire listener 2-3x dalam satu sesi login.
+  // Jika sudah verified — skip semua fire berikutnya.
   if (!user) {
-    gate.style.display = 'flex';
-    gate.classList.remove('hide');
-    logoutBtn.style.display = 'none';
+    if (!_authVerified) {
+      gate.style.display = 'flex';
+      gate.classList.remove('hide');
+      logoutBtn.style.display = 'none';
+    }
     return;
   }
 
-  // Minta backend verifikasi — backend yang pegang whitelist
+  if (_authVerified) return;   // sudah masuk — jangan proses ulang
+  if (_authInFlight) return;   // ada CHECK_ACCESS yang sedang berjalan
+  _authInFlight = true;
+
   try {
     const idToken = await user.getIdToken(/* forceRefresh */ true);
 
-    // [BUG-FIX #1] Kirim CHECK_ACCESS ke backend.
-    // Jika GAS belum diupdate ke v6.0 dan belum punya action CHECK_ACCESS,
-    // backend akan balas { ok: false, msg: "..." } — kita tangani di bawah.
     let res;
     try {
       res = await _gasRaw({ action: 'CHECK_ACCESS', idToken });
     } catch(netErr) {
-      // Koneksi gagal total (timeout / offline) — jangan paksa logout,
-      // tapi juga jangan buka akses. Tampilkan pesan retry.
+      // Koneksi gagal (timeout / offline) — jangan logout, tampilkan retry
       errEl.textContent = '⚠ Tidak dapat terhubung ke server. Periksa internet lalu refresh halaman.';
       errEl.classList.add('show');
       gate.style.display = 'flex';
       gate.classList.remove('hide');
       logoutBtn.style.display = 'none';
+      _authInFlight = false;
       return;
     }
 
     if (res.ok && res.allowed) {
-      // ✅ Akses diizinkan oleh backend
+      // ✅ Akses diizinkan
+      _authVerified          = true;
       window._cachedToken    = idToken;
       window._tokenFetchedAt = Date.now();
       gate.classList.add('hide');
       setTimeout(() => { gate.style.display = 'none'; }, 800);
       logoutBtn.style.display = 'flex';
       errEl.classList.remove('show');
+      // [FIX] Trigger load data setelah auth berhasil
+      // window.load sudah jalan sebelumnya tapi gagal karena belum auth
+      initAppData();
     } else if (res.msg && res.msg.includes('tidak terdaftar')) {
-      // ❌ Email tidak ada di whitelist
+      // ❌ Email tidak terdaftar — logout sah
+      _authVerified = false;
       _auth.signOut();
       errEl.textContent = '⚠ Akun tidak diizinkan akses sistem ini.';
       errEl.classList.add('show');
@@ -817,7 +850,8 @@ _auth.onAuthStateChanged(async user => {
       gate.classList.remove('hide');
       logoutBtn.style.display = 'none';
     } else {
-      // ❌ Respons tidak dikenal (termasuk GAS belum update ke v6.0)
+      // ❌ Respons tidak dikenal
+      _authVerified = false;
       _auth.signOut();
       errEl.textContent = '⚠ Verifikasi gagal. Pastikan GAS backend sudah diupdate ke v6.0.';
       errEl.classList.add('show');
@@ -826,10 +860,21 @@ _auth.onAuthStateChanged(async user => {
       logoutBtn.style.display = 'none';
     }
   } catch(_e) {
-    // Error tak terduga — paksa logout
-    _auth.signOut();
-    errEl.textContent = '⚠ Gagal verifikasi sesi. Coba lagi.';
-    errEl.classList.add('show');
+    // [FIX] Error tak terduga — jangan langsung logout
+    // Kalau user masih ada di Firebase, biarkan sesi aktif
+    if (_auth.currentUser) {
+      _authVerified          = true;
+      window._cachedToken    = null; // akan di-refresh saat fetch berikutnya
+      window._tokenFetchedAt = 0;
+      gate.classList.add('hide');
+      setTimeout(() => { gate.style.display = 'none'; }, 800);
+      logoutBtn.style.display = 'flex';
+    } else {
+      errEl.textContent = '⚠ Gagal verifikasi sesi. Coba lagi.';
+      errEl.classList.add('show');
+    }
+  } finally {
+    _authInFlight = false;
   }
 });
 
@@ -848,6 +893,8 @@ function logoutUser() {
   if (confirm('Keluar dari sistem?')) {
     window._cachedToken    = null;
     window._tokenFetchedAt = 0;
+    _authVerified          = false;  // [FIX] reset agar login ulang bisa proses normal
+    _authInFlight          = false;
     _auth.signOut();
   }
 }
@@ -855,7 +902,7 @@ function logoutUser() {
 // ─── CONFIG (dari Master Config) ───────────────────────────────────────────
 const CONFIG_KEY = 'banquet_elite_config';
 const DEFAULT_CFG = {
-  "gasUrl": "https://script.google.com/macros/s/AKfycbzSBF-mIzoVjlVgi48PjWVMqktOGh3btnHPN6DgXwbRSWR-EqphlkHakYiF_2gM0k4A/exec",
+  "gasUrl": "https://script.google.com/macros/s/AKfycbz8WS15fdJ6INRjDkLiTUVsaCLIRBotkusXxLyUCi7W4hTivGRIHDr95cMMtXskzfHf/exec",
   "venues": [
     "Ball Room",
     "VIP Room",
@@ -879,10 +926,10 @@ const DEFAULT_CFG = {
     "TINA"
   ],
   "brand": "LOTUS GARDEN HOTEL",
-  "version": "TRAINING  EDITION V.6.1 BEO",
+  "version": "LIVE EDITION V.6.1 BEO",
   "dashboard": "https://lotus-garden-hotel.github.io/BEO-Lotus-Garden-Hotel/",
-  "casePackage": "upper",
-  "caseSales": "upper"
+  "casePackage": "none",
+  "caseSales": "title"
 };
 
 function getConfig() {
@@ -1315,6 +1362,7 @@ async function loadScanner(filter, filterDate) {
     badge.textContent = cnt; cnt > 0 ? badge.classList.remove('hidden') : badge.classList.add('hidden');
 
     let filtered = res.rows.filter(r => {
+      if (r.status === 'BORROWED') return false; // [BUG-FIX] exclude phantom borrowed slots
       if (filter==='TENTATIVE') return r.status==='TENTATIVE';
       if (filter==='CONFIRM')   return r.status==='CONFIRM';
       return r.customer && !r.status;
@@ -1441,15 +1489,22 @@ function esc(str) {
 function monthName(d) { return MONTHS[parseInt(d.split('-')[1],10)-1]; }
 
 // Preload badge on startup
-window.addEventListener('load', async () => {
-  applyConfig(); // ✅ Load config dari Master Config
+// [FIX] initAppData() dipanggil dari auth success — bukan window.load
+// window.load hanya setup config, tidak fetch data (karena user belum tentu login)
+async function initAppData() {
   try {
-    const res = await getMonthData(MONTHS[new Date().getMonth()]); // [PERF-01] cache sekaligus preload
-
-    const cnt = res.rows.filter(r=>r.status==='TENTATIVE').length;
-    const b = document.getElementById('notif-badge');
-    if (cnt>0) { b.textContent=cnt; b.classList.remove('hidden'); }
+    const res = await getMonthData(MONTHS[new Date().getMonth()]);
+    const cnt = res.rows.filter(r => r.status === 'TENTATIVE').length;
+    const b   = document.getElementById('notif-badge');
+    if (cnt > 0) { b.textContent = cnt; b.classList.remove('hidden'); }
   } catch(_) {}
+  // Load scanner setelah badge
+  loadScanner(activeTab);
+}
+
+window.addEventListener('load', () => {
+  applyConfig(); // ✅ Setup config — tidak fetch data di sini
+  // Data di-load oleh initAppData() setelah auth berhasil
 });
 
 // ─── RANGE AVAILABILITY ────────────────────────────────────────────────────
@@ -1585,18 +1640,27 @@ async function checkRange() {
       </td>`;
 
     venues.forEach(venue => {
-      const events  = (dayData[venue] || []);
-      const hasData = events.length > 0 && events.some(e => e.customer);
+      const events      = (dayData[venue] || []);
+      // [BUG-FIX] Pisahkan: hasBorrowed = phantom FORCE_VENUE | hasData = event nyata
+      const hasBorrowed = events.some(e => e.status === 'BORROWED');
+      const hasData     = events.length > 0 && events.some(e => e.customer && e.status !== 'BORROWED');
 
-      if (!hasData) {
+      if (hasBorrowed && !hasData) {
+        // Slot fisik dipakai venue lain via FORCE_VENUE — JANGAN tampilkan VACANT
+        // Tidak ada onclick karena tidak bisa booking di sini
+        html += `<td title="Slot ini sedang digunakan oleh venue lain (Force Venue)">
+          <div class="slot-borrowed">✕ DIPINJAM<span class="slot-name">Slot terpakai</span></div></td>`;
+
+      } else if (!hasData) {
         cntEmpty++;
         // [SEC-06] Gunakan data-* agar tidak ada string injection di onclick
         html += `<td data-iso="${esc(iso)}" data-venue="${esc(venue)}" onclick="pickSlotFromRangeEl(this)" style="cursor:pointer">
           <div class="slot-empty">✓ VACANT<span class="slot-name">Tap isi</span></div></td>`;
+
       } else {
         const allTent = events.every(e => e.status === 'TENTATIVE');
-        const count   = events.filter(e => e.customer).length;
-        const label   = esc(count > 1 ? count + ' EVENT' : events[0].customer);
+        const count   = events.filter(e => e.customer && e.status !== 'BORROWED').length;
+        const label   = esc(count > 1 ? count + ' EVENT' : events.find(e => e.customer)?.customer || '');
 
         if (allTent) {
           cntTent += count;
@@ -1732,6 +1796,7 @@ function openScannerByDate(iso) {
     <button class="log-filter-btn" onclick="loadLogs()" style="white-space:nowrap">🔄 Refresh</button>
   </div>
 
+  <div id="logs-pagination-info" style="display:none;font-size:9px;color:#f0b27a;text-align:center;padding:4px 16px;background:rgba(243,156,18,.06);border-bottom:1px solid rgba(243,156,18,.1)"></div>
   <div class="logs-body" id="logs-body">
     <div class="range-empty">Memuat data logs...</div>
   </div>
@@ -1771,6 +1836,14 @@ async function loadLogs() {
     const res = await gas({ action:'READ_LOGS' });
     if (!res.ok) { body.innerHTML = '<div class="range-empty">&#x2717; Gagal mengambil data log.</div>'; return; }
     _logsRaw = res.logs || [];
+    // [PERF-FIX] Tampilkan info pagination jika ada total
+    if (res.total && res.total > _logsRaw.length) {
+      document.getElementById('logs-pagination-info').textContent =
+        `Menampilkan ${_logsRaw.length} dari ${res.total} log terbaru`;
+      document.getElementById('logs-pagination-info').style.display = 'block';
+    } else {
+      document.getElementById('logs-pagination-info').style.display = 'none';
+    }
     renderLogs();
   } catch(e) {
     body.innerHTML = '<div class="range-empty">&#x2717; Gagal memuat log. Coba refresh.</div>';
