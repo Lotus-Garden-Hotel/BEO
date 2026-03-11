@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Banquet Dashboard - LOTUS GARDRN HOTEL</title>
+    <title>Banquet Dashboard - LOTUS GARDEN HOTEL</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -197,7 +197,7 @@
     </div>
 
     <div class="flex justify-between items-center px-1 flex-none">
-        <div><h1 class="text-[12px] font-black italic uppercase text-indigo-400">Banquet Dashboard</h1><p class="text-[6px] font-bold text-slate-500 tracking-widest uppercase text-left">System Informasi Banquet LGH </p></div>
+        <div><h1 class="text-[12px] font-black italic uppercase text-indigo-400">Banquet Dashboard</h1><p class="text-[6px] font-bold text-slate-500 tracking-widest uppercase text-left">System Informasi Banquet LGH</p></div>
         <div class="flex gap-2">
             <button onclick="toggleNightMode()" id="night-btn" class="btn-top bg-slate-800 border border-slate-700" title="Mode Malam">🌙</button>
             <button onclick="logoutManual()" class="btn-top btn-logout" title="Keluar dari Sistem">
@@ -427,15 +427,22 @@
                     cachedOverflow = res.overflow || []; // [OVF] data dari sheet OVERFLOW
                 }
                 
-                let html = ''; let lCount = 0; let lGross = 0; let lPax = 0; let mtdNett = 0;
+                let lCount = 0; let lGross = 0; let lPax = 0; let mtdNett = 0;
+                const MONTH_IDX = {JANUARI:1,FEBRUARI:2,MARET:3,APRIL:4,MEI:5,JUNI:6,
+                                   JULI:7,AGUSTUS:8,SEPTEMBER:9,OKTOBER:10,NOVEMBER:11,DESEMBER:12};
 
+                // [SORT] Kumpulkan semua event yang lolos filter ke array dulu
+                const todayRaw = new Date(); todayRaw.setHours(0,0,0,0);
+                const evList = [];
+
+                // ── Summary rows ──
                 for (let i = 26; i < cachedRows.length; i++) {
                     const r = cachedRows[i]; if (!r || !r[9] || !r[13]) continue;
                     const gVal = cleanVal(r[14]); const pVal = cleanVal(r[11]);
                     const sStat = (r[13]||'').toUpperCase();
                     const vName = (r[15]||'').toLowerCase();
                     const pd = parseDateCell(r[9]); if (!pd) continue;
-                    const dP = pd.d, mP = pd.m;
+                    const dP = pd.d, mP = pd.m, yP = pd.y || todayRaw.getFullYear();
 
                     if (monthVal === "ALL" || mP === parseInt(monthVal)) {
                         if (sStat.includes("CONFIRM") || sStat.includes("DONE")) mtdNett += (gVal / 1.21);
@@ -448,19 +455,17 @@
 
                     if (mTime && mStatus && mSearch && mHV) {
                         lCount++; lGross += gVal; lPax += pVal;
-                        let isTent = sStat.includes("TENTATIVE");
-                        let cCol = sStat.includes("DONE") ? 'text-indigo-300 bg-indigo-500/20' : (sStat.includes("CONFIRM") ? 'text-emerald-400 bg-emerald-500/10' : (isTent ? 'text-amber-400 bg-amber-500/10' : 'text-slate-400 bg-white/5'));
-                        
-                        // [SEC-02] Semua field dari Sheets di-escape sebelum masuk innerHTML
-                        const safeDate   = esc(dP.toString().padStart(2,'0') + '/' + mP.toString().padStart(2,'0') + (pd.y ? '/' + pd.y : ''));
-                        const safeVenue  = esc(r[15] || 'TBD');
-                        const safeStat   = esc(sStat);
-                        const safeName   = esc(r[10]);
-                        const safePax    = esc(r[11] || '0');
-                        // r[16]=kolom Q(Waktu), r[17]=kolom R(Setup)
-                        const safeTime   = r[16] ? esc(r[16].toString().trim()) : '';
-                        const safeSetup  = r[17] ? esc(r[17].toString().trim()) : '';
-                        html += `<div class="bg-white/[0.03] border border-white/5 rounded-xl p-2 relative ${isTent ? 'tentative-glow' : ''}">
+                        const evDate = new Date(yP, mP - 1, dP); evDate.setHours(0,0,0,0);
+                        const isTent = sStat.includes("TENTATIVE");
+                        const cCol = sStat.includes("DONE") ? 'text-indigo-300 bg-indigo-500/20' : (sStat.includes("CONFIRM") ? 'text-emerald-400 bg-emerald-500/10' : (isTent ? 'text-amber-400 bg-amber-500/10' : 'text-slate-400 bg-white/5'));
+                        const safeDate  = esc(dP.toString().padStart(2,'0') + '/' + mP.toString().padStart(2,'0') + (pd.y ? '/' + pd.y : ''));
+                        const safeVenue = esc(r[15] || 'TBD');
+                        const safeStat  = esc(sStat);
+                        const safeName  = esc(r[10]);
+                        const safePax   = esc(r[11] || '0');
+                        const safeTime  = r[16] ? esc(r[16].toString().trim()) : '';
+                        const safeSetup = r[17] ? esc(r[17].toString().trim()) : '';
+                        evList.push({ evDate, gVal, html: `<div class="bg-white/[0.03] border border-white/5 rounded-xl p-2 relative ${isTent ? 'tentative-glow' : ''}">
                             <div class="absolute top-0 right-0 flex items-center z-10 text-[5.5px] font-black uppercase">
                                 <span class="bg-indigo-500/10 text-indigo-300 px-1.5 py-0.5 border-l border-white/5">${safeDate}</span>
                                 <span class="bg-white/5 text-slate-400 px-1.5 py-0.5 border-l border-white/5">${safeVenue}</span>
@@ -477,18 +482,13 @@
                                 </div>
                                 <p class="text-emerald-400 text-[11px] font-black">${formatRp(gVal)}</p>
                             </div>
-                        </div>`;
+                        </div>` });
                     }
                 }
 
-                // [OVF] Tambahkan data dari OVERFLOW ke kalkulasi
-                // OVERFLOW rows: { day, bulan, venue, customer, status, pax, price, source }
-                const MONTH_IDX = {JANUARI:1,FEBRUARI:2,MARET:3,APRIL:4,MEI:5,JUNI:6,
-                                   JULI:7,AGUSTUS:8,SEPTEMBER:9,OKTOBER:10,NOVEMBER:11,DESEMBER:12};
+                // ── OVERFLOW rows ──
                 for (const ovf of cachedOverflow) {
                     const pVal  = cleanVal(ovf.pax);
-                    // [FIX-PRICE] ovf.price = harga PER PAX (dari form f-price)
-                    // Total revenue = price × pax — konsisten dengan r[14] Summary sheet
                     const gVal  = cleanVal(ovf.price) * pVal;
                     const sStat = (ovf.status||'').toUpperCase();
                     const vName = (ovf.venue||'').toLowerCase();
@@ -500,24 +500,20 @@
                         if (sStat.includes("CONFIRM") || sStat.includes("DONE")) mtdNett += (gVal / 1.21);
                     }
 
-                    // Format tanggal sama seperti Summary: "dd/mm"
-                    const dStr = String(dP).padStart(2,'0') + '/' + String(mP).padStart(2,'0');
-                    let mTime = (search.length >= 1) ? true :
-                        (dateVal ? (parseInt(dP)==parseInt(dateVal.split('-')[2]) && parseInt(mP)==parseInt(dateVal.split('-')[1])) :
-                        (monthVal !== "ALL" ? parseInt(mP) === parseInt(monthVal) : true));
+                    const dStr  = String(dP).padStart(2,'0') + '/' + String(mP).padStart(2,'0');
+                    let mTime   = (search.length >= 1) ? true : (dateVal ? (parseInt(dP)==parseInt(dateVal.split('-')[2]) && parseInt(mP)==parseInt(dateVal.split('-')[1])) : (monthVal !== "ALL" ? parseInt(mP) === parseInt(monthVal) : true));
                     let mStatus = (currentStatusFilter === 'ALL' || sStat.includes(currentStatusFilter));
                     let mSearch = (search === "" || (ovf.customer||'').toLowerCase().includes(search) || vName.includes(search));
-                    let mHV    = (!isHighValueMode || gVal >= 10000000);
+                    let mHV     = (!isHighValueMode || gVal >= 10000000);
 
                     if (mTime && mStatus && mSearch && mHV) {
                         lCount++; lGross += gVal; lPax += pVal;
-                        let isTent = sStat.includes("TENTATIVE");
-                        let cCol = sStat.includes("DONE") ? 'text-indigo-300 bg-indigo-500/20' :
-                            (sStat.includes("CONFIRM") ? 'text-emerald-400 bg-emerald-500/10' :
-                            (isTent ? 'text-amber-400 bg-amber-500/10' : 'text-slate-400 bg-white/5'));
-                        const safeTime  = ovf.time    ? `<span class="ev-badge ev-badge-time">🕐 ${esc(ovf.time)}</span>`      : '';
-                        const safeSetup2 = ovf.package ? `<span class="ev-badge ev-badge-setup">🪑 ${esc(ovf.package)}</span>` : '';
-                        html += `<div class="bg-white/[0.03] border border-amber-500/20 rounded-xl p-2 relative ${isTent ? 'tentative-glow' : ''}">
+                        const evDate = new Date(todayRaw.getFullYear(), mP - 1, dP); evDate.setHours(0,0,0,0);
+                        const isTent = sStat.includes("TENTATIVE");
+                        const cCol = sStat.includes("DONE") ? 'text-indigo-300 bg-indigo-500/20' : (sStat.includes("CONFIRM") ? 'text-emerald-400 bg-emerald-500/10' : (isTent ? 'text-amber-400 bg-amber-500/10' : 'text-slate-400 bg-white/5'));
+                        const safeTime2  = ovf.time    ? `<span class="ev-badge ev-badge-time">🕐 ${esc(ovf.time)}</span>`       : '';
+                        const safeSetup2 = ovf.package ? `<span class="ev-badge ev-badge-setup">🪑 ${esc(ovf.package)}</span>`   : '';
+                        evList.push({ evDate, gVal, html: `<div class="bg-white/[0.03] border border-amber-500/20 rounded-xl p-2 relative ${isTent ? 'tentative-glow' : ''}">
                             <div class="absolute top-0 right-0 flex items-center z-10 text-[5.5px] font-black uppercase">
                                 <span class="bg-amber-500/10 text-amber-400 px-1.5 py-0.5">✦ OVF</span>
                                 <span class="bg-indigo-500/10 text-indigo-300 px-1.5 py-0.5 border-l border-white/5">${esc(dStr)}</span>
@@ -528,13 +524,26 @@
                             <div class="flex justify-between items-end leading-none mt-1">
                                 <div class="flex flex-col gap-0.5">
                                     <p class="text-lg font-black text-white leading-none">${esc(String(pVal))}<span class="text-[6px] text-slate-600 ml-0.5 tracking-tighter">PAX</span></p>
-                                    <div class="flex gap-1 flex-wrap mt-0.5">${safeTime}${safeSetup2}</div>
+                                    <div class="flex gap-1 flex-wrap mt-0.5">${safeTime2}${safeSetup2}</div>
                                 </div>
                                 <p class="text-emerald-400 text-[11px] font-black">${formatRp(gVal)}</p>
                             </div>
-                        </div>`;
+                        </div>` });
                     }
                 }
+
+                // [SORT] Hari ini & future: ascending (terdekat dulu)
+                //         Past: descending (terbaru dulu, terlama paling bawah)
+                evList.sort((a, b) => {
+                    const aMs = a.evDate.getTime(), bMs = b.evDate.getTime();
+                    const todMs = todayRaw.getTime();
+                    const aFut = aMs >= todMs, bFut = bMs >= todMs;
+                    if (aFut && bFut) return aMs - bMs;   // future: tanggal dekat dulu
+                    if (!aFut && !bFut) return bMs - aMs; // past: tanggal terbaru dulu
+                    return aFut ? -1 : 1;                 // future selalu di atas past
+                });
+
+                const html = evList.map(e => e.html).join('');
 
                 currentNettRaw = lGross / 1.21;
                 document.getElementById('mtd-label').innerText = monthVal === "ALL" ? "PERFORMANCE OVERALL" : `PERFORMANCE ${monthNames[parseInt(monthVal)].toUpperCase()}`;
