@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Banquet LOTUS GARDEN — LIVE Edition</title>
+  <title>BanquetLOTUS GARDEN HOTEL — LIVE Edition</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -158,6 +158,21 @@
       display:none; align-items:center; justify-content:center; gap:5px;
       transition:border-color .2s, background .2s;
     }
+    /* [FIX] Tombol Unlock Update — muncul saat CONFIRM/DONE */
+    #btn-unlock {
+      display:none; width:100%; padding:12px; border-radius:12px;
+      border:1px solid rgba(201,168,76,.4); background:rgba(201,168,76,.1);
+      color:var(--gold); font-size:13px; font-weight:700; cursor:pointer;
+      transition:background .2s;
+    }
+    #btn-unlock:hover { background:rgba(201,168,76,.22); }
+    .btn-new-slot {
+      display:none; width:100%; padding:13px; border-radius:12px;
+      border:1px solid rgba(99,102,241,.5); background:rgba(99,102,241,.12);
+      color:#818cf8; font-size:13px; font-weight:700; cursor:pointer;
+      transition:background .2s; letter-spacing:.3px;
+    }
+    .btn-new-slot:hover { background:rgba(99,102,241,.22); }
     .btn-secondary.visible { display:flex; }
     .btn-secondary:hover { border-color:var(--gold); background:rgba(201,168,76,.06); }
 
@@ -391,6 +406,16 @@
       border-radius:7px; padding:5px 4px; color:var(--dim);
       font-size:8px;
     }
+    /* [OVF] Slot dengan 2 event (slot 1 + OVERFLOW) */
+    .slot-double {
+      background: linear-gradient(135deg, rgba(99,102,241,.1) 0%, rgba(201,168,76,.1) 100%);
+      border: 1px solid rgba(201,168,76,.4);
+      border-radius:7px; padding:5px 4px; color:var(--gold);
+      font-size:8px; font-weight:700; cursor:pointer; transition:all .15s;
+    }
+    .slot-double:hover { background:rgba(201,168,76,.18); transform:scale(1.05); }
+    .slot-double .slot-name { font-size:7px; display:block; margin-top:2px; opacity:.8; }
+    .slot-time { font-size:7px; display:block; margin-top:1px; color:#f59e0b; font-weight:700; opacity:.9; letter-spacing:.02em; }
     /* [BUG-FIX] Slot "dipinjam" via FORCE_VENUE — tampil gray, tidak bisa diklik */
     .slot-borrowed {
       background: repeating-linear-gradient(
@@ -738,10 +763,16 @@
         <!-- Sync -->
         <button id="btn-sync" class="btn-gold" onclick="submitData()">✦ Sync to Cloud</button>
 
+        <!-- Unlock Update — muncul saat status CONFIRM/DONE -->
+        <button id="btn-unlock" class="btn-secondary" onclick="unlockUpdate()" style="display:none">🔓 Unlock Update</button>
+
+        <!-- [OVF] New Slot — muncul saat slot 1 terisi & slot 2 masih kosong -->
+        <button id="btn-new-slot" class="btn-new-slot" onclick="startNewSlot()" style="display:none">✦ Buat Booking Slot 2</button>
+
         <!-- Feature row: Duplicate + Force Venue -->
         <div class="btn-row">
           <button id="btn-duplicate" class="btn-secondary" onclick="duplicateBooking()">📋 Duplikat</button>
-          <button id="btn-force"     class="btn-force"     onclick="openForceVenue()">⚡ Paksa Slot Lain</button>
+          <button id="btn-force" style="display:none" title="Fitur ini digantikan oleh OVERFLOW" class="btn-force" onclick="openForceVenue()">⚡ Paksa Slot Lain</button>
         </div>
 
         <!-- Delete -->
@@ -786,7 +817,7 @@ let _authInFlight = false;
   const c = (function() {
     try { return JSON.parse(localStorage.getItem('banquet_elite_config')) || null; } catch(_) { return null; }
   })();
-  const DEFAULT_GAS = "https://script.google.com/macros/s/AKfycbzcJm9SeulvTWAOedhyPh0gkvOkWf3tD9hf9pJem5iRXcp3GCLXevtvD11Ai_TCl9on/exec";
+  const DEFAULT_GAS = "https://script.google.com/macros/s/AKfycbxN-scggECOGZXqsOuII_AftWN8VXkRR9qaj_wbX6VXwqGespdwvCVWA-SirJs_0fXc/exec";
   window._GAS = (c && c.gasUrl) ? c.gasUrl : DEFAULT_GAS;
 })();
 
@@ -902,7 +933,7 @@ function logoutUser() {
 // ─── CONFIG (dari Master Config) ───────────────────────────────────────────
 const CONFIG_KEY = 'banquet_elite_config';
 const DEFAULT_CFG = {
-  "gasUrl": "https://script.google.com/macros/s/AKfycbyc69cJctKrYMb03Pt-ExPPh9VP9SSdYBZj5-6bP3Kq8nEDW4sCqiJrUMGGHJ0n1CRE/exec",
+  "gasUrl": "https://script.google.com/macros/s/AKfycbxN-scggECOGZXqsOuII_AftWN8VXkRR9qaj_wbX6VXwqGespdwvCVWA-SirJs_0fXc/exec",
   "venues": [
     "Ball Room",
     "VIP Room",
@@ -926,7 +957,7 @@ const DEFAULT_CFG = {
     "TINA"
   ],
   "brand": "LOTUS GARDEN HOTEL",
-  "version": "LIVE EDITION V.6.1 BEO",
+  "version": "TEST EDITION V.6.1 BEO",
   "dashboard": "https://lotus-garden-hotel.github.io/BEO-Lotus-Garden-Hotel/",
   "casePackage": "none",
   "caseSales": "title"
@@ -1029,18 +1060,25 @@ async function gas(params) {
   // [FIX] Auto-retry sekali jika GAS mengembalikan error auth.
   // Skenario mobile: app di-background → token di-cache 55 menit → saat dibuka lagi
   // token sudah expired tapi cache belum direset → server tolak → retry dengan token fresh.
+  // Auto-retry sekali jika error bukan rate-limit dan bukan network error
+  // (misal: token expired saat app di-background)
   if (!res.ok && !res.rateLimited && res.msg && (
     res.msg.includes('sesi') ||
     res.msg.includes('login') ||
     res.msg.includes('token') ||
     res.msg.includes('Token') ||
-    res.msg.includes('Verifikasi')
+    res.msg.includes('Verifikasi') ||
+    res.msg.includes('expired')
   )) {
-    // Paksa invalidate cache → ambil token baru dari Firebase
+    console.warn('[Auth] Auto-retry dengan token segar:', res.msg);
     window._cachedToken    = null;
     window._tokenFetchedAt = 0;
-    const freshToken = await getIdToken();
-    return _gasRaw({ ...params, idToken: freshToken });
+    try {
+      const freshToken = await getIdToken();
+      return _gasRaw({ ...params, idToken: freshToken });
+    } catch(retryErr) {
+      return res; // return original error jika refresh token juga gagal
+    }
   }
   return res;
 }
@@ -1069,6 +1107,7 @@ async function writeActivityLog(logAction, params, detail) {
 }
 
 let origDate = "", origVenue = "", editMode = false, activeTab = "TENTATIVE";
+let currentSource = "BULAN"; // [OVF] track apakah booking aktif di BULAN atau OVERFLOW
 let isDuplicateMode = false; // flag agar field tidak terhapus saat duplicate
 let _confirmResolve = null;
 
@@ -1154,16 +1193,39 @@ async function onDateVenueChange() {
   try {
     const res = await gas({ action:'CHECK', date:d, venue:v });
     body.classList.add('unlocked');
-    if (res.occupied && res.data) {
-      banner.textContent = '⚠  Terisi — ' + (res.data.status || 'TENTATIVE');
+    hideNewSlotBtn(); // reset dulu
+
+    if (res.slotsFilled === 2) {
+      // Penuh 2/2 — tampilkan data slot 1 (yang terisi lebih dulu), tidak bisa tambah
+      const srcLabel = res.data?.source === 'OVERFLOW' ? ' [Slot 2]' : '';
+      banner.textContent = '⚠  Penuh (2/2) — ' + (res.data?.status || 'TENTATIVE') + srcLabel;
+      banner.className   = 'status-banner occupied';
+      if (res.data) fillForm(res.data, d, v);
+      hide('btn-force');
+
+    } else if (res.occupied && res.data) {
+      // Slot 1 terisi, slot 2 kosong — tampilkan data + tombol Buat Slot 2
+      const srcLabel = res.data.source === 'OVERFLOW' ? ' [Slot 2]' : '';
+      banner.textContent = '⚠  Terisi — ' + (res.data.status || 'TENTATIVE') + srcLabel;
       banner.className   = 'status-banner occupied';
       fillForm(res.data, d, v);
-      show('btn-force');
+      hide('btn-force');
+      // [OVF] Tampilkan tombol untuk buat booking kedua di venue yang sama
+      showNewSlotBtn();
+
+    } else if (res.slotsFilled === 1) {
+      // Edge case: slot ada tapi occupied=false (harusnya tidak terjadi, safety net)
+      banner.textContent = '✦  Slot 1 Terisi · Slot 2 Tersedia';
+      banner.className   = 'status-banner available';
+      hide('btn-force');
+      showNewSlotBtn();
+      if (!editMode && !isDuplicateMode) clearFields();
+
     } else {
+      // Kosong total
       banner.textContent = '✓  Venue Tersedia';
       banner.className   = 'status-banner available';
       hide('btn-force');
-      // ✅ FIX Bug 1: jangan hapus field saat mode duplikat aktif
       if (!editMode && !isDuplicateMode) clearFields();
     }
   } catch(e) {
@@ -1175,15 +1237,14 @@ async function onDateVenueChange() {
 // ─── FILL FORM ─────────────────────────────────────────────────────────────
 function fillForm(data, date, venue) {
   origDate = date; origVenue = venue; editMode = true;
+  currentSource = data.source || 'BULAN'; // [OVF] track sumber data
   set('f-customer', data.customer || '');
   set('f-status',   (data.status  || '').toUpperCase());
   set('f-package',  (data.package || '').toUpperCase());
   set('f-sales',    (data.sales   || '').toUpperCase());
   set('f-time',     data.time     || '');
   set('f-pax',      data.pax      || '');
-  set('f-price',    data.price    || '');
-  document.getElementById('f-price-display').value =
-    data.price > 0 ? 'Rp ' + fmt(data.price) : '';
+  setPrice(data.price || ''); // [FIX-PRICE] gunakan setPrice agar format konsisten
   calcRevenue(); onStatusChange();
   show('btn-duplicate');
 }
@@ -1319,32 +1380,55 @@ function closeForce() { document.getElementById('modal-force').classList.remove(
 
 // ─── SUBMIT ────────────────────────────────────────────────────────────────
 async function submitData() {
+  if (_formLocked) return; // [FIX-LOCK] jangan submit jika form masih locked
   if (!validate()) return;
   setBtn('btn-sync', true);
   const d = val('f-date'), v = val('f-venue');
+  // [OVF] Source routing logic:
+  // - Edit di tempat sama (tidak pindah) → kirim currentSource langsung (BULAN/OVERFLOW)
+  // - Move ke lokasi baru → kirim AUTO (GAS akan routing ke slot kosong)
+  // - Booking baru → kirim AUTO
+  const isMoveEvent = editMode && (d !== origDate || v !== origVenue);
+  const writeSource = editMode && !isMoveEvent ? currentSource : 'AUTO';
+
   try {
     const res = await gas({
       action:'UPDATE', sheetName:monthName(d), date:d, venue:v,
+      source:    writeSource,
+      isUpdate:  String(editMode && !isMoveEvent), // [FIX] bedakan UPDATE vs CREATE baru
       oldSheetName: origDate ? monthName(origDate) : '',
       oldDate:origDate, oldVenue:origVenue,
-      isMoveEvent: String(editMode && (d!==origDate || v!==origVenue)),
+      oldSource: isMoveEvent ? currentSource : '',
+      isMoveEvent: String(isMoveEvent),
       customer:val('f-customer'), status:val('f-status'),
       package:val('f-package'),   sales:val('f-sales'),
       time:val('f-time'),         pax:val('f-pax'), price:val('f-price')
     });
     if (res.ok) {
-      // ✅ LOG aktivitas
-      const isMove = editMode && (d !== origDate || v !== origVenue);
+      // [OVF] Update currentSource jika GAS routing ke OVERFLOW
+      if (res.source) currentSource = res.source;
+
+      // Notif khusus jika masuk OVERFLOW slot 2
+      if (res.slot === 2) {
+        toast('✦ ' + res.msg + ' (Slot 2 — Overflow)', 'success', 4000);
+      }
+
+      const isMove      = isMoveEvent;
       const isMoveVenue = editMode && d === origDate && v !== origVenue;
       const isMoveDate  = editMode && d !== origDate && v === origVenue;
       let logAction = editMode ? 'UPDATE' : 'CREATE';
       let detail    = editMode ? 'Update data booking' : 'Buat booking baru';
-      if (isMove && isMoveVenue) { logAction = 'CHANGE_VENUE'; detail = `Venue: ${origVenue} → ${v}`; }
-      else if (isMove && isMoveDate) { logAction = 'CHANGE_DATE'; detail = `Tanggal: ${origDate} → ${d}`; }
-      else if (isMove) { logAction = 'MOVE'; detail = `Move: ${origDate}/${origVenue} → ${d}/${v}`; }
+      if (res.slot === 2) { logAction = 'CREATE'; detail = 'Buat booking baru (Overflow slot 2)'; }
+      else if (isMove && isMoveVenue) { logAction = 'CHANGE_VENUE'; detail = `Venue: ${origVenue} → ${v}`; }
+      else if (isMove && isMoveDate)  { logAction = 'CHANGE_DATE';  detail = `Tanggal: ${origDate} → ${d}`; }
+      else if (isMove)                { logAction = 'MOVE';         detail = `Move: ${origDate}/${origVenue} → ${d}/${v}`; }
       writeActivityLog(logAction, { date:d, venue:v }, detail);
-      invalidateMonthCache(monthName(d)); // [PERF-01] buang cache setelah write
+      invalidateMonthCache(monthName(d));
       toast('✦ ' + res.msg, 'success'); resetForm(true);
+    }
+    else if (res.full) {
+      // [OVF] Semua slot penuh — tampilkan pesan jelas
+      toast('✗ ' + res.msg, 'error', 6000);
     }
     else { toast('✗ ' + res.msg, 'error', 5000); }
   } catch(e) { toast('✗ ' + e.message, 'error', 5000); }
@@ -1364,7 +1448,7 @@ async function deleteData() {
   if (!ok) return;
   setBtn('btn-delete', true);
   try {
-    const res = await gas({ action:'DELETE', sheetName:monthName(d), date:d, venue:v });
+    const res = await gas({ action:'DELETE', sheetName:monthName(d), date:d, venue:v, source: currentSource }); // [OVF] kirim source BULAN/OVERFLOW
     if (res.ok) {
       writeActivityLog('DELETE', { date:d, venue:v, customer:name }, `Hapus booking: ${name}`);
       invalidateMonthCache(monthName(d)); // [PERF-01] buang cache setelah delete
@@ -1401,7 +1485,6 @@ async function loadScanner(filter, filterDate) {
     badge.textContent = cnt; cnt > 0 ? badge.classList.remove('hidden') : badge.classList.add('hidden');
 
     let filtered = res.rows.filter(r => {
-      if (r.status === 'BORROWED') return false; // [BUG-FIX] exclude phantom borrowed slots
       if (filter==='TENTATIVE') return r.status==='TENTATIVE';
       if (filter==='CONFIRM')   return r.status==='CONFIRM';
       return r.customer && !r.status;
@@ -1423,8 +1506,19 @@ async function loadScanner(filter, filterDate) {
       const cls     = r.status==='TENTATIVE' ? 's-tentative' : r.status==='CONFIRM' ? 's-confirm' : 's-none';
       const rowNum  = parseInt(r.row, 10) || 0;
       // Gunakan data-* attribute untuk pass parameter, bukan inject langsung ke onclick string
-      return `<div class="event-card" data-iso="${esc(iso)}" data-venue="${esc(r.venue)}" data-shn="${esc(shn)}" data-row="${rowNum}" onclick="pickEventFromCard(this)">
-        <div class="event-name">${esc(r.customer) || '—'}</div>
+      // [OVF] Embed semua field booking di data-* → pickEventFromCard isi form langsung
+      // tanpa network call tambahan (0 latency setelah klik)
+      const srcBadge = r.source === 'OVERFLOW'
+        ? `<span style="font-size:8px;color:var(--gold);margin-left:4px">✦ OVF</span>` : '';
+      return `<div class="event-card"
+          data-iso="${esc(iso)}" data-venue="${esc(r.venue)}"
+          data-shn="${esc(shn)}" data-row="${rowNum}" data-source="${esc(r.source||'BULAN')}"
+          data-customer="${esc(r.customer||'')}"  data-status="${esc(r.status||'')}"
+          data-package="${esc(r.package||'')}"   data-sales="${esc(r.sales||'')}"
+          data-time="${esc(r.time||'')}"         data-pax="${esc(r.pax||'')}"
+          data-price="${esc(r.price||'')}"
+          onclick="pickEventFromCard(this)">
+        <div class="event-name">${esc(r.customer) || '—'}${srcBadge}</div>
         <div class="event-meta">${esc(r.dateLabel)} · ${esc(r.venue)}</div>
         <span class="event-status ${cls}">${esc(r.status) || 'No Status'}</span>
       </div>`;
@@ -1432,53 +1526,147 @@ async function loadScanner(filter, filterDate) {
   } catch(e) { body.innerHTML = '<div class="empty-state">✗ Gagal memuat data. Coba lagi.</div>'; }
 }
 
-// [SEC-06] Wrapper: baca dari data-* bukan dari string parameter yang bisa di-inject
+// [PERF] Isi form langsung dari data-* di card — nol network call tambahan
+// Data sudah lengkap karena READ_MONTH sekarang return semua field booking
 function pickEventFromCard(el) {
-  pickEvent(el.dataset.iso, el.dataset.venue, el.dataset.shn, parseInt(el.dataset.row, 10));
-}
+  const ds = el.dataset;
+  const date   = ds.iso;
+  const venue  = ds.venue;
+  const source = ds.source || 'BULAN';
 
-async function pickEvent(date, venue, sheetName, rowNum) {
-  // ✅ FIX Bug 1: kalau ada rowNum → GET_ROW langsung, tidak pakai CHECK by date+venue
-  set('f-date', date);
+  set('f-date',  date);
   set('f-venue', venue);
+  currentSource = source;
   closeScanner();
 
-  if (rowNum && rowNum > 0 && sheetName) {
-    // Load data langsung by row number — akurat meski venue sama di tanggal sama
-    const banner = document.getElementById('avail-banner');
-    banner.className = 'status-banner occupied';
-    banner.textContent = '⏳ Memuat data...';
-    try {
-      const res = await gas({ action:'GET_ROW', sheetName, row: rowNum });
-      if (res.ok && res.data) {
-        const d = res.data;
-        set('f-customer', d.customer);
-        set('f-status',   d.status);
-        set('f-package',  d.package);
-        set('f-sales',    d.sales);
-        set('f-time',     d.time);
-        set('f-pax',      d.pax);
-        setPrice(d.price);
-        editMode = true;
-        currentRow = rowNum;
-        banner.textContent = '▲ TERISI — ' + d.status;
-        document.getElementById('btn-duplicate') && document.getElementById('btn-duplicate').classList.remove('hidden');
-        onStatusChange(); updateRevenue();
-      }
-    } catch(e) {
-      // fallback ke CHECK biasa kalau GET_ROW gagal
-      onDateVenueChange();
-    }
+  const banner = document.getElementById('avail-banner');
+  const body   = document.getElementById('form-body');
+
+  if (ds.customer) {
+    // INSTANT FILL — tidak perlu request apapun
+    lockForm(false); // pastikan form tidak locked sebelum isi
+    body.classList.add('unlocked');
+    set('f-customer', ds.customer);
+    set('f-status',   ds.status   || '');
+    set('f-package',  ds.package  || '');
+    set('f-sales',    ds.sales    || '');
+    set('f-time',     ds.time     || '');
+    set('f-pax',      ds.pax      || '');
+    setPrice(ds.price || '0');
+
+    origDate  = date;
+    origVenue = venue;
+    editMode  = true;
+
+    const srcLabel = source === 'OVERFLOW' ? ' [Slot 2]' : '';
+    banner.className   = 'status-banner occupied';
+    banner.textContent = '▲ TERISI — ' + (ds.status || 'TENTATIVE') + srcLabel;
+
+    const btnDup = document.getElementById('btn-duplicate');
+    if (btnDup) btnDup.classList.remove('hidden');
+    hide('btn-force');
+    hideNewSlotBtn(); // [OVF] dari scanner — tidak perlu tombol slot 2
+    onStatusChange(); calcRevenue(); // onStatusChange akan lock jika CONFIRM/DONE
+
   } else {
+    // Fallback ke CHECK jika data tidak lengkap
     onDateVenueChange();
   }
 }
 
+// pickEvent tetap untuk dipanggil dari range table dll (klik VACANT buka form kosong)
+async function pickEvent(date, venue, sheetName, rowNum, source) {
+  set('f-date', date);
+  set('f-venue', venue);
+  currentSource = source || 'BULAN';
+  closeScanner();
+  onDateVenueChange();
+}
+
 // ─── UI HELPERS ────────────────────────────────────────────────────────────
 function onStatusChange() {
-  const s = val('f-status');
+  const s   = val('f-status');
   const del = document.getElementById('btn-delete');
-  editMode && s !== 'CONFIRM' && s !== 'DONE' ? del.classList.add('visible') : del.classList.remove('visible');
+  const unl = document.getElementById('btn-unlock');
+  const syn = document.getElementById('btn-sync');
+
+  // DELETE hanya untuk non-CONFIRM/DONE
+  if (editMode && s !== 'CONFIRM' && s !== 'DONE') {
+    del.classList.add('visible');
+  } else {
+    del.classList.remove('visible');
+  }
+
+  // [FIX-LOCK] CONFIRM/DONE → lock form, tampilkan btn-unlock, sembunyikan Sync
+  if (editMode && (s === 'CONFIRM' || s === 'DONE')) {
+    lockForm(true);
+  } else {
+    lockForm(false);
+  }
+}
+
+let _formLocked = false;
+function lockForm(lock) {
+  _formLocked = lock;
+  const unl = document.getElementById('btn-unlock');
+  const syn = document.getElementById('btn-sync');
+  const fields = ['f-customer','f-status','f-package','f-sales','f-time','f-pax','f-price-display'];
+  fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = lock;
+  });
+  unl.style.display = lock ? 'block' : 'none';
+  syn.style.display  = lock ? 'none'  : 'block';
+}
+
+function unlockUpdate() {
+  lockForm(false);
+  _formLocked = false;
+  toast('🔓 Form dibuka — edit lalu Sync to Cloud', 'info', 3000);
+}
+
+// ─── [OVF] SLOT 2 — Buat booking baru di venue yang sudah terisi ───────────
+function showNewSlotBtn() {
+  const btn = document.getElementById('btn-new-slot');
+  if (btn) btn.style.display = 'block';
+}
+
+function hideNewSlotBtn() {
+  const btn = document.getElementById('btn-new-slot');
+  if (btn) btn.style.display = 'none';
+}
+
+// Klik "Buat Booking Slot 2": clear form, pertahankan tanggal+venue, mode CREATE baru
+function startNewSlot() {
+  const d = val('f-date');
+  const v = val('f-venue');
+  if (!d || !v) return;
+
+  // Reset ke mode CREATE baru — tanggal & venue tetap
+  editMode      = false;
+  origDate      = '';
+  origVenue     = '';
+  currentSource = 'AUTO'; // GAS akan routing ke slot 2 (OVERFLOW)
+  isDuplicateMode = false;
+  lockForm(false);
+
+  // Clear semua field booking
+  clearFields();
+
+  // Update banner
+  const banner = document.getElementById('avail-banner');
+  banner.textContent = '✦  Buat Booking Slot 2 — ' + v;
+  banner.className   = 'status-banner available';
+
+  // Sembunyikan tombol new slot, tampilkan sync
+  hideNewSlotBtn();
+  hide('btn-delete');
+  hide('btn-duplicate');
+  hide('btn-unlock');
+  document.getElementById('btn-sync').style.display = 'block';
+
+  toast('✦ Isi data booking kedua untuk ' + v, 'info', 3000);
+  document.getElementById('f-customer').focus();
 }
 
 function onPriceInput(el) {
@@ -1492,13 +1680,22 @@ function calcRevenue() {
   document.getElementById('rev-display').textContent = 'Rp ' + t.toLocaleString('id-ID');
 }
 
+// [FIX-PRICE] Set nilai harga/pax dari data raw (angka atau string "70000")
+// Handles: "70000", "70,000", "Rp 70.000", 70000
+function setPrice(raw) {
+  const clean = String(raw || '0').replace(/[^0-9]/g, '');
+  const num   = parseFloat(clean) || 0;
+  set('f-price', num > 0 ? String(num) : '');
+  document.getElementById('f-price-display').value = num > 0 ? 'Rp ' + fmt(num) : '';
+}
+
 function resetForm(full) {
   if (full) {
     set('f-date',''); set('f-venue','');
     document.getElementById('avail-banner').className = 'status-banner';
     document.getElementById('form-body').classList.remove('unlocked');
     hide('btn-delete'); hide('btn-duplicate'); hide('btn-force');
-    editMode=false; origDate=''; origVenue=''; isDuplicateMode=false;
+    editMode=false; origDate=''; origVenue=''; isDuplicateMode=false; currentSource='BULAN'; lockForm(false); hideNewSlotBtn();
   }
   clearFields();
 }
@@ -1644,7 +1841,8 @@ async function checkRange() {
         if (!allRows[key]) allRows[key] = {};
         const vk = r.venue;
         if (!allRows[key][vk]) allRows[key][vk] = [];
-        allRows[key][vk].push({ status: r.status, customer: r.customer, row: r.row });
+        // [OVF] simpan source agar DELETE bisa kirim source yang benar
+        allRows[key][vk].push({ status: r.status, customer: r.customer, row: r.row, source: r.source || 'BULAN', time: r.time || '' });
       });
     });
   } catch(e) {
@@ -1679,36 +1877,44 @@ async function checkRange() {
       </td>`;
 
     venues.forEach(venue => {
-      const events      = (dayData[venue] || []);
-      // [BUG-FIX] Pisahkan: hasBorrowed = phantom FORCE_VENUE | hasData = event nyata
-      const hasBorrowed = events.some(e => e.status === 'BORROWED');
-      const hasData     = events.length > 0 && events.some(e => e.customer && e.status !== 'BORROWED');
+      const events  = (dayData[venue] || []);
+      const hasData = events.length > 0 && events.some(e => e.customer);
 
-      if (hasBorrowed && !hasData) {
-        // Slot fisik dipakai venue lain via FORCE_VENUE — JANGAN tampilkan VACANT
-        // Tidak ada onclick karena tidak bisa booking di sini
-        html += `<td title="Slot ini sedang digunakan oleh venue lain (Force Venue)">
-          <div class="slot-borrowed">✕ DIPINJAM<span class="slot-name">Slot terpakai</span></div></td>`;
-
-      } else if (!hasData) {
+      if (!hasData) {
+        // VACANT — bisa diklik untuk booking baru
         cntEmpty++;
-        // [SEC-06] Gunakan data-* agar tidak ada string injection di onclick
         html += `<td data-iso="${esc(iso)}" data-venue="${esc(venue)}" onclick="pickSlotFromRangeEl(this)" style="cursor:pointer">
           <div class="slot-empty">✓ VACANT<span class="slot-name">Tap isi</span></div></td>`;
 
       } else {
-        const allTent = events.every(e => e.status === 'TENTATIVE');
-        const count   = events.filter(e => e.customer && e.status !== 'BORROWED').length;
-        const label   = esc(count > 1 ? count + ' EVENT' : events.find(e => e.customer)?.customer || '');
+        // Ada event — bisa 1 (slot 1) atau 2 (slot 1 + OVERFLOW)
+        const filledEvents = events.filter(e => e.customer);
+        const count        = filledEvents.length;
+        const allTent      = filledEvents.every(e => e.status === 'TENTATIVE');
+        const hasDouble    = count >= 2; // [OVF] ada 2 event di venue ini hari ini
 
-        if (allTent) {
+        if (hasDouble) {
+          // [OVF] 2 EVT — tampil gold double badge, klik buka scanner hari itu
+          cntConf += count;
+          const t1d = filledEvents[0] && filledEvents[0].time ? `<span class="slot-time">${esc(filledEvents[0].time)}</span>` : '';
+          const t2d = filledEvents[1] && filledEvents[1].time ? `<span class="slot-time">${esc(filledEvents[1].time)}</span>` : '';
+          html += `<td data-iso="${esc(iso)}" onclick="openScannerByDateEl(this)" style="cursor:pointer"
+            title="Klik untuk lihat ${count} event di venue ini">
+            <div class="slot-double">✦ ${count} EVT<span class="slot-name">${esc(venue.split(' ')[0])}</span>${t1d}${t2d}</div></td>`;
+
+        } else if (allTent) {
           cntTent += count;
+          const label   = esc(filledEvents[0].customer);
+          const timeStr = filledEvents[0].time ? `<span class="slot-time">${esc(filledEvents[0].time)}</span>` : '';
           html += `<td data-iso="${esc(iso)}" data-venue="${esc(venue)}" onclick="pickSlotFromRangeEl(this)" style="cursor:pointer">
-            <div class="slot-tentative">⚡ TENT<span class="slot-name">${label}</span></div></td>`;
+            <div class="slot-tentative">⚡ TENT<span class="slot-name">${label}</span>${timeStr}</div></td>`;
+
         } else {
           cntConf += count;
+          const label   = esc(filledEvents[0].customer);
+          const timeStr = filledEvents[0].time ? `<span class="slot-time">${esc(filledEvents[0].time)}</span>` : '';
           html += `<td data-iso="${esc(iso)}" onclick="openScannerByDateEl(this)" style="cursor:pointer" title="Klik untuk lihat detail event">
-            <div class="slot-confirm">✔ ${count > 1 ? count+' EVT' : 'CONF'}<span class="slot-name">${label}</span></div></td>`;
+            <div class="slot-confirm">✔ CONF<span class="slot-name">${label}</span>${timeStr}</div></td>`;
         }
       }
     });
@@ -1753,13 +1959,12 @@ function openScannerByDate(iso) {
   closeRangePopup();
   document.getElementById('f-date').value = iso;
   openScanner();
+  // [FIX-TAB] switchTab() sudah handle UI + state sekaligus, bukan selector manual
   setTimeout(() => {
-    document.querySelectorAll('.scanner-tab').forEach(t => t.classList.remove('active'));
-    const confirmTab = document.querySelector('.scanner-tab[data-tab="CONFIRM"]');
-    if (confirmTab) { confirmTab.classList.add('active'); activeTab = 'CONFIRM'; }
+    switchTab('CONFIRM');
     loadScanner('CONFIRM', iso);
-    toast('📅 Event CONFIRM tgl ' + iso.split('-')[2] + ' ditampilkan', 'info', 3000);
-  }, 300);
+    const d = iso.split('-'); toast('📅 Tanggal ' + d[2] + '/' + d[1], 'info', 2000);
+  }, 80);
 }
 </script>
 <!-- ─── RANGE AVAILABILITY POPUP ─────────────────────────── -->
@@ -1857,7 +2062,8 @@ let _logFilter = 'ALL';
 
 const ACTION_LABEL = {
   CREATE:'✦ CREATE', UPDATE:'✎ UPDATE', DELETE:'🗑 DELETE',
-  CHANGE_DATE:'📅 DATE', CHANGE_VENUE:'🏛 VENUE', MOVE:'↗ MOVE', FORCE_VENUE:'⚡ FORCE'
+  CHANGE_DATE:'📅 DATE', CHANGE_VENUE:'🏛 VENUE', MOVE:'↗ MOVE', FORCE_VENUE:'⚡ FORCE',
+  CREATE:'✦ CREATE', UPDATE:'✏ UPDATE' // [OVF] tambah label untuk OVERFLOW events
 };
 
 async function openLogsPopup() {
