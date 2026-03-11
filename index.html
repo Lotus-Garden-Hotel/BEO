@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Banquet Dashboard - V.9.4 Precision</title>
+    <title>Banquet Dashboard - LOTUS GARDEN</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -27,7 +27,30 @@
         .follow-up-badge { background: #f59e0b; color: #000; font-size: 6px; font-weight: 900; padding: 1px 3px; border-radius: 2px; text-transform: uppercase; margin-left: 4px; animation: blink 2s infinite; }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         
-        .btn-top { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 10px; transition: 0.2s; font-size: 14px; }
+        .btn-top { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 10px; transition: 0.2s; font-size: 14px; position: relative; }
+        .btn-top[title]::after {
+            content: attr(title);
+            position: fixed;
+            bottom: auto;
+            top: 52px;
+            left: auto;
+            background: #1e293b;
+            color: #f8fafc;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            padding: 5px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(201,168,76,.3);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity .15s ease;
+            z-index: 9999;
+            transform: translateX(-30%);
+        }
+        .btn-top[title]:hover::after { opacity: 1; }
         .btn-logout { background: rgba(244, 63, 94, 0.1); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.2); }
 
         #event-container { overflow-y: auto; scrollbar-width: none; flex: 1; min-height: 0; }
@@ -150,50 +173,7 @@
         .ev-badge-pax   { color:#38bdf8; background:rgba(56,189,248,.08); border:1px solid rgba(56,189,248,.2); }
         .ev-badge-setup { color:#a78bfa; background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2); }
 
-        /* ── Action Button Tooltips ── */
-        .action-btn { position: relative; }
-        .action-btn[data-tip]::after {
-            content: attr(data-tip);
-            position: absolute;
-            bottom: calc(100% + 8px);
-            left: 50%;
-            transform: translateX(-50%);
-            background: #1e293b;
-            color: #f8fafc;
-            font-size: 9px;
-            font-weight: 700;
-            letter-spacing: .06em;
-            text-transform: uppercase;
-            white-space: nowrap;
-            padding: 5px 9px;
-            border-radius: 7px;
-            border: 1px solid rgba(201,168,76,.25);
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity .15s ease, transform .15s ease;
-            transform: translateX(-50%) translateY(4px);
-            z-index: 999;
-        }
-        .action-btn[data-tip]::before {
-            content: '';
-            position: absolute;
-            bottom: calc(100% + 3px);
-            left: 50%;
-            transform: translateX(-50%);
-            border: 5px solid transparent;
-            border-top-color: rgba(201,168,76,.25);
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity .15s ease;
-            z-index: 999;
-        }
-        .action-btn[data-tip]:hover::after {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-        .action-btn[data-tip]:hover::before {
-            opacity: 1;
-        }
+
     </style>
 </head>
 <body class="no-scrollbar">
@@ -219,8 +199,8 @@
     <div class="flex justify-between items-center px-1 flex-none">
         <div><h1 class="text-[12px] font-black italic uppercase text-indigo-400">Banquet Dashboard</h1><p class="text-[6px] font-bold text-slate-500 tracking-widest uppercase text-left">System Informasi Banquet LGH</p></div>
         <div class="flex gap-2">
-            <button onclick="toggleNightMode()" id="night-btn" class="btn-top bg-slate-800 border border-slate-700">🌙</button>
-            <button onclick="logoutManual()" class="btn-top btn-logout">
+            <button onclick="toggleNightMode()" id="night-btn" class="btn-top bg-slate-800 border border-slate-700" title="Mode Malam">🌙</button>
+            <button onclick="logoutManual()" class="btn-top btn-logout" title="Keluar dari Sistem">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
             </button>
             <button onclick="window.location.href='graphics.html'" class="bg-indigo-500/20 text-indigo-400 px-3 py-1.5 rounded-full text-[8px] font-black border border-indigo-500/30">ANALYTICS →</button>
@@ -253,15 +233,15 @@
             <button onclick="setStatusFilter('DONE')" id="btn-DONE" class="filter-btn text-indigo-400">DONE</button>
         </div>
         <div class="flex gap-1.5 pl-2 border-l border-white/10">
-            <button onclick="openAvailModal()" id="btn-check-avail" class="action-btn" data-tip="Cek Ketersediaan">
+            <button onclick="openAvailModal()" id="btn-check-avail" class="action-btn" title="Cek Ketersediaan Venue">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
                     <line x1="3" y1="10" x2="21" y2="10"/><polyline points="9 16 11 18 15 14"/>
                 </svg>
             </button>
-            <button onclick="toggleHighValue()" id="btn-hv" class="action-btn" data-tip="Filter High Value">💎</button>
-            <button onclick="filterAllTentative()" id="btn-tent-all" class="action-btn" style="color:#f59e0b" data-tip="Tentative Alert">🔔</button>
-            <button onclick="refreshData()" id="btn-refresh" class="action-btn" data-tip="Refresh Data">🔄</button>
+            <button onclick="toggleHighValue()" id="btn-hv" class="action-btn" title="Filter High Value (≥10 Juta)">💎</button>
+            <button onclick="filterAllTentative()" id="btn-tent-all" class="action-btn" style="color:#f59e0b" title="Cek Semua Tentative">🔔</button>
+            <button onclick="refreshData()" id="btn-refresh" class="action-btn" title="Refresh Data">🔄</button>
         </div>
     </div>
 
