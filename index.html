@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Banquet Dashboard - V.9.4 Precision</title>
+    <title>Banquet LIVE Dashboard - LOTUS GARDEN HOTEL</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -144,6 +144,11 @@
         .ix-spin { width:18px; height:18px; border:2px solid rgba(255,255,255,.1); border-top-color:#c9a84c; border-radius:50%; animation:ixSpin .8s linear infinite; }
         @keyframes ixSpin { to{transform:rotate(360deg)} }
         .ix-date-label { font-size:9px; color:#475569; font-weight:700; text-transform:uppercase; margin-bottom:8px; letter-spacing:.1em; }
+        /* ── Event & Scanner badges ── */
+        .ev-badge       { font-size:8px; font-weight:700; border-radius:6px; padding:2px 7px; letter-spacing:.02em; white-space:nowrap; display:inline-flex; align-items:center; gap:3px; }
+        .ev-badge-time  { color:#f59e0b; background:rgba(245,158,11,.1);  border:1px solid rgba(245,158,11,.25); }
+        .ev-badge-pax   { color:#38bdf8; background:rgba(56,189,248,.08); border:1px solid rgba(56,189,248,.2); }
+        .ev-badge-setup { color:#a78bfa; background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2); }
     </style>
 </head>
 <body class="no-scrollbar">
@@ -277,7 +282,7 @@
             return fresh;
         }
 
-        const GAS_URL    = 'https://script.google.com/macros/s/AKfycbxN-scggECOGZXqsOuII_AftWN8VXkRR9qaj_wbX6VXwqGespdwvCVWA-SirJs_0fXc/exec';
+        const GAS_URL    = 'https://script.google.com/macros/s/AKfycbyAEH36_neKveCl4uLiYd-VnH3Fy8rjrInA_SL15siYPwGojK-nuJZFuRpLDifoIW1_/exec';
         const TIMEOUT_MS = 12000;
 
         async function gasRaw(params) {
@@ -427,8 +432,9 @@
                         const safeStat   = esc(sStat);
                         const safeName   = esc(r[10]);
                         const safePax    = esc(r[11] || '0');
-                        // r[16] = kolom Q Summary sheet (Waktu/Time)
+                        // r[16]=kolom Q(Waktu), r[17]=kolom R(Setup)
                         const safeTime   = r[16] ? esc(r[16].toString().trim()) : '';
+                        const safeSetup  = r[17] ? esc(r[17].toString().trim()) : '';
                         html += `<div class="bg-white/[0.03] border border-white/5 rounded-xl p-2 relative ${isTent ? 'tentative-glow' : ''}">
                             <div class="absolute top-0 right-0 flex items-center z-10 text-[5.5px] font-black uppercase">
                                 <span class="bg-indigo-500/10 text-indigo-300 px-1.5 py-0.5 border-l border-white/5">${safeDate}</span>
@@ -439,7 +445,10 @@
                             <div class="flex justify-between items-end leading-none mt-1">
                                 <div class="flex flex-col gap-0.5">
                                     <p class="text-lg font-black text-white leading-none">${safePax}<span class="text-[6px] text-slate-600 ml-0.5 tracking-tighter">PAX</span></p>
-                                    ${safeTime ? `<span class="text-amber-400/80 text-[8px] font-bold">🕐 ${safeTime}</span>` : ''}
+                                    <div class="flex gap-1 flex-wrap mt-0.5">
+                                        ${safeTime  ? `<span class="ev-badge ev-badge-time">🕐 ${safeTime}</span>`   : ''}
+                                        ${safeSetup ? `<span class="ev-badge ev-badge-setup">🪑 ${safeSetup}</span>` : ''}
+                                    </div>
                                 </div>
                                 <p class="text-emerald-400 text-[11px] font-black">${formatRp(gVal)}</p>
                             </div>
@@ -481,7 +490,8 @@
                         let cCol = sStat.includes("DONE") ? 'text-indigo-300 bg-indigo-500/20' :
                             (sStat.includes("CONFIRM") ? 'text-emerald-400 bg-emerald-500/10' :
                             (isTent ? 'text-amber-400 bg-amber-500/10' : 'text-slate-400 bg-white/5'));
-                        const safeTime = ovf.time ? `<span class="text-amber-400/80 text-[8px] font-bold">🕐 ${esc(ovf.time)}</span>` : '';
+                        const safeTime  = ovf.time    ? `<span class="ev-badge ev-badge-time">🕐 ${esc(ovf.time)}</span>`      : '';
+                        const safeSetup2 = ovf.package ? `<span class="ev-badge ev-badge-setup">🪑 ${esc(ovf.package)}</span>` : '';
                         html += `<div class="bg-white/[0.03] border border-amber-500/20 rounded-xl p-2 relative ${isTent ? 'tentative-glow' : ''}">
                             <div class="absolute top-0 right-0 flex items-center z-10 text-[5.5px] font-black uppercase">
                                 <span class="bg-amber-500/10 text-amber-400 px-1.5 py-0.5">✦ OVF</span>
@@ -493,7 +503,7 @@
                             <div class="flex justify-between items-end leading-none mt-1">
                                 <div class="flex flex-col gap-0.5">
                                     <p class="text-lg font-black text-white leading-none">${esc(String(pVal))}<span class="text-[6px] text-slate-600 ml-0.5 tracking-tighter">PAX</span></p>
-                                    ${safeTime}
+                                    <div class="flex gap-1 flex-wrap mt-0.5">${safeTime}${safeSetup2}</div>
                                 </div>
                                 <p class="text-emerald-400 text-[11px] font-black">${formatRp(gVal)}</p>
                             </div>
@@ -687,7 +697,7 @@
                         if (!allRows[key]) allRows[key] = {};
                         const vk = r.venue;
                         if (!allRows[key][vk]) allRows[key][vk] = [];
-                        allRows[key][vk].push({ status: r.status, customer: r.customer, source: r.source || 'BULAN', time: r.time || '' });
+                        allRows[key][vk].push({ status: r.status, customer: r.customer, source: r.source || 'BULAN', time: r.time || '', pax: r.pax || '', package: r.package || '' });
                     });
                 });
             } catch(e) {
@@ -826,16 +836,16 @@
                     const iso  = yr + '-' + mo + '-' + dNum;
                     const stat = (r.status||'').toUpperCase();
                     const cls  = stat==='TENTATIVE' ? 'ix-s-tentative' : stat==='CONFIRM' ? 'ix-s-confirm' : stat==='DONE' ? 'ix-s-done' : 'ix-s-none';
-                    const ovfBadge  = r.source==='OVERFLOW' ? ' <span style="font-size:8px;color:#c9a84c">✦ OVF</span>' : '';
-                    const timeBadge = r.time
-                        ? `<span style="font-size:9px;font-weight:700;color:#f59e0b;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);border-radius:5px;padding:2px 7px">🕐 ${esc(r.time)}</span>`
-                        : '';
+                    const ovfBadge = r.source==='OVERFLOW' ? ' <span style="font-size:8px;color:#c9a84c">✦ OVF</span>' : '';
+                    const timeBadge = r.time    ? `<span class="ev-badge ev-badge-time">🕐 ${esc(r.time)}</span>`        : '';
+                    const paxBadge  = r.pax && r.pax !== '0' ? `<span class="ev-badge ev-badge-pax">👤 ${esc(r.pax)}</span>` : '';
+                    const pkgBadge  = r.package ? `<span class="ev-badge ev-badge-setup">🪑 ${esc(r.package)}</span>`    : '';
                     return `<div class="ix-event-card">
                         <div class="ix-event-name">${esc(r.customer||'—')}${ovfBadge}</div>
                         <div class="ix-event-meta">${esc(iso.split('-').reverse().join('/'))} · ${esc(r.venue||'')}</div>
-                        <div style="margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                        <div style="margin-top:6px;display:flex;align-items:center;gap:5px;flex-wrap:wrap">
                             <span class="ix-event-status ${cls}">${stat || 'No Status'}</span>
-                            ${timeBadge ? timeBadge : ''}
+                            ${timeBadge}${paxBadge}${pkgBadge}
                         </div>
                     </div>`;
                 }).join('');
