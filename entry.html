@@ -51,7 +51,7 @@
     }
 
     /* ── Header ── */
-    .header { display:flex; align-items:center; justify-content:space-between; animation:fadeUp .5s ease both; }
+    .header { display:flex; align-items:center; justify-content:space-between; animation:fadeUp .5s ease both; min-width:0; overflow:visible; }
     .brand-name {
       font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:700; letter-spacing:.08em;
       background:linear-gradient(90deg,var(--gold) 0%,var(--gold3) 40%,var(--gold) 100%);
@@ -59,14 +59,22 @@
       animation:shimmer 4s linear infinite; line-height:1;
     }
     .brand-sub { font-size:7px; font-weight:500; letter-spacing:.35em; color:var(--dim); text-transform:uppercase; }
-    .header-actions { display:flex; gap:6px; align-items:center; }
+    .header-actions { display:flex; gap:5px; align-items:center; flex-wrap:nowrap; flex-shrink:0; }
     .btn-icon {
       width:36px; height:36px; border-radius:10px; background:var(--card); border:1px solid var(--border);
       display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative;
-      transition:border-color .2s; font-size:15px;
+      transition:border-color .2s; font-size:15px; flex-shrink:0;
     }
     .btn-icon:active { transform:scale(.93); }
     .btn-icon:hover  { border-color:var(--gold); }
+    @media (max-width:420px) {
+      .btn-icon { width:30px; height:30px; font-size:13px; border-radius:8px; }
+      .header-actions { gap:4px; }
+    }
+    @media (max-width:360px) {
+      .btn-icon { width:28px; height:28px; font-size:12px; border-radius:7px; }
+      .header-actions { gap:3px; }
+    }
     .notif-badge {
       position:absolute; top:-4px; right:-4px; min-width:16px; height:16px; padding:0 4px;
       background:var(--gold); color:var(--black); border-radius:8px; font-size:8px; font-weight:700;
