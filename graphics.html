@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Banquet Analytics - LOTUS</title>
+    <title>Banquet Analytics - V.6.4 [Full Sync]</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
@@ -48,7 +48,7 @@
     </div>
 
     <div class="space-y-4">
-        <div class="card-base">
+        <div id="gr-revenue-card" class="card-base">
             <div class="flex justify-between items-start mb-6">
                 <div>
                     <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Revenue Stream</p>
@@ -63,7 +63,7 @@
         </div>
 
         <div class="grid grid-cols-2 gap-2">
-            <div class="card-base text-center border-b-2 border-emerald-500 py-3">
+            <div id="gr-annual-prog" class="card-base text-center border-b-2 border-emerald-500 py-3">
                 <p class="text-[7px] font-black text-slate-500 uppercase mb-1 tracking-widest">Annual Progress</p>
                 <h2 id="annual-progress" class="text-lg font-black text-emerald-400">0%</h2>
             </div>
@@ -74,7 +74,7 @@
         </div>
 
         <div class="grid grid-cols-2 gap-2">
-            <div class="card-base text-center border-b-2 border-indigo-500 py-3">
+            <div id="gr-avg-ach" class="card-base text-center border-b-2 border-indigo-500 py-3">
                 <p class="text-[7px] font-black text-slate-500 uppercase mb-1 tracking-widest">Avg Achievement</p>
                 <h2 id="avg-ach" class="text-lg font-black text-indigo-400">0%</h2>
             </div>
@@ -92,18 +92,11 @@
 
     <script>
         // [SEC-01] Firebase Auth — sama dengan index.html
-        const firebaseConfig = {
-            apiKey: "AIzaSyCX0--DGM_tp_2y7hBbrGiMfeVyToVD4zM",
-            authDomain: "banquet-dashboard-kediri.firebaseapp.com",
-            projectId: "banquet-dashboard-kediri",
-            storageBucket: "banquet-dashboard-kediri.firebasestorage.app",
-            messagingSenderId: "716626784276",
-            appId: "1:716626784276:web:4f7d4d51dace341d21b701"
-        };
+        const firebaseConfig = { apiKey: "AIzaSyCX0--DGM_tp_2y7hBbrGiMfeVyToVD4zM", authDomain: "banquet-dashboard-kediri.firebaseapp.com", projectId: "banquet-dashboard-kediri", storageBucket: "banquet-dashboard-kediri.firebasestorage.app", messagingSenderId: "716626784276", appId: "1:716626784276:web:4f7d4d51dace341d21b701" };
         firebase.initializeApp(firebaseConfig);
         const _provider = new firebase.auth.GoogleAuthProvider();
 
-        const GAS_URL    = 'https://script.google.com/macros/s/AKfycbxN-scggECOGZXqsOuII_AftWN8VXkRR9qaj_wbX6VXwqGespdwvCVWA-SirJs_0fXc/exec';
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbw9Qy5YrMUfjR3_grkM2x32cNzWETbeJzEHBni6RvbL704Q6AZGVWcyOoSq8tRQU2aG/exec';
         const TIMEOUT_MS = 12000;
         const TOKEN_TTL_MS = 55 * 60 * 1000;
         let _cachedToken = null, _tokenFetchedAt = 0;
@@ -169,9 +162,11 @@
                     // ✅ Diizinkan
                     _authVerified = true;
                     _cachedToken = idToken; _tokenFetchedAt = Date.now();
+                    window._userRole = res.role || 'STAFF';
                     err.classList.add('hidden');
                     gate.classList.add('hidden');
                     shell.classList.remove('hidden');
+                    applyRoleUI(res.role || 'STAFF');
                     const savedMode = localStorage.getItem('nightMode');
                     if (savedMode === 'enabled') document.body.classList.add('night-mode');
                     setTimeout(fetchData, 50);
@@ -211,6 +206,29 @@
                     const err = document.getElementById('auth-error');
                     err.textContent = '⚠ Gagal login. Periksa koneksi dan coba lagi.';
                     err.classList.remove('hidden');
+                }
+            }
+        }
+
+        // [ROLE] Sembunyikan grafik finansial untuk STAFF
+        function applyRoleUI(role) {
+            if (role === 'STAFF') {
+                // Sembunyikan Revenue Stream chart
+                const revCard = document.getElementById('gr-revenue-card');
+                if (revCard) revCard.style.display = 'none';
+                // Sembunyikan Annual Progress (budget-based)
+                const annProg = document.getElementById('gr-annual-prog');
+                if (annProg) annProg.style.display = 'none';
+                // Sembunyikan Avg Achievement (budget-based)
+                const avgAch = document.getElementById('gr-avg-ach');
+                if (avgAch) avgAch.style.display = 'none';
+                // Tampilkan notice
+                const shell = document.getElementById('app-shell');
+                if (shell) {
+                    const notice = document.createElement('div');
+                    notice.style.cssText = 'text-align:center;padding:6px 12px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);border-radius:10px;font-size:9px;font-weight:700;color:#818cf8;letter-spacing:.08em;margin-bottom:8px';
+                    notice.textContent = '🔒 TAMPILAN TERBATAS — MODE STAFF';
+                    shell.insertBefore(notice, shell.firstElementChild.nextSibling);
                 }
             }
         }

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BEO Approval — Lotus Garden by WH</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --gold:#c9a84c;--gold-dk:#a07830;--gold-lt:#e8d5a0;
+    --ink:#1a1610;--bg:#0d0b08;--card:#18140f;--border:#3d3028;
+    --green:#2d7a3a;--green-lt:#3da84f;--red:#8b2020;
+  }
+  html,body{min-height:100vh;background:var(--bg);display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif;}
+  .wrap{width:100%;max-width:420px;padding:20px 16px;}
+  .logo-row{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:24px;}
+  .logo-row img{width:52px;height:auto;}
+  .logo-row h1{font-size:13px;font-weight:800;color:var(--gold);letter-spacing:.2em;text-transform:uppercase;}
+  .card{background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:28px 24px;text-align:center;}
+  .icon{font-size:48px;margin-bottom:12px;display:block;}
+  .dept-badge{display:inline-block;background:linear-gradient(90deg,var(--gold-dk),var(--gold));color:var(--ink);font-size:11px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;padding:4px 14px;border-radius:20px;margin-bottom:14px;}
+  .beo-id{font-size:12px;color:var(--gold-lt);letter-spacing:.1em;margin-bottom:8px;font-weight:600;}
+  .title{font-size:18px;font-weight:800;color:#f0e8d0;margin-bottom:6px;}
+  .sub{font-size:12px;color:#7a6a54;margin-bottom:28px;line-height:1.6;}
+  .btn{width:100%;padding:16px;border:none;border-radius:12px;font-size:14px;font-weight:800;letter-spacing:.08em;cursor:pointer;transition:all .2s;margin-bottom:10px;}
+  .btn-approve{background:linear-gradient(135deg,var(--green),var(--green-lt));color:#fff;}
+  .btn-approve:hover{filter:brightness(1.1);transform:translateY(-1px);}
+  .btn-approve:active{transform:translateY(0);}
+  .btn-secondary{background:transparent;border:1px solid var(--border);color:#7a6a54;font-size:12px;padding:10px;}
+  /* States */
+  .state{display:none;}
+  .state.active{display:block;}
+  /* Success */
+  .success-card{background:linear-gradient(135deg,#0d1f10,#0f2015);border-color:var(--green);}
+  .success-icon{font-size:64px;margin-bottom:16px;display:block;}
+  .success-title{font-size:20px;font-weight:800;color:#6ddc85;margin-bottom:8px;}
+  .success-time{font-size:11px;color:#3a6a44;margin-top:12px;}
+  /* Already done */
+  .already-card{background:#0d0f1a;border-color:#3d4070;}
+  .already-title{color:#9090d0;font-size:18px;font-weight:800;margin-bottom:8px;}
+  /* Error */
+  .error-card{background:#1a0d0d;border-color:var(--red);}
+  .error-title{color:#e06060;font-size:18px;font-weight:800;margin-bottom:8px;}
+  /* Loading */
+  .spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:20px auto;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-text{color:#7a6a54;font-size:13px;margin-top:8px;}
+  /* Divider */
+  .divider{border:none;border-top:1px solid var(--border);margin:20px 0;}
+  .hint{font-size:10px;color:#4a3a2a;line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo-row">
+    <div>
+      <h1>Lotus Garden by WH</h1>
+    </div>
+  </div>
+
+  <!-- STATE: CONFIRM -->
+  <div class="card state active" id="state-confirm">
+    <span class="icon">📋</span>
+    <div class="dept-badge" id="dept-label">—</div>
+    <div class="beo-id" id="beo-id-display">Loading...</div>
+    <div class="title">Konfirmasi Approval</div>
+    <div class="sub">Anda akan memberikan persetujuan sebagai<br>perwakilan departemen untuk BEO ini.</div>
+    <button class="btn btn-approve" onclick="doApprove()">✅ SETUJU &amp; APPROVE</button>
+    <button class="btn btn-secondary" onclick="showCancel()">Batal</button>
+    <hr class="divider">
+    <div class="hint">Dengan menekan tombol Approve, Anda menyatakan telah membaca dan menyetujui instruksi dalam BEO yang dikirimkan.</div>
+  </div>
+
+  <!-- STATE: LOADING -->
+  <div class="card state" id="state-loading">
+    <div class="spinner"></div>
+    <div class="loading-text">Memproses approval...</div>
+  </div>
+
+  <!-- STATE: SUCCESS -->
+  <div class="card success-card state" id="state-success">
+    <span class="success-icon">✅</span>
+    <div class="dept-badge" id="success-dept">—</div>
+    <div class="success-title">Approval Berhasil!</div>
+    <div class="sub">Terima kasih. Persetujuan Anda telah tercatat dalam sistem Banquet Elite.</div>
+    <div class="success-time" id="success-time"></div>
+  </div>
+
+  <!-- STATE: ALREADY DONE -->
+  <div class="card already-card state" id="state-already">
+    <span class="icon">🔒</span>
+    <div class="already-title">Sudah Di-Approve</div>
+    <div class="sub">Approval dari departemen ini sudah pernah dikonfirmasi sebelumnya.</div>
+  </div>
+
+  <!-- STATE: ERROR -->
+  <div class="card error-card state" id="state-error">
+    <span class="icon">⚠️</span>
+    <div class="error-title">Link Tidak Valid</div>
+    <div class="sub" id="error-msg">Token approval tidak ditemukan atau sudah kadaluarsa. Hubungi tim Sales untuk link baru.</div>
+  </div>
+</div>
+
+<script>
+const GAS_URL = localStorage.getItem('https://script.google.com/macros/s/AKfycbxspkLL20a_kgR7OKPWjoNr0tebcS77VxiNX8smdmylh_xz1_ZgQPv-b24Ob_uw2RqS/exec') ||
+                'https://script.google.com/macros/s/AKfycbxspkLL20a_kgR7OKPWjoNr0tebcS77VxiNX8smdmylh_xz1_ZgQPv-b24Ob_uw2RqS/exec';
+
+const params  = new URLSearchParams(location.search);
+const token   = params.get('t');
+let   _dept   = '';
+let   _beoId  = '';
+
+// Decode info dari token prefix (opsional — bisa di-strip untuk ringkas)
+// Token format: 32 char random — info dept/beoId diambil dari GAS saat DO_APPROVE
+// Untuk preview label sebelum approve, info dikirim via URL param tambahan
+_dept   = decodeURIComponent(params.get('dept')  || '');
+_beoId  = decodeURIComponent(params.get('beo')   || '');
+
+function show(id) {
+  document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function init() {
+  if (!token) { show('state-error'); return; }
+  document.getElementById('dept-label').textContent     = _dept  || 'Departemen';
+  document.getElementById('beo-id-display').textContent = _beoId || 'BEO';
+}
+
+async function doApprove() {
+  show('state-loading');
+  try {
+    const url = GAS_URL + '?' + new URLSearchParams({ action:'DO_APPROVE', token });
+    const res = await fetch(url);
+    const d   = await res.json();
+    if (d.ok) {
+      if (d.alreadyDone) {
+        show('state-already');
+      } else {
+        document.getElementById('success-dept').textContent = d.dept || _dept;
+        document.getElementById('success-time').textContent = d.approvedAt ? '⏱ ' + d.approvedAt : '';
+        show('state-success');
+      }
+    } else {
+      document.getElementById('error-msg').textContent = d.msg || 'Terjadi kesalahan.';
+      show('state-error');
+    }
+  } catch(e) {
+    document.getElementById('error-msg').textContent = 'Gagal terhubung ke server. Coba lagi.';
+    show('state-error');
+  }
+}
+
+function showCancel() {
+  if (confirm('Batalkan approval? Link ini masih bisa digunakan nanti.')) {
+    window.close();
+  }
+}
+
+init();
+</script>
+</body>
+</html>
