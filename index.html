@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Banquet Dashboard - LOTUS GARDEN HOTEL</title>
+    <title>Dashboard Information - BANQUET LOTUS GARDEN HOTEL</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -23,6 +23,15 @@
         #btn-check-avail { background: rgba(99,102,241,0.12); border-color: rgba(99,102,241,0.35); color: #818cf8; }
         #btn-check-avail:hover { background: rgba(99,102,241,0.22); }
         
+        /* ── BEO card tap feedback ── */
+        [onclick*="openBeoFull"]:active {
+            opacity: .75;
+            transform: scale(.985);
+        }
+        [onclick*="openBeoFull"] {
+            transition: opacity .15s, transform .15s;
+        }
+
         .tentative-glow { border: 1.2px solid #f59e0b !important; box-shadow: inset 0 0 10px rgba(245, 158, 11, 0.05); }
         .today-glow { border: 1.5px solid #22c55e !important; box-shadow: 0 0 14px rgba(34,197,94,.35), inset 0 0 12px rgba(34,197,94,.05); }
         .today-pulse { display:inline-flex; align-items:center; gap:4px; font-size:7px; font-weight:900; letter-spacing:.12em; color:#22c55e; background:rgba(34,197,94,.12); border:1px solid rgba(34,197,94,.35); border-radius:99px; padding:2px 7px; }
@@ -204,6 +213,7 @@
         <div><h1 class="text-[12px] font-black italic uppercase text-indigo-400">Banquet Dashboard</h1><p class="text-[6px] font-bold text-slate-500 tracking-widest uppercase text-left">System Informasi Banquet LGH</p></div>
         <div class="flex gap-2">
             <button onclick="toggleNightMode()" id="night-btn" class="btn-top bg-slate-800 border border-slate-700" title="Mode Malam">🌙</button>
+            <button onclick="openWAHistory()" class="btn-top" style="background:rgba(37,211,102,.1);border:1px solid rgba(37,211,102,.25);color:#25d366;font-size:15px;" title="History Pengiriman WA">📬</button>
             <button onclick="logoutManual()" class="btn-top btn-logout" title="Keluar dari Sistem">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
             </button>
@@ -264,7 +274,7 @@
     </div>
 
     <div class="flex-none space-y-2 pb-1">
-        <div class="card-base bg-gradient-to-br from-indigo-950/40 to-black/40 border-indigo-500/20 p-3">
+        <div id="perf-card" class="card-base bg-gradient-to-br from-indigo-950/40 to-black/40 border-indigo-500/20 p-3">
             <div class="flex justify-between items-end mb-2">
                 <div class="flex flex-col">
                     <p id="mtd-label" class="text-[7px] font-black text-indigo-300 tracking-[0.2em] uppercase">PERFORMANCE</p>
@@ -311,7 +321,7 @@
             return fresh;
         }
 
-        const GAS_URL    = 'https://script.google.com/macros/s/AKfycbyAEH36_neKveCl4uLiYd-VnH3Fy8rjrInA_SL15siYPwGojK-nuJZFuRpLDifoIW1_/exec';
+        const GAS_URL    = 'https://script.google.com/macros/s/AKfycbxmb4EsbScFw72p3lejQ3x_plMuAF5ALGjRIVnlkx1S8rIUgdC_wdkpo6dRx-laXtQl/exec';
         const TIMEOUT_MS = 12000;
 
         async function gasRaw(params) {
@@ -366,6 +376,8 @@
                     // ✅ Diizinkan
                     _authVerified = true;
                     _cachedToken = idToken; _tokenFetchedAt = Date.now();
+                    window._userRole = res.role || 'STAFF'; // simpan role
+                    applyRoleUI(res.role || 'STAFF');
                     if (errEl) errEl.style.display = 'none';
                     gate.style.transform = 'translateY(-100%)';
                     setTimeout(() => { gate.style.display = 'none'; handleInit(); }, 500);
@@ -395,6 +407,21 @@
         });
 
         async function loginWithGoogle() { try { await firebase.auth().signInWithPopup(provider); } catch (e) { console.error(e); } }
+        // [ROLE] Sembunyikan elemen finansial untuk STAFF
+        function applyRoleUI(role) {
+            if (role === 'STAFF') {
+                // Sembunyikan seluruh Performance card (Budget, ACH%, Variance, progress bar)
+                const perf = document.getElementById('perf-card');
+                if (perf) perf.style.display = 'none';
+                // Sembunyikan NETT (COPY) di summary bar
+                const nettEl = document.getElementById('daily-nett');
+                if (nettEl) {
+                    const nettRow = nettEl.closest('.flex');
+                    if (nettRow) nettRow.style.display = 'none';
+                }
+            }
+        }
+
         function logoutManual() { if(confirm('Logout dari sistem?')) { _cachedToken = null; _tokenFetchedAt = 0; _authVerified = false; _authInFlight = false; firebase.auth().signOut(); } }
 
         // Populate Month Dropdown
@@ -472,13 +499,23 @@
                         const isToday = evDate.getTime() === todayRaw.getTime();
                         const todayBadge = isToday ? `<span class="today-pulse"><span class="today-dot"></span>TODAY'S EVENT</span>` : '';
                         const cardBorder = isTent ? 'tentative-glow' : (isToday ? 'today-glow' : '');
-                        evList.push({ evDate, gVal, html: `<div class="bg-white/[0.03] border border-white/5 rounded-xl p-2 relative ${cardBorder}">
+                        const isoFull = `${yP || todayRaw.getFullYear()}-${String(mP).padStart(2,'0')}-${String(dP).padStart(2,'0')}`;
+                        const venueRaw = r[15] || '';
+                        const beoKey = _beoDataIdx++;
+                        _beoDataMap[beoKey] = {
+                            date: isoFull, venue: venueRaw,
+                            customer: r[10]||'', status: (r[13]||'').toUpperCase(),
+                            pax: r[11]||'', price: r[14]||'', time: r[16]||'', setup: r[17]||'',
+                            eventTitle:'', contact:'', phone:'', notes:'', sales:'', package:''
+                        };
+                        evList.push({ evDate, gVal, html: `<div class="bg-white/[0.03] border border-white/5 rounded-xl p-2 relative ${cardBorder}" style="cursor:pointer;" onclick="openBeoFull(${beoKey},event)">
                             <div class="absolute top-0 right-0 flex items-center z-10 text-[5.5px] font-black uppercase">
                                 <span class="bg-indigo-500/10 text-indigo-300 px-1.5 py-0.5 border-l border-white/5">${safeDate}</span>
                                 <span class="bg-white/5 text-slate-400 px-1.5 py-0.5 border-l border-white/5">${safeVenue}</span>
                                 <span class="${cCol} px-1.5 py-0.5 border-l border-white/5">${safeStat}${isTent ? '<span class="follow-up-badge">!</span>' : ''}</span>
+                                <span style="background:linear-gradient(135deg,#8a6e1e,#b8962e);color:#fff;padding:2px 10px;font-size:6px;font-weight:900;letter-spacing:.12em;">📄 BEO</span>
                             </div>
-                            <p class="text-indigo-200/80 text-[9px] font-bold uppercase truncate pr-24 mb-1">${safeName}</p>
+                            <p class="text-indigo-200/80 text-[9px] font-bold uppercase truncate pr-36 mb-1">${safeName}</p>
                             <div class="flex justify-between items-end leading-none mt-1">
                                 <div class="flex flex-col gap-0.5">
                                     <p class="text-lg font-black text-white leading-none">${safePax}<span class="text-[6px] text-slate-600 ml-0.5 tracking-tighter">PAX</span></p>
@@ -524,14 +561,26 @@
                         const isToday2 = evDate.getTime() === todayRaw.getTime();
                         const todayBadge2 = isToday2 ? `<span class="today-pulse"><span class="today-dot"></span>TODAY'S EVENT</span>` : '';
                         const cardBorder2 = isTent ? 'tentative-glow' : (isToday2 ? 'today-glow' : '');
-                        evList.push({ evDate, gVal, html: `<div class="bg-white/[0.03] border border-amber-500/20 rounded-xl p-2 relative ${cardBorder2}">
+                        const isoOvf = `${todayRaw.getFullYear()}-${String(mP).padStart(2,'0')}-${String(dP).padStart(2,'0')}`;
+                        const venueOvf = ovf.venue || '';
+                        const beoKeyOvf = _beoDataIdx++;
+                        _beoDataMap[beoKeyOvf] = {
+                            date: isoOvf, venue: venueOvf,
+                            customer: ovf.customer||'', status: sStat,
+                            pax: String(pVal), price: ovf.price||'', time: ovf.time||'',
+                            setup: ovf.setup||'', package: ovf.package||'',
+                            eventTitle: ovf.eventTitle||'', contact: ovf.contactPerson||ovf.contact||'',
+                            phone: ovf.phone||'', notes: ovf.notes||'', sales: ovf.sales||''
+                        };
+                        evList.push({ evDate, gVal, html: `<div class="bg-white/[0.03] border border-amber-500/20 rounded-xl p-2 relative ${cardBorder2}" style="cursor:pointer;" onclick="openBeoFull(${beoKeyOvf},event)">
                             <div class="absolute top-0 right-0 flex items-center z-10 text-[5.5px] font-black uppercase">
                                 <span class="bg-amber-500/10 text-amber-400 px-1.5 py-0.5">✦ OVF</span>
                                 <span class="bg-indigo-500/10 text-indigo-300 px-1.5 py-0.5 border-l border-white/5">${esc(dStr)}</span>
                                 <span class="bg-white/5 text-slate-400 px-1.5 py-0.5 border-l border-white/5">${esc(ovf.venue||'TBD')}</span>
                                 <span class="${cCol} px-1.5 py-0.5 border-l border-white/5">${esc(sStat)}</span>
+                                <span style="background:linear-gradient(135deg,#8a6e1e,#b8962e);color:#fff;padding:2px 10px;font-size:6px;font-weight:900;letter-spacing:.12em;">📄 BEO</span>
                             </div>
-                            <p class="text-indigo-200/80 text-[9px] font-bold uppercase truncate pr-24 mb-1">${esc(ovf.customer||'—')}</p>
+                            <p class="text-indigo-200/80 text-[9px] font-bold uppercase truncate pr-36 mb-1">${esc(ovf.customer||'—')}</p>
                             <div class="flex justify-between items-end leading-none mt-1">
                                 <div class="flex flex-col gap-0.5">
                                     <p class="text-lg font-black text-white leading-none">${esc(String(pVal))}<span class="text-[6px] text-slate-600 ml-0.5 tracking-tighter">PAX</span></p>
@@ -819,6 +868,94 @@
         // ══ SCANNER ENGINE FUNCTIONS (index) ══════════════════════
         let ixActiveTab = 'TENTATIVE';
         let ixActiveDateFilter = null;
+        let _beoCache = [];
+
+        function openBeo(idx) {
+            const d = _beoCache[idx];
+            if (!d) return;
+            window.location.href = 'beo.html?data=' + encodeURIComponent(JSON.stringify(d));
+        }
+
+        // ── BEO dari main list — fetch data lengkap dulu via CHECK ──────────
+        // CHECK returns: { ok, occupied, data: { customer, status, package, sales, time,
+        //   setup, pax, price, eventTitle, contactPerson, phone, notes, source } }
+        // Show loading state on the clicked card
+        let _beoLoadingEl = null;
+        const _beoDataMap = {};
+        let _beoDataIdx = 0;
+        async function openBeoFull(key, event) {
+            // Prevent double-tap
+            if (_beoLoadingEl) return;
+            if (event && event.currentTarget) {
+                _beoLoadingEl = event.currentTarget;
+                _beoLoadingEl.style.opacity = '.5';
+                _beoLoadingEl.style.pointerEvents = 'none';
+            }
+            const entry = _beoDataMap[key];
+            if (!entry) {
+                _beoLoadingEl = null;   // reset agar bisa klik lagi
+                console.warn('[BEO] entry not found for key:', key);
+                return;
+            }
+            const isoDate = entry.date;
+            const venue   = entry.venue;
+            const basic   = entry;
+            try {
+                // Step 1: Redirect immediately dengan basic data (customer, venue, date, pax, etc.)
+                // Step 2: GAS CHECK dijalankan di background — beo.html tidak perlu menunggu
+                const beoData = {
+                    date:       isoDate,
+                    venue:      venue,
+                    customer:   basic.customer   || '',
+                    status:     basic.status     || '',
+                    package:    basic.package    || '',
+                    sales:      basic.sales      || '',
+                    time:       basic.time       || '',
+                    setup:      basic.setup      || '',
+                    pax:        basic.pax        || '',
+                    price:      basic.price      || '',
+                    eventTitle: basic.eventTitle || '',
+                    contact:    basic.contact    || '',
+                    phone:      basic.phone      || '',
+                    notes:      basic.notes      || '',
+                    _needEnrich: '1',   // flag: beo.html akan enrichment sendiri via CHECK
+                };
+                // Enrich dengan GAS CHECK — jika berhasil, update beoData sebelum redirect
+                try {
+                    const sheetName = AVAIL_MONTHS[parseInt(isoDate.split('-')[1]) - 1];
+                    const idToken   = await getIdToken();
+                    const res = await Promise.race([
+                        gasRaw({ action:'CHECK', date:isoDate, venue, sheetName, idToken }),
+                        new Promise((_,rej) => setTimeout(() => rej(new Error('timeout')), 4000))
+                    ]);
+                    const d = (res && res.ok && res.occupied && res.data) ? res.data : null;
+                    if (d) {
+                        beoData.customer   = d.customer    || beoData.customer;
+                        beoData.status     = d.status      || beoData.status;
+                        beoData.package    = d.package     || beoData.package;
+                        beoData.sales      = d.sales       || beoData.sales;
+                        beoData.time       = d.time        || beoData.time;
+                        beoData.setup      = d.setup       || beoData.setup;
+                        beoData.pax        = d.pax         || beoData.pax;
+                        beoData.price      = d.price       || beoData.price;
+                        beoData.eventTitle = d.eventTitle  || beoData.eventTitle;
+                        beoData.contact    = d.contactPerson || d.contact || beoData.contact;
+                        beoData.phone      = d.phone       || beoData.phone;
+                        beoData.notes      = d.notes       || beoData.notes;
+                    }
+                    beoData._needEnrich = '0';
+                } catch(_) { /* timeout or error — pakai basic data saja */ }
+
+                _beoLoadingEl = null;
+                // sessionStorage lebih reliable dari URL param (tidak ada masalah encoding)
+                try { sessionStorage.setItem('beoData', JSON.stringify(beoData)); } catch(_) {}
+                window.location.href = 'beo.html';
+            } catch(e) {
+                _beoLoadingEl = null;
+                try { sessionStorage.setItem('beoData', JSON.stringify({ ...basic, date: isoDate, venue })); } catch(_) {}
+                window.location.href = 'beo.html';
+            }
+        }
 
         function ixOpenScanner(filterDate) {
             ixActiveDateFilter = filterDate || null;
@@ -876,6 +1013,7 @@
                 const yr  = targetDate.getFullYear();
                 const mo  = String(targetDate.getMonth()+1).padStart(2,'0');
 
+                _beoCache = [];
                 body.innerHTML = rows.map(r => {
                     const dNum = r.day ? String(r.day).padStart(2,'0') : '01';
                     const iso  = yr + '-' + mo + '-' + dNum;
@@ -885,12 +1023,30 @@
                     const timeBadge = r.time    ? `<span class="ev-badge ev-badge-time">🕐 ${esc(r.time)}</span>`        : '';
                     const paxBadge  = r.pax && r.pax !== '0' ? `<span class="ev-badge ev-badge-pax">👤 ${esc(r.pax)}</span>` : '';
                     const pkgBadge  = r.package ? `<span class="ev-badge ev-badge-setup">🪑 ${esc(r.package)}</span>`    : '';
+                    const beoIdx = _beoCache.length;
+                    _beoCache.push({
+                        date: iso,
+                        venue: r.venue || '',
+                        customer: r.customer || '',
+                        eventTitle: r.eventTitle || '',
+                        contact: r.contactPerson || r.contact || '',
+                        phone: r.phone || '',
+                        notes: r.notes || '',
+                        status: r.status || '',
+                        package: r.package || '',
+                        pax: r.pax || '',
+                        time: r.time || '',
+                        setup: r.setup || '',
+                        price: r.price || '',
+                        sales: r.sales || ''
+                    });
                     return `<div class="ix-event-card">
                         <div class="ix-event-name">${esc(r.customer||'—')}${ovfBadge}</div>
                         <div class="ix-event-meta">${esc(iso.split('-').reverse().join('/'))} · ${esc(r.venue||'')}</div>
                         <div style="margin-top:6px;display:flex;align-items:center;gap:5px;flex-wrap:wrap">
                             <span class="ix-event-status ${cls}">${stat || 'No Status'}</span>
                             ${timeBadge}${paxBadge}${pkgBadge}
+                            <button onclick="openBeo(${beoIdx})" style="margin-left:auto;background:linear-gradient(135deg,#8a6e1e,#b8962e);border:none;color:#fff;font-size:7.5px;font-weight:800;letter-spacing:.08em;padding:4px 10px;border-radius:20px;cursor:pointer;display:flex;align-items:center;gap:4px;">📄 BEO</button>
                         </div>
                     </div>`;
                 }).join('');
@@ -903,7 +1059,103 @@
         function filterAllTentative() { if(confirm("Check Status Tentative untuk di Followup.")) { document.getElementById('month-select').value = "ALL"; resetDateOnly(); setStatusFilter('TENTATIVE'); } }
         async function refreshData() { const btn = document.getElementById('btn-refresh'); btn.classList.add('animate-spin'); cachedRows = []; cachedOverflow = []; document.getElementById('customer-search').value = ""; document.getElementById('date-input').value = ''; setStatusFilter('ALL'); setToday(); await updateDashboard(); setTimeout(() => btn.classList.remove('animate-spin'), 600); }
         function handleInit() { const v = new URLSearchParams(window.location.search).get('venue'); if (v) { document.getElementById('month-select').value = "ALL"; document.getElementById('customer-search').value = decodeURIComponent(v); } else { setToday(); } updateDashboard(); }
-    </script>
+    
+        // ── WA HISTORY ──────────────────────────────────────────────────────
+        function openWAHistory() {
+            document.getElementById('modal-wa-history').style.display = 'block';
+            loadWAHistory();
+        }
+        function closeWAHistory() {
+            document.getElementById('modal-wa-history').style.display = 'none';
+        }
+        async function loadWAHistory() {
+            const listEl    = document.getElementById('wah-list');
+            const summaryEl = document.getElementById('wah-summary');
+            const dateVal   = document.getElementById('wah-date').value;
+            const venueVal  = document.getElementById('wah-venue').value.trim();
+
+            listEl.innerHTML = '<div style="text-align:center;color:#2a4a2a;font-size:10px;padding:20px;">⏳ Memuat...</div>';
+            summaryEl.innerHTML = '';
+
+            try {
+                const params = { action: 'READ_WA_LOG' };
+                if (dateVal)  params.filterDate  = dateVal;
+                if (venueVal) params.filterVenue = venueVal;
+
+                const res = await gasRawWA(params);
+                if (!res.ok || !res.logs) {
+                    listEl.innerHTML = '<div style="text-align:center;color:#ef4444;font-size:10px;padding:20px;">Gagal memuat data</div>';
+                    return;
+                }
+
+                const logs = res.logs;
+                if (logs.length === 0) {
+                    listEl.innerHTML = '<div style="text-align:center;color:#2a4a2a;font-size:10px;padding:20px;">Tidak ada history pengiriman</div>';
+                    return;
+                }
+
+                // Summary chips
+                const total    = logs.length;
+                const terkirim = logs.filter(l => l.statusKirim === 'TERKIRIM').length;
+                const gagal    = total - terkirim;
+                summaryEl.innerHTML = `
+                    <div style="background:rgba(37,211,102,.12);border:1px solid rgba(37,211,102,.2);border-radius:20px;padding:3px 10px;font-size:8px;font-weight:700;color:#25d366;">${total} Pengiriman</div>
+                    <div style="background:rgba(37,211,102,.08);border:1px solid rgba(37,211,102,.15);border-radius:20px;padding:3px 10px;font-size:8px;font-weight:700;color:#4ade80;">✅ ${terkirim} Berhasil</div>
+                    ${gagal > 0 ? `<div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:20px;padding:3px 10px;font-size:8px;font-weight:700;color:#f87171;">❌ ${gagal} Gagal</div>` : ''}
+                `;
+
+                // Group by event (date+venue+timestamp batch)
+                const grouped = {};
+                logs.forEach(l => {
+                    const key = l.timestamp.substring(0,16) + '|' + l.venue + '|' + l.date;
+                    if (!grouped[key]) grouped[key] = { meta: l, depts: [] };
+                    grouped[key].depts.push(l);
+                });
+
+                listEl.innerHTML = '';
+                Object.values(grouped).forEach(grp => {
+                    const m = grp.meta;
+                    const allOk = grp.depts.every(d => d.statusKirim === 'TERKIRIM');
+                    const card = document.createElement('div');
+                    card.style.cssText = `background:#0d1a0d;border:1px solid ${allOk ? 'rgba(37,211,102,.2)' : 'rgba(239,68,68,.2)'};border-radius:10px;padding:10px;`;
+
+                    const deptsHtml = grp.depts.map(d =>
+                        `<span style="display:inline-flex;align-items:center;gap:3px;background:${d.statusKirim==='TERKIRIM'?'rgba(37,211,102,.1)':'rgba(239,68,68,.1)'};border:1px solid ${d.statusKirim==='TERKIRIM'?'rgba(37,211,102,.2)':'rgba(239,68,68,.2)'};border-radius:20px;padding:2px 8px;font-size:7.5px;font-weight:700;color:${d.statusKirim==='TERKIRIM'?'#4ade80':'#f87171'};">${d.statusKirim==='TERKIRIM'?'✅':'❌'} ${d.dept}</span>`
+                    ).join('');
+
+                    card.innerHTML = `
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+                            <div>
+                                <div style="font-size:10px;font-weight:800;color:#e8f5e8;">${m.eventTitle||m.customer||'—'}</div>
+                                <div style="font-size:8px;color:#4a6e4a;margin-top:1px;">🏛 ${m.venue} · 📅 ${m.date}</div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-size:7px;color:#2a4a2a;">${m.timestamp}</div>
+                                <div style="font-size:7px;color:#2a5a2a;margin-top:1px;">${m.sender.split('@')[0]}</div>
+                            </div>
+                        </div>
+                        <div style="font-size:8px;color:#4a6e4a;margin-bottom:6px;">📦 ${m.package||'—'} · 👥 ${m.pax||'—'} Pax · ✅ ${m.status||'—'}</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:4px;">${deptsHtml}</div>
+                    `;
+                    listEl.appendChild(card);
+                });
+
+            } catch(e) {
+                listEl.innerHTML = `<div style="text-align:center;color:#ef4444;font-size:10px;padding:20px;">Error: ${e.message}</div>`;
+            }
+        }
+
+        // helper khusus WA history — pakai idToken dari _cachedToken
+        async function gasRawWA(params) {
+            const ctrl = new AbortController();
+            const tid  = setTimeout(() => ctrl.abort(), 15000);
+            try {
+                const tok = _cachedToken || '';
+                const r   = await fetch(GAS_URL + '?' + new URLSearchParams({...params, idToken: tok}), { signal: ctrl.signal });
+                return await r.json();
+            } finally { clearTimeout(tid); }
+        }
+</script>
 <!-- ══ SCANNER ENGINE (index) ══ -->
 <div id="ix-modal-scanner" class="ix-sheet-overlay" onclick="ixCloseScanner()">
   <div class="ix-bottom-sheet" onclick="event.stopPropagation()">
@@ -962,5 +1214,42 @@
   </div>
 </div>
 
+
+    <!-- ══ MODAL WA HISTORY ══════════════════════════════════════════════════ -->
+    <div id="modal-wa-history" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;padding:12px;overflow-y:auto;">
+      <div style="background:#0a0f0a;border:1px solid rgba(37,211,102,.2);border-radius:16px;max-width:500px;margin:0 auto;padding:18px;">
+
+        <!-- Header -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <div>
+            <div style="font-size:12px;font-weight:800;color:#25d366;letter-spacing:.1em;">📬 HISTORY PENGIRIMAN WA</div>
+            <div style="font-size:8px;color:#4a6e4a;margin-top:2px;letter-spacing:.05em;">Log BEO ke Departemen</div>
+          </div>
+          <button onclick="closeWAHistory()" style="background:none;border:none;color:#4a6e4a;font-size:20px;cursor:pointer;line-height:1;">✕</button>
+        </div>
+
+        <!-- Filter row -->
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:12px;">
+          <div>
+            <div style="font-size:7px;font-weight:700;color:#4a6e4a;letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px;">📅 Tgl Event</div>
+            <input id="wah-date" type="date" style="width:100%;background:#0d1a0d;border:1px solid rgba(37,211,102,.2);border-radius:8px;padding:7px 8px;color:#a0d4a0;font-size:10px;outline:none;">
+          </div>
+          <div>
+            <div style="font-size:7px;font-weight:700;color:#4a6e4a;letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px;">🏛 Venue</div>
+            <input id="wah-venue" type="text" placeholder="Semua venue..." style="width:100%;background:#0d1a0d;border:1px solid rgba(37,211,102,.2);border-radius:8px;padding:7px 8px;color:#a0d4a0;font-size:10px;outline:none;">
+          </div>
+          <button onclick="loadWAHistory()" style="background:rgba(37,211,102,.15);border:1px solid rgba(37,211,102,.3);color:#25d366;font-size:9px;font-weight:800;padding:0 12px;border-radius:8px;cursor:pointer;align-self:flex-end;height:32px;letter-spacing:.05em;">🔍 CARI</button>
+        </div>
+
+        <!-- Summary chips -->
+        <div id="wah-summary" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;"></div>
+
+        <!-- Log list -->
+        <div id="wah-list" style="display:flex;flex-direction:column;gap:6px;max-height:55vh;overflow-y:auto;">
+          <div style="text-align:center;color:#2a4a2a;font-size:10px;padding:20px;">Klik 🔍 CARI untuk muat data</div>
+        </div>
+
+      </div>
+    </div>
 </body>
 </html>
