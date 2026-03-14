@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>BanquetLOTUS GARDEN HOTEL — LIVE Edition</title>
+  <title>LOTUS GARDEN HOTEL — Live Edition</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -47,7 +47,7 @@
     .shell {
       position:relative; z-index:1; display:flex; flex-direction:column;
       height:100vh; height:-webkit-fill-available;
-      padding:14px 14px calc(14px + env(safe-area-inset-bottom)); gap:10px;
+      padding:14px 14px 0; gap:10px;
     }
 
     /* ── Header ── */
@@ -93,6 +93,7 @@
       background:var(--card); border:1px solid var(--border); border-radius:20px;
       padding:16px; flex:1; display:flex; flex-direction:column; gap:10px;
       min-height:0; animation:fadeUp .5s .1s ease both; overflow:hidden;
+      padding-bottom:80px;
     }
     .gold-line { height:1px; background:linear-gradient(90deg,transparent,var(--gold),transparent); opacity:.3; flex-shrink:0; }
     .row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
@@ -202,9 +203,16 @@
     .spinner-light { border:2px solid rgba(255,255,255,.15); border-top-color:var(--text); }
 
     /* ── Footer ── */
-    .footer { flex-shrink:0; animation:fadeUp .5s .2s ease both; }
+    .footer {
+      position:fixed; bottom:0; left:0; right:0; z-index:50;
+      display:flex; gap:8px;
+      padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+      background:var(--black);
+      border-top:1px solid var(--border);
+      animation:fadeUp .5s .2s ease both;
+    }
     .footer a {
-      display:block; padding:10px; background:var(--card); border:1px solid var(--border);
+      flex:1; display:block; padding:10px; background:var(--card); border:1px solid var(--border);
       border-radius:12px; text-align:center; text-decoration:none;
       font-size:9px; font-weight:600; letter-spacing:.2em; color:var(--gold); text-transform:uppercase;
       transition:border-color .2s;
@@ -708,6 +716,28 @@
 
       <div class="row2">
         <div class="field">
+          <label>🎪 Event Title</label>
+          <input type="text" id="f-event-title" placeholder="Annual Meeting, Wedding...">
+        </div>
+        <div class="field">
+          <label>🙋 Contact Person</label>
+          <input type="text" id="f-contact" placeholder="Nama PIC customer...">
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>📞 No. Telp</label>
+          <input type="tel" id="f-phone" placeholder="08xx-xxxx-xxxx">
+        </div>
+        <div class="field" style="flex:2">
+          <label>📝 Catatan Khusus</label>
+          <input type="text" id="f-notes" placeholder="Special request, info tambahan...">
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
           <label>⚡ Status</label>
           <select id="f-status" onchange="onStatusChange()">
             <option value="">— Pilih —</option>
@@ -737,14 +767,19 @@
         </div>
       </div>
 
+      <div class="field">
+        <label>🪑 Set Up / Layout</label>
+        <input type="text" id="f-setup" placeholder="Theatre, Classroom, Banquet...">
+      </div>
+
       <div class="row2">
         <div class="field">
           <label>👥 Pax</label>
-          <input type="number" id="f-pax" placeholder="0" oninput="calcRevenue()">
+          <input type="number" id="f-pax" placeholder="0 (opsional)" oninput="calcRevenue()">
         </div>
         <div class="field">
           <label>💰 Harga / Pax</label>
-          <input type="text" id="f-price-display" placeholder="Rp 0" oninput="onPriceInput(this)">
+          <input type="text" id="f-price-display" placeholder="Rp 0 (opsional)" oninput="onPriceInput(this)">
           <input type="hidden" id="f-price">
         </div>
       </div>
@@ -784,6 +819,41 @@
 
   <div class="footer">
     <a id="ui-dashboard" href="#" target="_blank">◆ Open Dashboard ↗</a>
+    <button onclick="openBEO()" id="btn-beo" style="flex:1;background:linear-gradient(135deg,#1e3a5f,#2d5a8e);border:1px solid rgba(100,160,255,.3);color:#7eb8ff;font-size:11px;font-weight:700;letter-spacing:.08em;padding:12px;border-radius:10px;cursor:pointer;">📄 BEO ↗</button>
+    <button onclick="openSendWA()" id="btn-send-wa" style="flex:1;background:linear-gradient(135deg,#0d3320,#1a5c38);border:1px solid rgba(37,211,102,.3);color:#25d366;font-size:11px;font-weight:700;letter-spacing:.08em;padding:12px;border-radius:10px;cursor:pointer;">📲 Kirim Dept</button>
+  </div>
+
+  <!-- MODAL KIRIM WA DEPARTEMEN -->
+  <div id="modal-wa" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;padding:16px;overflow-y:auto;">
+    <div style="background:#1a1410;border:1px solid #3d3028;border-radius:16px;max-width:480px;margin:0 auto;padding:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:800;color:#d4af5a;letter-spacing:.1em;">📲 KIRIM BEO KE DEPARTEMEN</div>
+        <button onclick="closeModalWA()" style="background:none;border:none;color:#7a6e5a;font-size:18px;cursor:pointer;">✕</button>
+      </div>
+
+      <!-- Booking preview -->
+      <div id="wa-preview" style="background:#0d0b08;border:1px solid #2a2218;border-radius:10px;padding:12px;margin-bottom:14px;font-size:10px;color:#b8962e;line-height:1.7;font-family:monospace;"></div>
+
+      <!-- Fonnte token -->
+      <div style="margin-bottom:12px;">
+        <label style="font-size:9px;font-weight:700;color:#7a6e5a;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:4px;">🔑 Fonnte Token</label>
+        <input id="wa-token" type="password" placeholder="Token dari dashboard.fonnte.com" style="width:100%;background:#0d0b08;border:1px solid #3d3028;border-radius:8px;padding:8px 10px;color:#e8e0c8;font-size:10px;outline:none;">
+        <div style="font-size:8px;color:#4a4035;margin-top:3px;">Daftar gratis di fonnte.com → connect WA → copy token</div>
+      </div>
+
+      <!-- Dept list -->
+      <div style="margin-bottom:14px;">
+        <div style="font-size:9px;font-weight:700;color:#7a6e5a;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">📋 Departemen Tujuan</div>
+        <div id="dept-list-container" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+
+      <!-- Action buttons -->
+      <div style="display:flex;gap:8px;">
+        <button onclick="saveWAConfig()" style="flex:1;background:#2a2218;border:1px solid #3d3028;color:#b8962e;font-size:10px;font-weight:700;padding:10px;border-radius:8px;cursor:pointer;">💾 Simpan Config</button>
+        <button onclick="sendWABEO()" id="btn-send-exec" style="flex:2;background:linear-gradient(135deg,#0d3320,#1a5c38);border:1px solid rgba(37,211,102,.4);color:#25d366;font-size:11px;font-weight:800;padding:10px;border-radius:8px;cursor:pointer;">📤 KIRIM SEKARANG</button>
+      </div>
+      <div id="wa-send-result" style="margin-top:10px;font-size:9px;line-height:1.7;"></div>
+    </div>
   </div>
 </div>
 
@@ -817,7 +887,7 @@ let _authInFlight = false;
   const c = (function() {
     try { return JSON.parse(localStorage.getItem('banquet_elite_config')) || null; } catch(_) { return null; }
   })();
-  const DEFAULT_GAS = "https://script.google.com/macros/s/AKfycbxN-scggECOGZXqsOuII_AftWN8VXkRR9qaj_wbX6VXwqGespdwvCVWA-SirJs_0fXc/exec";
+  const DEFAULT_GAS = "https://script.google.com/macros/s/AKfycbxmb4EsbScFw72p3lejQ3x_plMuAF5ALGjRIVnlkx1S8rIUgdC_wdkpo6dRx-laXtQl/exec";
   window._GAS = (c && c.gasUrl) ? c.gasUrl : DEFAULT_GAS;
 })();
 
@@ -933,7 +1003,7 @@ function logoutUser() {
 // ─── CONFIG (dari Master Config) ───────────────────────────────────────────
 const CONFIG_KEY = 'banquet_elite_config';
 const DEFAULT_CFG = {
-  "gasUrl": "https://script.google.com/macros/s/AKfycbxN-scggECOGZXqsOuII_AftWN8VXkRR9qaj_wbX6VXwqGespdwvCVWA-SirJs_0fXc/exec",
+  "gasUrl": "https://script.google.com/macros/s/AKfycbxmb4EsbScFw72p3lejQ3x_plMuAF5ALGjRIVnlkx1S8rIUgdC_wdkpo6dRx-laXtQl/exec",
   "venues": [
     "Ball Room",
     "VIP Room",
@@ -957,7 +1027,7 @@ const DEFAULT_CFG = {
     "TINA"
   ],
   "brand": "LOTUS GARDEN HOTEL",
-  "version": "BEO LIVE EDITION V.6.2 ",
+  "version": "LIVWE EDITION V.6.2 BEO",
   "dashboard": "https://lotus-garden-hotel.github.io/BEO-Lotus-Garden-Hotel/",
   "casePackage": "none",
   "caseSales": "title"
@@ -1169,6 +1239,9 @@ function validate() {
     { id:'f-customer', msg:'Nama customer wajib diisi' },
     { id:'f-status',   msg:'Status wajib dipilih' },
     { id:'f-package',  msg:'Package wajib dipilih' },
+    { id:'f-sales',    msg:'PIC Sales wajib dipilih' },
+    { id:'f-time',     msg:'Waktu wajib diisi' },
+    { id:'f-setup',    msg:'Set Up / Layout wajib diisi' },
   ];
   rules.forEach(r => document.getElementById(r.id).classList.remove('error'));
   for (const r of rules) {
@@ -1191,7 +1264,7 @@ async function onDateVenueChange() {
   banner.className   = 'status-banner scanning';
 
   try {
-    const res = await gas({ action:'CHECK', date:d, venue:v });
+    const res = await gas({ action:'CHECK', date:d, venue:v, sheetName:monthName(d) });
     body.classList.add('unlocked');
     hideNewSlotBtn(); // reset dulu
 
@@ -1243,6 +1316,11 @@ function fillForm(data, date, venue) {
   set('f-package',  (data.package || '').toUpperCase());
   set('f-sales',    (data.sales   || '').toUpperCase());
   set('f-time',     data.time     || '');
+  set('f-setup',    data.setup    || '');
+  set('f-event-title', data.eventTitle    || '');
+  set('f-contact',  data.contactPerson || '');
+  set('f-phone',    data.phone    || '');
+  set('f-notes',    data.notes    || '');
   set('f-pax',      data.pax      || '');
   setPrice(data.price || ''); // [FIX-PRICE] gunakan setPrice agar format konsisten
   calcRevenue(); onStatusChange();
@@ -1255,7 +1333,11 @@ function duplicateBooking() {
   const snap = {
     customer: val('f-customer'), status:  val('f-status'),
     package:  val('f-package'), sales:   val('f-sales'),
-    time:     val('f-time'),    pax:     val('f-pax'),
+    time:     val('f-time'),    setup:   val('f-setup'), pax: val('f-pax'),
+    eventTitle: val('f-event-title'), contactPerson: val('f-contact'),
+    phone:    val('f-phone'),   notes:   val('f-notes'),
+    eventTitle: val('f-event-title'), contactPerson: val('f-contact'),
+    phone:    val('f-phone'),   notes:   val('f-notes'),
     price:    val('f-price'),   priceDisplay: document.getElementById('f-price-display').value
   };
 
@@ -1266,7 +1348,10 @@ function duplicateBooking() {
   // Restore semua data lain
   set('f-customer', snap.customer); set('f-status',  snap.status);
   set('f-package',  snap.package);  set('f-sales',   snap.sales);
-  set('f-time',     snap.time);     set('f-pax',     snap.pax);
+  set('f-time',     snap.time);     set('f-setup',   snap.setup || '');
+  set('f-event-title', snap.eventTitle || ''); set('f-contact', snap.contactPerson || '');
+  set('f-phone',    snap.phone || '');         set('f-notes',   snap.notes || '');
+  set('f-pax',      snap.pax);
   set('f-price',    snap.price);
   document.getElementById('f-price-display').value = snap.priceDisplay;
 
@@ -1359,7 +1444,9 @@ async function pickForceSlot(targetRow) {
       forceVenue:  v,
       customer:    val('f-customer'), status:  val('f-status'),
       package:     val('f-package'),  sales:   val('f-sales'),
-      time:        val('f-time'),     pax:     val('f-pax'),
+      time:        val('f-time'),     setup:   val('f-setup'), pax: val('f-pax'),
+      eventTitle: val('f-event-title'), contactPerson: val('f-contact'),
+      phone:      val('f-phone'),     notes:   val('f-notes'),
       price:       val('f-price')
     });
     if (res.ok) {
@@ -1402,7 +1489,9 @@ async function submitData() {
       isMoveEvent: String(isMoveEvent),
       customer:val('f-customer'), status:val('f-status'),
       package:val('f-package'),   sales:val('f-sales'),
-      time:val('f-time'),         pax:val('f-pax'), price:val('f-price')
+      time:val('f-time'),         setup:val('f-setup'), pax:val('f-pax'), price:val('f-price'),
+      eventTitle:val('f-event-title'), contactPerson:val('f-contact'),
+      phone:val('f-phone'),       notes:val('f-notes')
     });
     if (res.ok) {
       // [OVF] Update currentSource jika GAS routing ke OVERFLOW
@@ -1513,10 +1602,12 @@ async function loadScanner(filter, filterDate) {
       return `<div class="event-card"
           data-iso="${esc(iso)}" data-venue="${esc(r.venue)}"
           data-shn="${esc(shn)}" data-row="${rowNum}" data-source="${esc(r.source||'BULAN')}"
-          data-customer="${esc(r.customer||'')}"  data-status="${esc(r.status||'')}"
-          data-package="${esc(r.package||'')}"   data-sales="${esc(r.sales||'')}"
-          data-time="${esc(r.time||'')}"         data-pax="${esc(r.pax||'')}"
-          data-price="${esc(r.price||'')}"
+          data-customer="${esc(r.customer||'')}"       data-status="${esc(r.status||'')}"
+          data-package="${esc(r.package||'')}"          data-sales="${esc(r.sales||'')}"
+          data-time="${esc(r.time||'')}"                data-setup="${esc(r.setup||'')}"
+          data-pax="${esc(r.pax||'')}"                  data-price="${esc(r.price||'')}"
+          data-event-title="${esc(r.eventTitle||'')}"    data-contact-person="${esc(r.contactPerson||'')}"
+          data-phone="${esc(r.phone||'')}"              data-notes="${esc(r.notes||'')}"
           onclick="pickEventFromCard(this)">
         <div class="event-name">${esc(r.customer) || '—'}${srcBadge}</div>
         <div class="event-meta">${esc(r.dateLabel)} · ${esc(r.venue)}</div>
@@ -1551,6 +1642,11 @@ function pickEventFromCard(el) {
     set('f-package',  ds.package  || '');
     set('f-sales',    ds.sales    || '');
     set('f-time',     ds.time     || '');
+    set('f-setup',    ds.setup    || '');
+    set('f-event-title', ds.eventTitle    || '');
+    set('f-contact',  ds.contactPerson || '');
+    set('f-phone',    ds.phone    || '');
+    set('f-notes',    ds.notes    || '');
     set('f-pax',      ds.pax      || '');
     setPrice(ds.price || '0');
 
@@ -1610,7 +1706,8 @@ function lockForm(lock) {
   _formLocked = lock;
   const unl = document.getElementById('btn-unlock');
   const syn = document.getElementById('btn-sync');
-  const fields = ['f-customer','f-status','f-package','f-sales','f-time','f-pax','f-price-display'];
+  const fields = ['f-customer','f-status','f-package','f-sales','f-time','f-setup','f-pax','f-price-display',
+                  'f-event-title','f-contact','f-phone','f-notes'];
   fields.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.disabled = lock;
@@ -1701,7 +1798,8 @@ function resetForm(full) {
 }
 
 function clearFields() {
-  ['f-customer','f-status','f-package','f-time','f-pax','f-price','f-price-display'].forEach(id=>set(id,''));
+  ['f-customer','f-status','f-package','f-time','f-setup','f-pax','f-price','f-price-display',
+   'f-event-title','f-contact','f-phone','f-notes'].forEach(id=>set(id,''));
   document.getElementById('rev-display').textContent = 'Rp 0';
 }
 
@@ -2149,6 +2247,228 @@ function updateLogsSummary() {
   const topUser = Object.entries(emailCount).sort((a,b)=>b[1]-a[1])[0];
   document.getElementById('ls-user').textContent = topUser ? topUser[0].split('@')[0] : '—';
 }
+
+// ─── WA DEPARTEMEN CONFIG & SEND ──────────────────────────────────────────
+const WA_DEPTS_DEFAULT = [
+  { id:'banquet',  name:'Banquet Operational', number:'', instruction:'Mohon siapkan ruangan dan perlengkapan sesuai layout yang tertera.', enabled:true },
+  { id:'fo',       name:'Front Office',        number:'', instruction:'Mohon koordinasi kedatangan tamu dan parking.', enabled:true },
+  { id:'engineering', name:'Engineering',      number:'', instruction:'Pastikan AC, sound system, dan lighting siap sebelum event.', enabled:true },
+  { id:'housekeeping', name:'Housekeeping',    number:'', instruction:'Mohon kebersihan venue dan toilet terjaga selama event berlangsung.', enabled:true },
+  { id:'security', name:'Security',            number:'', instruction:'Mohon siagakan petugas di area venue dan parkir.', enabled:true },
+  { id:'accounting', name:'Accounting',        number:'', instruction:'Mohon proses billing sesuai data event terlampir.', enabled:true },
+];
+const WA_CONFIG_KEY = 'lg_wa_dept_config';
+
+function loadWAConfig() {
+  try {
+    const raw = localStorage.getItem(WA_CONFIG_KEY);
+    return raw ? JSON.parse(raw) : { token: '', depts: WA_DEPTS_DEFAULT };
+  } catch(e) { return { token: '', depts: WA_DEPTS_DEFAULT }; }
+}
+
+function saveWAConfig() {
+  const token = document.getElementById('wa-token').value.trim();
+  const depts = WA_DEPTS_DEFAULT.map(d => {
+    const numEl  = document.getElementById('wa-num-'  + d.id);
+    const instEl = document.getElementById('wa-inst-' + d.id);
+    const enEl   = document.getElementById('wa-en-'   + d.id);
+    return {
+      id:          d.id,
+      name:        d.name,
+      number:      numEl  ? numEl.value.trim()   : '',
+      instruction: instEl ? instEl.value.trim()  : d.instruction,
+      enabled:     enEl   ? enEl.checked         : true
+    };
+  });
+  localStorage.setItem(WA_CONFIG_KEY, JSON.stringify({ token, depts }));
+  toast('✅ Konfigurasi WA tersimpan', 'ok');
+}
+
+function renderDeptList(cfg) {
+  const container = document.getElementById('dept-list-container');
+  container.innerHTML = '';
+  cfg.depts.forEach(d => {
+    const row = document.createElement('div');
+    row.style.cssText = 'background:#0d0b08;border:1px solid #2a2218;border-radius:8px;padding:10px;';
+    row.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <input type="checkbox" id="wa-en-${d.id}" ${d.enabled?'checked':''} style="accent-color:#25d366;width:14px;height:14px;">
+        <span style="font-size:10px;font-weight:700;color:#d4af5a;flex:1;">${d.name}</span>
+      </div>
+      <input id="wa-num-${d.id}" type="text" value="${d.number||''}" placeholder="Nomor/Group WA: 628xxx atau JID group"
+        style="width:100%;background:#1a1410;border:1px solid #3d3028;border-radius:6px;padding:6px 8px;color:#e8e0c8;font-size:9px;margin-bottom:5px;outline:none;">
+      <input id="wa-inst-${d.id}" type="text" value="${d.instruction||''}" placeholder="Instruksi khusus untuk departemen ini..."
+        style="width:100%;background:#1a1410;border:1px solid #3d3028;border-radius:6px;padding:6px 8px;color:#7a9e7a;font-size:9px;outline:none;">
+    `;
+    container.appendChild(row);
+  });
+}
+
+function buildWAPreview() {
+  const d = {
+    eventTitle: val('f-event-title') || val('f-customer'),
+    customer:   val('f-customer'),
+    date:       val('f-date'),
+    venue:      val('f-venue'),
+    time:       val('f-time'),
+    setup:      val('f-setup'),
+    package:    val('f-package'),
+    pax:        val('f-pax'),
+    status:     val('f-status'),
+    contact:    val('f-contact'),
+    phone:      val('f-phone'),
+    notes:      val('f-notes'),
+  };
+  const DAYS   = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  let dateDisplay = d.date;
+  if (d.date) {
+    try {
+      const dt = new Date(d.date + 'T00:00:00');
+      dateDisplay = DAYS[dt.getDay()] + ', ' + dt.getDate() + ' ' + MONTHS[dt.getMonth()] + ' ' + dt.getFullYear();
+    } catch(e) {}
+  }
+  return [
+    '📋 BANQUET EVENT ORDER',
+    '━━━━━━━━━━━━━━━━━━━━━',
+    d.eventTitle ? '🎪 Event   : ' + d.eventTitle : '',
+    '🏢 Organizer : ' + (d.customer||'—'),
+    '📅 Tanggal : ' + (dateDisplay||'—'),
+    '🏛 Venue   : ' + (d.venue||'—'),
+    '⏰ Waktu   : ' + (d.time||'—'),
+    '🪑 Setup   : ' + (d.setup||'—'),
+    '📦 Package : ' + (d.package||'—'),
+    '👥 Pax     : ' + (d.pax||'—'),
+    d.contact  ? '👤 Contact : ' + d.contact + (d.phone?' | '+d.phone:'') : '',
+    d.notes    ? '📝 Catatan : ' + d.notes : '',
+    '━━━━━━━━━━━━━━━━━━━━━',
+    '✅ Status  : ' + (d.status||'—'),
+  ].filter(Boolean).join('\n');
+}
+
+function openSendWA() {
+  // Cek ada data
+  if (!val('f-date') || !val('f-venue')) {
+    toast('⚠ Pilih tanggal dan venue dulu', 'error'); return;
+  }
+  const cfg = loadWAConfig();
+  document.getElementById('wa-token').value = cfg.token || '';
+  renderDeptList(cfg);
+  document.getElementById('wa-preview').textContent = buildWAPreview();
+  document.getElementById('wa-send-result').innerHTML = '';
+  document.getElementById('modal-wa').style.display = 'block';
+}
+
+function closeModalWA() {
+  document.getElementById('modal-wa').style.display = 'none';
+}
+
+async function sendWABEO() {
+  const token = document.getElementById('wa-token').value.trim();
+  if (!token) { toast('⚠ Fonnte token wajib diisi', 'error'); return; }
+
+  // Kumpulkan dept yang enabled dan ada nomornya
+  const depts = WA_DEPTS_DEFAULT.map(d => {
+    const numEl  = document.getElementById('wa-num-'  + d.id);
+    const instEl = document.getElementById('wa-inst-' + d.id);
+    const enEl   = document.getElementById('wa-en-'   + d.id);
+    return {
+      id:          d.id,
+      name:        d.name,
+      number:      numEl  ? numEl.value.trim()  : '',
+      instruction: instEl ? instEl.value.trim() : '',
+      enabled:     enEl   ? enEl.checked        : false
+    };
+  }).filter(d => d.enabled && d.number);
+
+  if (depts.length === 0) {
+    toast('⚠ Tidak ada departemen aktif dengan nomor WA', 'error'); return;
+  }
+
+  const msgData = {
+    eventTitle: val('f-event-title'),
+    customer:   val('f-customer'),
+    date:       val('f-date'),
+    venue:      val('f-venue'),
+    time:       val('f-time'),
+    setup:      val('f-setup'),
+    package:    val('f-package'),
+    pax:        val('f-pax'),
+    status:     val('f-status'),
+    contact:    val('f-contact'),
+    phone:      val('f-phone'),
+    notes:      val('f-notes'),
+  };
+
+  const btn = document.getElementById('btn-send-exec');
+  btn.textContent = '⏳ Mengirim...';
+  btn.disabled = true;
+
+  const resultEl = document.getElementById('wa-send-result');
+  resultEl.innerHTML = '<span style="color:#7a6e5a;">Mengirim ke ' + depts.length + ' departemen...</span>';
+
+  try {
+    const dateVal = val('f-date');
+    const res = await gas({
+      action:       'SEND_DEPT_WA',
+      fonnteToken:  token,
+      depts:        JSON.stringify(depts),
+      msgData:      JSON.stringify(msgData),
+      sheetName:    dateVal ? monthName(dateVal) : monthName(new Date().toISOString().slice(0,10)),
+      date:         dateVal,
+      venue:        val('f-venue'),
+    });
+
+    let html = '';
+    if (res.results) {
+      res.results.forEach(r => {
+        const icon = r.ok ? '✅' : '❌';
+        const color = r.ok ? '#25d366' : '#ef4444';
+        html += `<div style="color:${color};">${icon} ${r.dept}</div>`;
+      });
+    }
+    html += `<div style="margin-top:6px;color:${res.ok?'#25d366':'#ef4444'};font-weight:700;">${res.msg}</div>`;
+    resultEl.innerHTML = html;
+
+    if (res.ok) {
+      toast('📲 ' + res.msg, 'ok');
+      // Auto-save config
+      saveWAConfig();
+    } else {
+      toast('⚠ ' + res.msg, 'error');
+    }
+  } catch(e) {
+    resultEl.innerHTML = '<span style="color:#ef4444;">Error: ' + e.message + '</span>';
+    toast('⚠ Gagal mengirim', 'error');
+  } finally {
+    btn.textContent = '📤 KIRIM SEKARANG';
+    btn.disabled = false;
+  }
+}
+
+
+// ─── OPEN BEO ──────────────────────────────────────────────────────────────
+function openBEO() {
+  const data = {
+    date:          val('f-date'),
+    venue:         val('f-venue'),
+    customer:      val('f-customer'),
+    eventTitle:    val('f-event-title'),
+    contact:       val('f-contact'),
+    phone:         val('f-phone'),
+    status:        val('f-status'),
+    package:       val('f-package'),
+    sales:         val('f-sales'),
+    time:          val('f-time'),
+    setup:         val('f-setup'),
+    pax:           val('f-pax'),
+    price:         val('f-price-display'),
+    notes:         val('f-notes'),
+  };
+  const encoded = encodeURIComponent(JSON.stringify(data));
+  window.open('beo.html?data=' + encoded, '_blank');
+}
+
 </script>
 
 </body>
