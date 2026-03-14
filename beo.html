@@ -240,6 +240,7 @@
   <button class="btn-back" onclick="goBack()">← Dashboard</button>
   <span class="toolbar-title">◆ Banquet Event Order</span>
   <button class="btn-tool" onclick="resetForm()">↺ Reset</button>
+  <button class="btn-tool" id="btn-save-tpl" onclick="saveMenuTemplateFromBeo()" style="background:rgba(243,156,18,.12);border-color:rgba(243,156,18,.3);color:#f39c12;">💾 Simpan Template</button>
   <button class="btn-approval" onclick="openApprovalModal()">✉ Kirim Approval</button>
   <button class="btn-tool primary" onclick="window.print()">🖨 Print / PDF</button>
 </div>
@@ -263,7 +264,7 @@
           Jl. JA Soeprapto No. 26 Kediri,<br>
           Jawa Timur, Indonesia<br>
           <span class="kop-t">T.</span> 0354 77 9999<br>
-          <span class="kop-e">E.</span> rsv.lotusgardenbywh@gmail.com<br>
+          <span class="kop-e">E.</span> <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="137a673d7f7c67666074726177767d716a647b53747e727a7f3d707c7e">[email&#160;protected]</a><br>
           <span class="kop-web">www.waringinhospitality.com</span>
         </div>
       </div>
@@ -440,31 +441,31 @@ Notes : Kebutuhan manning diluar standard harus atas persetujuan HRD &amp; GM</d
     <tbody id="billing-body">
       <tr>
         <td class="align-left" contenteditable="true"></td>
-        <td contenteditable="true"></td>
-        <td contenteditable="true"></td>
-        <td contenteditable="true"></td>
-        <td contenteditable="true"></td>
+        <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()"></td>
+        <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()"></td>
+        <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()"></td>
+        <td contenteditable="true" oninput="calcBillingTotal()"></td>
       </tr>
       <tr>
         <td class="align-left" contenteditable="true"></td>
-        <td contenteditable="true"></td>
-        <td contenteditable="true"></td>
-        <td contenteditable="true"></td>
-        <td contenteditable="true"></td>
+        <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()"></td>
+        <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()"></td>
+        <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()"></td>
+        <td contenteditable="true" oninput="calcBillingTotal()"></td>
       </tr>
       <tr>
         <td class="align-left" contenteditable="true"></td>
-        <td contenteditable="true"></td>
-        <td contenteditable="true"></td>
-        <td contenteditable="true"></td>
-        <td contenteditable="true"></td>
+        <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()"></td>
+        <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()"></td>
+        <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()"></td>
+        <td contenteditable="true" oninput="calcBillingTotal()"></td>
       </tr>
     </tbody>
     <tfoot>
       <tr class="billing-subtotal-row">
         <td colspan="3" style="text-align:right;font-weight:700;">TOTAL</td>
         <td style="text-align:left;font-weight:700;">Rp</td>
-        <td contenteditable="true" id="billing-total" style="font-weight:800;"></td>
+        <td id="billing-total" style="font-weight:800;"></td>
       </tr>
     </tfoot>
   </table>
@@ -577,7 +578,7 @@ Notes : Kebutuhan manning diluar standard harus atas persetujuan HRD &amp; GM</d
   </div>
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 
 // ══════════════════════════════════════════════════════════════════════════
 // DEPT CONFIG
@@ -749,14 +750,63 @@ function addMenuItemTime() { addMenuItem('time'); }
 // ══════════════════════════════════════════════════════════════════════════
 // BILLING TABLE
 // ══════════════════════════════════════════════════════════════════════════
+// ══ BILLING AUTO-CALC ═══════════════════════════════════════════════════════
+// calcBillingRow(tdEl) — saat QTY, DAY, atau RATE berubah → auto-isi kolom Total
+// calcBillingTotal()   — sum semua baris kolom Total → isi #billing-total
+
+function _parseNum(str) {
+  // Hapus semua non-digit kecuali titik/koma lalu parse
+  if (!str) return 0;
+  const cleaned = str.toString().replace(/[^0-9.,]/g, '').replace(/\./g, '').replace(',', '.');
+  return parseFloat(cleaned) || 0;
+}
+
+function _fmtRp(n) {
+  if (!n || isNaN(n)) return '';
+  return Math.round(n).toLocaleString('id-ID');
+}
+
+function calcBillingRow(td) {
+  // td = cell yang baru diubah (QTY/DAY/RATE kolom 1/2/3, indeks 1-3)
+  const tr = td.closest('tr');
+  if (!tr) return;
+  const cells = tr.cells;
+  if (cells.length < 5) return;
+  const qty  = _parseNum(cells[1].textContent);
+  const day  = _parseNum(cells[2].textContent);
+  const rate = _parseNum(cells[3].textContent);
+  // Kalau semua 0 → biarkan kolom total kosong
+  if (qty === 0 && day === 0 && rate === 0) return;
+  // Kalau ada rate: total = qty × day × rate (jika day=0 anggap 1)
+  if (rate > 0) {
+    const q = qty || 1;
+    const d = day || 1;
+    cells[4].textContent = _fmtRp(q * d * rate);
+  }
+}
+
+function calcBillingTotal() {
+  const tbody = document.getElementById('billing-body');
+  if (!tbody) return;
+  let sum = 0;
+  Array.from(tbody.rows).forEach(function(tr) {
+    if (tr.cells.length >= 5) {
+      sum += _parseNum(tr.cells[4].textContent);
+    }
+  });
+  const totalEl = document.getElementById('billing-total');
+  if (totalEl) totalEl.textContent = sum > 0 ? _fmtRp(sum) : '';
+}
+
+
 function addBillingRow() {
   const tbody = document.getElementById('billing-body');
   const tr = document.createElement('tr');
   tr.innerHTML = `<td class="align-left" contenteditable="true"></td>
-    <td contenteditable="true"></td>
-    <td contenteditable="true"></td>
-    <td contenteditable="true"></td>
-    <td contenteditable="true"></td>`;
+    <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()"></td>
+    <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()"></td>
+    <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()"></td>
+    <td contenteditable="true" oninput="calcBillingTotal()"></td>`;
   tbody.appendChild(tr);
   tr.querySelector('td').focus();
 }
@@ -807,11 +857,7 @@ function addBillingRow() {
 
   const todayStr = new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
 
-  // Fill info table
-  function set(id, val) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = (val && val !== '') ? val : '—';
-  }
+  // Fill info table — pakai global set() di bawah
 
   set('i-beo-no',       genBeoNo(d.venue, d.date, d.customer));
   set('i-issued-date',  todayStr);
@@ -834,22 +880,31 @@ function addBillingRow() {
   // Signature sales name
   set('sig-prepare', d.sales || '');
 
-  // Billing total from price × pax
-  if (d.price && d.pax) {
-    const total = parseInt(d.price) * parseInt(d.pax);
-    if (!isNaN(total)) {
-      document.getElementById('billing-total').textContent = total.toLocaleString('id-ID');
-      // Add a row with event data
-      const tbody = document.getElementById('billing-body');
-      if (tbody.rows[0]) {
-        tbody.rows[0].cells[0].textContent = d.eventTitle || d.customer || 'Banquet Event';
-        tbody.rows[0].cells[1].textContent = d.pax || '';
-        tbody.rows[0].cells[2].textContent = '1';
-        tbody.rows[0].cells[3].textContent = parseInt(d.price).toLocaleString('id-ID');
-        tbody.rows[0].cells[4].textContent = total.toLocaleString('id-ID');
+  // Billing — auto-fill baris pertama dari data pax × price
+  (function initBilling() {
+    const tbody = document.getElementById('billing-body');
+    // Tambah oninput ke semua row yang sudah ada
+    Array.from(tbody.rows).forEach(function(tr) {
+      Array.from(tr.cells).forEach(function(td, ci) {
+        if (ci > 0) td.setAttribute('oninput', 'calcBillingRow(this);calcBillingTotal()');
+      });
+    });
+    if (d.price || d.pax) {
+      // _parseNum handles formatted strings like "150.000" or "1.500.000"
+      const pax   = _parseNum(d.pax)   || 0;
+      const price = _parseNum(d.price) || 0;
+      const total = pax > 0 && price > 0 ? pax * price : 0;
+      const row0  = tbody.rows[0];
+      if (row0) {
+        row0.cells[0].textContent = d.eventTitle || d.customer || 'Banquet Event';
+        row0.cells[1].textContent = pax   > 0 ? pax   : '';
+        row0.cells[2].textContent = '1';
+        row0.cells[3].textContent = price > 0 ? _fmtRp(price) : '';
+        row0.cells[4].textContent = total > 0 ? _fmtRp(total) : '';
       }
     }
-  }
+    calcBillingTotal();
+  })();
 
   // F&B notes
   const fnbNotes = document.getElementById('op-fnb');
@@ -894,7 +949,28 @@ function addBillingRow() {
   renderSetList('set-rows', DEFAULT_SET_ROWS);
   renderSetList('eng-rows', DEFAULT_ENG_ROWS);
   renderSetList('hk-rows',  DEFAULT_HK_ROWS);
-  renderMenuList(DEFAULT_MENU);
+
+  // [MNU] Load menu dari template jika ada
+  const hasTemplateMenu = d.menuItems && Array.isArray(d.menuItems) && d.menuItems.length > 0;
+  renderMenuList(hasTemplateMenu ? d.menuItems : DEFAULT_MENU);
+  if (d.backdropLettering) {
+    const el = document.getElementById('lbp-backdrop');
+    if (el) el.textContent = d.backdropLettering;
+  }
+  if (d.banquetInstruction) {
+    const setRows = document.getElementById('set-rows');
+    if (setRows) d.banquetInstruction.split('\n').filter(l=>l.trim()).forEach(function(line){
+      const row = document.createElement('div'); row.className='set-row';
+      row.innerHTML='<span class="set-text" contenteditable="true" spellcheck="false">'+
+        line.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</span>'+
+        '<span class="set-del" onclick="this.closest(\'.set-row\').remove()">✕</span>';
+      setRows.insertBefore(row, setRows.firstChild);
+    });
+  }
+  if (d.hrdManning) {
+    const el = document.getElementById('hrd-ratio');
+    if (el) el.textContent = d.hrdManning;
+  }
 
   // Init chips & visibility
   buildChips();
@@ -904,7 +980,7 @@ function addBillingRow() {
 // ══ HELPERS ══════════════════════════════════════════════════════════════
 function set(id, val) {
   const el = document.getElementById(id);
-  if (el) el.textContent = val || '—';
+  if (el) el.textContent = (val !== null && val !== undefined && val !== '') ? val : '—';
 }
 
 // ══ NAVIGATION ═══════════════════════════════════════════════════════════
@@ -944,11 +1020,13 @@ const APR_DEPTS = [
 ];
 
 function _getGasUrl() {
+  // Fallback hardcoded — sama dengan entry_live_secure.html DEFAULT_CFG
+  const DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbyQTrvw2WtHV0zpItsVA2hG_02R0gscUrOua2rnOqw750PvT3PODSaO6LaM3HWUTXJi/exec';
   try {
     const c = JSON.parse(localStorage.getItem('banquet_master_cfg_v4') ||
                          localStorage.getItem('banquet_elite_config') || '{}');
-    return c.gasUrl_entry || c.gasUrl || '';
-  } catch(_) { return ''; }
+    return c.gasUrl_entry || c.gasUrl || DEFAULT_GAS;
+  } catch(_) { return DEFAULT_GAS; }
 }
 function _getWaToken() {
   try { return (JSON.parse(localStorage.getItem('lg_wa_dept_config')||'{}')).token || ''; }
@@ -1098,14 +1176,130 @@ function _renderApprovalBadges(approvals) {
   if (!gasUrl) return;
   setTimeout(() => {
     const beoId = (document.getElementById('i-beo-no')||{}).textContent||'';
-    if (beoId && beoId.includes('BEO')) _startApprovalPolling(gasUrl, beoId);
-  }, 1000);
+    if (beoId && beoId !== '—') _fetchApprovalStatus(gasUrl, beoId);
+  }, 2000);
 })();
 
-document.getElementById('apr-modal').addEventListener('click', function(e) {
-  if (e.target === this) closeApprovalModal();
-});
-
 </script>
-</body>
+
+<!-- ─── SAVE TEMPLATE MODAL ─────── -->
+<div id="tpl-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;padding:24px;overflow-y:auto;">
+  <div style="background:#1a1410;border:1px solid #3d3028;border-radius:16px;max-width:420px;margin:30px auto;padding:20px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:800;color:#d4af5a;">💾 SIMPAN TEMPLATE MENU</div>
+      <button onclick="closeTplModal()" style="background:none;border:none;color:#7a6e5a;font-size:18px;cursor:pointer;">✕</button>
+    </div>
+    <div style="margin-bottom:10px;">
+      <label style="font-size:9px;font-weight:700;color:#c9a84c;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:5px;">Customer</label>
+      <input id="tpl-customer-inp" type="text" placeholder="Nama customer..."
+        style="width:100%;background:#231d15;border:1px solid #3d3028;border-radius:8px;padding:9px 12px;color:#e8dcc8;font-size:12px;outline:none;box-sizing:border-box;">
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="font-size:9px;font-weight:700;color:#c9a84c;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:5px;">Nama Template</label>
+      <input id="tpl-name-inp" type="text" placeholder="Paket Wedding A, KAHMI BP IMAM..."
+        style="width:100%;background:#231d15;border:1px solid #3d3028;border-radius:8px;padding:9px 12px;color:#e8dcc8;font-size:12px;outline:none;box-sizing:border-box;">
+    </div>
+    <div id="tpl-preview" style="background:#0d0d0d;border:1px solid #2a2520;border-radius:8px;padding:10px;margin-bottom:14px;font-size:9px;color:#7a6e5a;line-height:1.8;max-height:120px;overflow-y:auto;"></div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="closeTplModal()" style="flex:1;padding:10px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:#7a6e5a;font-size:11px;font-weight:700;cursor:pointer;">Batal</button>
+      <button onclick="confirmSaveTemplate()" id="tpl-confirm-btn" style="flex:2;padding:10px;border-radius:10px;background:rgba(243,156,18,.2);border:1px solid rgba(243,156,18,.4);color:#f39c12;font-size:11px;font-weight:700;cursor:pointer;">✓ Simpan Template</button>
+    </div>
+    <div id="tpl-status" style="margin-top:10px;font-size:10px;text-align:center;min-height:16px;"></div>
+  </div>
+</div>
+
+<script>
+function _collectMenuItems() {
+  const rows = document.querySelectorAll('#menu-rows .menu-item');
+  const items = [];
+  rows.forEach(function(row) {
+    const el = row.querySelector('.menu-text');
+    if (!el) return;
+    const text = el.textContent.trim();
+    if (!text) return;
+    // Deteksi time header: cek style attribute ATAU computed background-color
+    const styleAttr = el.getAttribute('style') || '';
+    const computedBg = window.getComputedStyle ? window.getComputedStyle(el).backgroundColor : '';
+    // Time header punya background hijau (linear-gradient atau rgb hijau)
+    const isTime = styleAttr.includes('linear-gradient') ||
+                   styleAttr.includes('1a5c22') ||
+                   styleAttr.includes('2d9e40') ||
+                   computedBg.includes('26,92,34') ||  // rgb(26,92,34)
+                   computedBg.includes('45,158,64');   // rgb(45,158,64)
+    items.push({ type: isTime ? 'time' : 'item', text });
+  });
+  return items;
+}
+function _collectBanquetInstruction() {
+  return Array.from(document.querySelectorAll('#set-rows .set-row .set-text'))
+    .map(el => el.textContent.trim()).filter(Boolean).join('\n');
+}
+function _collectHrdManning() {
+  const el = document.getElementById('hrd-ratio');
+  return el ? el.textContent.trim() : '';
+}
+function _collectBackdrop() {
+  const el = document.getElementById('lbp-backdrop');
+  return el ? el.textContent.trim() : '';
+}
+function saveMenuTemplateFromBeo() {
+  const custRaw = (document.getElementById('i-customer')||{}).textContent || '';
+  const cust = custRaw.replace(/^—$/,'').trim();
+  const ni = document.getElementById('tpl-name-inp');
+  const ci = document.getElementById('tpl-customer-inp');
+  if (ci) ci.value = cust;
+  if (ni) ni.value = cust;
+  const items = _collectMenuItems();
+  const prev = document.getElementById('tpl-preview');
+  if (prev) {
+    const T = items.filter(m=>m.type==='time').map(m=>m.text);
+    const F = items.filter(m=>m.type==='item').map(m=>m.text);
+    prev.innerHTML =
+      (T.length ? '<b style="color:#2ecc71">Waktu:</b> '+T.join(', ')+'<br>' : '') +
+      (F.length ? '<b style="color:#d4af5a">Menu ('+F.length+' item):</b> '+F.slice(0,6).join(', ')+(F.length>6?'...':'') : '<i>Tidak ada item menu</i>') +
+      (_collectBanquetInstruction() ? '<br><span style="color:#aaa">📋 Ada instruksi banquet</span>' : '') +
+      (_collectBackdrop()           ? '<br><span style="color:#aaa">🎭 Ada backdrop lettering</span>' : '') +
+      (_collectHrdManning()         ? '<br><span style="color:#aaa">👷 Ada HRD/Manning</span>' : '');
+  }
+  document.getElementById('tpl-status').textContent = '';
+  document.getElementById('tpl-modal').style.display = 'block';
+}
+function closeTplModal() {
+  document.getElementById('tpl-modal').style.display = 'none';
+}
+async function confirmSaveTemplate() {
+  const ni = document.getElementById('tpl-name-inp');
+  const ci = document.getElementById('tpl-customer-inp');
+  const st = document.getElementById('tpl-status');
+  const cb = document.getElementById('tpl-confirm-btn');
+  const tplName  = (ni ? ni.value : '').trim();
+  const customer = (ci ? ci.value : '').trim();
+  if (!customer) { st.textContent = '⚠ Isi nama customer.'; return; }
+  const gasUrl = _getGasUrl();
+  if (!gasUrl) { st.textContent = '⚠ GAS URL belum dikonfigurasi.'; return; }
+  // Debug: tampilkan 40 karakter pertama URL yang dipakai
+  console.log('[SAVE_MENU] GAS URL:', gasUrl.substring(0,80));
+  cb.textContent = '⏳ Menyimpan...'; cb.disabled = true;
+  st.style.color = '#888';
+  st.textContent = '⟳ Menghubungi: .../' + gasUrl.split('/').pop();
+  try {
+    const p = new URLSearchParams({
+      action:'SAVE_MENU', customer, templateName: tplName || customer,
+      menuItems:          JSON.stringify(_collectMenuItems()),
+      banquetInstruction: _collectBanquetInstruction(),
+      backdropLettering:  _collectBackdrop(),
+      hrdManning:         _collectHrdManning(),
+      notes:'', venue:(document.getElementById('i-venue')||{}).textContent||'',
+      package:'', sales:(document.getElementById('sig-prepare')||{}).textContent||''
+    });
+    const res = await (await fetch(gasUrl+'?'+p)).json();
+    if (res.ok) {
+      st.style.color='#2ecc71';
+      st.textContent='✦ Template "' + (tplName||customer) + '" berhasil disimpan!';
+      setTimeout(closeTplModal, 1800);
+    } else { st.style.color='#e74c3c'; st.textContent='✗ '+(res.msg||'Gagal.'); }
+  } catch(e) { st.style.color='#e74c3c'; st.textContent='✗ Gagal koneksi.'; }
+  finally { cb.textContent='✓ Simpan Template'; cb.disabled=false; }
+}
+</script>
 </html>
