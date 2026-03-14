@@ -88,6 +88,52 @@
             <p class="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 text-center">Venues Usage Intensity (Confirm+Done+Tentative)</p>
             <div id="venue-list" class="grid grid-cols-2 gap-2"></div>
         </div>
+
+        <!-- ══ TYPE OF EVENT per BULAN ══════════════════════════════════════ -->
+        <div class="card-base">
+            <div class="flex items-center justify-between mb-3">
+                <p class="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em]">Type of Event</p>
+                <select id="evt-month-select" onchange="loadEventType()"
+                    class="text-[9px] font-black uppercase bg-white/10 border border-white/10 rounded-lg px-2 py-1 text-indigo-300 outline-none cursor-pointer">
+                    <option value="ALL">— Semua Bulan —</option>
+                    <option value="JANUARI">Januari</option>
+                    <option value="FEBRUARI">Februari</option>
+                    <option value="MARET">Maret</option>
+                    <option value="APRIL">April</option>
+                    <option value="MEI">Mei</option>
+                    <option value="JUNI">Juni</option>
+                    <option value="JULI">Juli</option>
+                    <option value="AGUSTUS">Agustus</option>
+                    <option value="SEPTEMBER">September</option>
+                    <option value="OKTOBER">Oktober</option>
+                    <option value="NOVEMBER">November</option>
+                    <option value="DESEMBER">Desember</option>
+                </select>
+            </div>
+
+            <!-- Donut chart -->
+            <div class="relative flex justify-center mb-4" style="height:220px">
+                <canvas id="eventTypeChart"></canvas>
+                <div id="evt-center-label" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span id="evt-total-num" class="text-2xl font-black text-white">0</span>
+                    <span class="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Events</span>
+                </div>
+            </div>
+
+            <!-- Loading / empty state -->
+            <div id="evt-loading" class="text-center py-3 hidden">
+                <div class="inline-block w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                <p class="text-[9px] text-slate-500 mt-1">Memuat data...</p>
+            </div>
+            <div id="evt-empty" class="text-center py-3 hidden">
+                <p class="text-[10px] text-slate-600 italic">Tidak ada data untuk bulan ini.</p>
+            </div>
+
+            <!-- Legend list -->
+            <div id="evt-legend" class="space-y-1.5 mt-2"></div>
+        </div>
+        <!-- ══ END TYPE OF EVENT ═════════════════════════════════════════════ -->
+
     </div>
 
     <script>
@@ -170,6 +216,8 @@
                     const savedMode = localStorage.getItem('nightMode');
                     if (savedMode === 'enabled') document.body.classList.add('night-mode');
                     setTimeout(fetchData, 50);
+                    // [EVT] Init Type of Event setelah auth OK
+                    setTimeout(() => { initEvtMonthSelect(); loadEventType(); }, 300);
 
                 } else if (res.msg && res.msg.includes('tidak terdaftar')) {
                     // ❌ Email tidak ada di whitelist — signOut sah
@@ -190,6 +238,7 @@
                     gate.classList.add('hidden');
                     shell.classList.remove('hidden');
                     setTimeout(fetchData, 50);
+                    setTimeout(() => { initEvtMonthSelect(); loadEventType(); }, 300);
                 } else {
                     err.textContent = '⚠ Gagal verifikasi sesi. Coba refresh halaman.';
                     err.classList.remove('hidden');
@@ -377,6 +426,192 @@
             const isNight = document.body.classList.toggle('night-mode');
             localStorage.setItem('nightMode', isNight ? 'enabled' : 'disabled');
             if (firebase.auth().currentUser) fetchData();
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        // TYPE OF EVENT — filter per bulan, baca kolom F via READ_MONTH
+        // ════════════════════════════════════════════════════════════════════
+
+        // Palet warna konsisten per kategori event
+        const EVT_PALETTE = {
+            'WEDDING':              '#f472b6',
+            'BIRTHDAY':             '#fb923c',
+            'ENGAGEMENT':           '#a78bfa',
+            'AKAD NIKAH':           '#34d399',
+            'SOSIAL EVENT/GATHERING':'#60a5fa',
+            'SOCIAL EVENT/GATHERING':'#60a5fa',
+            'BANQUET MEETING':      '#facc15',
+            'MEETING':              '#facc15',
+            'GATHERING':            '#38bdf8',
+        };
+        const EVT_FALLBACK_COLORS = ['#818cf8','#f87171','#4ade80','#e879f9','#22d3ee','#fbbf24','#a3e635'];
+
+        let _evtChart = null;           // instance Chart.js aktif
+        let _evtCache = {};             // cache per bulan { BULAN: { label:[], data:[], map:{} } }
+        const ALL_MONTHS = ['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI',
+                            'JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'];
+
+        // Auto-set dropdown ke bulan saat ini saat halaman dimuat
+        function initEvtMonthSelect() {
+            const sel = document.getElementById('evt-month-select');
+            const curMonth = ALL_MONTHS[new Date().getMonth()];
+            // Pilih bulan saat ini jika ada di option
+            for (const opt of sel.options) {
+                if (opt.value === curMonth) { opt.selected = true; break; }
+            }
+        }
+
+        async function loadEventType() {
+            const sel       = document.getElementById('evt-month-select');
+            const bulan     = sel.value;  // "ALL" atau "JANUARI" dll
+            const loading   = document.getElementById('evt-loading');
+            const empty     = document.getElementById('evt-empty');
+            const legend    = document.getElementById('evt-legend');
+
+            loading.classList.remove('hidden');
+            empty.classList.add('hidden');
+            legend.innerHTML = '';
+            if (_evtChart) { _evtChart.destroy(); _evtChart = null; }
+            document.getElementById('evt-total-num').textContent = '0';
+
+            try {
+                let evtMap = {};
+
+                if (bulan === 'ALL') {
+                    // Gabungkan semua bulan — gunakan cache masing-masing
+                    for (const m of ALL_MONTHS) {
+                        const data = await fetchEvtForMonth(m);
+                        for (const [k, v] of Object.entries(data)) {
+                            evtMap[k] = (evtMap[k] || 0) + v;
+                        }
+                    }
+                } else {
+                    evtMap = await fetchEvtForMonth(bulan);
+                }
+
+                loading.classList.add('hidden');
+
+                const total = Object.values(evtMap).reduce((a, b) => a + b, 0);
+                if (total === 0) { empty.classList.remove('hidden'); return; }
+
+                // Urutkan descending
+                const sorted = Object.entries(evtMap).sort((a, b) => b[1] - a[1]);
+                const labels = sorted.map(([k]) => k);
+                const data   = sorted.map(([, v]) => v);
+                const colors = labels.map((l, i) => {
+                    const key = l.toUpperCase();
+                    if (EVT_PALETTE[key]) return EVT_PALETTE[key];
+                    // partial match
+                    for (const [pk, pv] of Object.entries(EVT_PALETTE)) {
+                        if (key.includes(pk) || pk.includes(key)) return pv;
+                    }
+                    return EVT_FALLBACK_COLORS[i % EVT_FALLBACK_COLORS.length];
+                });
+
+                document.getElementById('evt-total-num').textContent = total;
+                renderEvtChart(labels, data, colors, total);
+                renderEvtLegend(labels, data, colors, total);
+
+            } catch(e) {
+                loading.classList.add('hidden');
+                empty.classList.remove('hidden');
+                empty.querySelector('p').textContent = 'Gagal memuat data: ' + (e.message || e);
+                console.error('loadEventType error:', e);
+            }
+        }
+
+        // Fetch READ_MONTH untuk satu bulan, return map { eventType: count }
+        async function fetchEvtForMonth(bulan) {
+            if (_evtCache[bulan]) return _evtCache[bulan];
+
+            const idToken = await getIdToken();
+            const res = await gasRaw({ action: 'READ_MONTH', idToken, sheetName: bulan });
+            if (!res.ok) throw new Error(res.msg || 'Gagal READ_MONTH ' + bulan);
+
+            const rows = res.rows || [];
+            const map  = {};
+
+            for (const r of rows) {
+                const status = (r.status || '').toUpperCase();
+                // Ambil semua status kecuali CANCEL dan kosong
+                if (status === 'CANCEL' || status === '') continue;
+
+                // Kolom F di sheet = "Type Of Event"
+                // Di GAS V_6.2, kolom E = package (r[4]) → ini adalah Type of Event
+                // Kolom F (r[5]) di-SKIP oleh READ_MONTH
+                // Sumber OVERFLOW: field "eventTitle" = kolom L = EVENT_TITLE
+                // Untuk source BULAN: gunakan r.package (kolom E = Type of Event)
+                // Untuk source OVERFLOW: field yg paling relevan juga package
+                let evtType = (r.package || '').toString().trim().toUpperCase();
+
+                // Fallback: jika kosong, tandai sebagai OTHER
+                if (!evtType) evtType = 'OTHER';
+
+                map[evtType] = (map[evtType] || 0) + 1;
+            }
+
+            _evtCache[bulan] = map;
+            return map;
+        }
+
+        function renderEvtChart(labels, data, colors, total) {
+            const ctx = document.getElementById('eventTypeChart').getContext('2d');
+            _evtChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels,
+                    datasets: [{
+                        data,
+                        backgroundColor: colors,
+                        borderColor: 'rgba(0,0,0,0.3)',
+                        borderWidth: 2,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '68%',
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            display: ctx => (ctx.dataset.data[ctx.dataIndex] / total) >= 0.05,
+                            color: '#fff',
+                            font: { weight: '900', size: 9 },
+                            formatter: (v) => v + '×'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    const pct = Math.round((ctx.raw / total) * 100);
+                                    return ' ' + ctx.raw + ' event (' + pct + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderEvtLegend(labels, data, colors, total) {
+            const legend = document.getElementById('evt-legend');
+            legend.innerHTML = labels.map((l, i) => {
+                const pct = Math.round((data[i] / total) * 100);
+                const barW = Math.max(4, pct);
+                return `
+                <div class="flex items-center gap-2 group">
+                    <div class="w-2 h-2 rounded-full flex-shrink-0" style="background:${colors[i]}"></div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-center mb-0.5">
+                            <span class="text-[9px] font-bold text-slate-300 truncate tracking-tight">${esc(l)}</span>
+                            <span class="text-[9px] font-black ml-2 flex-shrink-0" style="color:${colors[i]}">${data[i]}× <span class="text-slate-500 font-bold">(${pct}%)</span></span>
+                        </div>
+                        <div class="h-1 rounded-full bg-white/5 overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500" style="width:${barW}%;background:${colors[i]}"></div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
         }
     </script>
     </div><!-- /app-shell -->
