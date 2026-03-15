@@ -623,9 +623,6 @@ function applyDeptVis() {
 // ══════════════════════════════════════════════════════════════════════════
 const DEFAULT_SET_ROWS = [
   { checked:true,  text:'ROUND TABLE' },
-  { checked:true,  text:'CLASSROOM' },
-  { checked:true,  text:'THEATRE' },
-   { checked:true,  text:'U-SHAPE' },
   { checked:false, text:'SOFA DERET DEPAN 5 DI TENGAH' },
   { checked:true,  text:'RECEPTION TABLE' },
   { checked:true,  text:'HEAD TABLE DI ATAS STAGE 5 KURSI' },
@@ -697,7 +694,7 @@ function addHkRow() {
 // MENU LIST — editable
 // ══════════════════════════════════════════════════════════════════════════
 const DEFAULT_MENU = [
-  { type:'time',   text:'PAKET MENU' },
+  { type:'time',   text:'BUBER JAM 17:00 WIB' },
   { type:'item',   text:'MENDOAN' },
   { type:'item',   text:'PISANG GORENG' },
   { type:'item',   text:'KURMA' },
@@ -1151,59 +1148,75 @@ function addBillingRow() {
   // Jika tidak ada draft → render default
   // Ini menghilangkan duplikat dan render yang salah
   // ════════════════════════════════════════════════════════════════════════
-  async function _loadAndRender() {
-    let draftState = null;
-    let source = '';
-
-    // Coba cloud dulu
-    if (_custKey && _gasUrl) {
-      try {
-        const res  = await fetch(_gasUrl + '?action=GET_BEO_DRAFT&customer=' + encodeURIComponent(d.customer));
-        const data = await res.json();
-        if (data.ok && data.found && data.draft && data.draft.state && !data.draft.state._deleted) {
-          const cs = data.draft.state;
-          // Verifikasi customer sama
-          if (!cs._customer || cs._customer.toUpperCase().trim() === _custKey) {
-            draftState = cs;
-            source = 'cloud';
-            // Sync ke localStorage
-            try { localStorage.setItem(_draftKey, JSON.stringify(cs)); } catch(_) {}
-          }
-        }
-      } catch(e) { console.warn('[BEO] cloud fetch error:', e); }
-    }
-
-    // Jika cloud kosong, coba localStorage
-    if (!draftState && _draftKey) {
+  function _loadAndRender() {
+    // ── INSTANT: cek localStorage dulu (0ms, tidak perlu network) ────────
+    let localDraft = null;
+    if (_draftKey) {
       try {
         const raw = localStorage.getItem(_draftKey);
         if (raw) {
-          const ls = JSON.parse(raw);
-          const age = Date.now() - (ls._savedAt||0);
+          const ls  = JSON.parse(raw);
+          const age = Date.now() - (ls._savedAt || 0);
           if (age < 7*24*60*60*1000 &&
               (!ls._customer || ls._customer.toUpperCase().trim() === _custKey)) {
-            draftState = ls;
-            source = 'local';
+            localDraft = ls;
           }
         }
       } catch(e) {}
     }
 
-    // Render berdasarkan hasil
-    if (draftState) {
-      _renderFromDraft(draftState);
-      if (source === 'cloud') {
-        _showNotif('☁ Data BEO dimuat dari cloud', '#1a6e3a');
-        // Jika dari localStorage, push ke cloud supaya sinkron
-      } else {
-        _showNotif('♻ Draft lokal dipulihkan', '');
-        _pushToCloud(draftState);
-      }
-      console.log('[BEO] Draft restored from', source, '| saved:', new Date(draftState._savedAt||0));
+    if (localDraft) {
+      // Ada localStorage draft — render SEKARANG (instan), lalu cek cloud di background
+      _renderFromDraft(localDraft);
+      _showNotif('♻ Memuat...', '');
+      console.log('[BEO] localStorage draft rendered instantly');
     } else {
-      // Tidak ada draft — render default + template dari d
+      // Tidak ada localStorage — render default dulu agar tidak blank
       _renderFromDefault();
-      console.log('[BEO] No draft found, rendering defaults');
+      console.log('[BEO] No local draft, rendered defaults');
+    }
+
+    // ── BACKGROUND: fetch cloud draft — update jika lebih baru ───────────
+    if (_custKey && _gasUrl) {
+      fetch(_gasUrl + '?action=GET_BEO_DRAFT&customer=' + encodeURIComponent(d.customer))
+        .then(r => r.json())
+        .then(data => {
+          if (!data.ok || !data.found || !data.draft || !data.draft.state
+              || data.draft.state._deleted) {
+            // Tidak ada cloud draft
+            if (localDraft) {
+              _showNotif('♻ Draft lokal dipulihkan', '');
+              _pushToCloud(localDraft); // sinkron lokal ke cloud
+            }
+            return;
+          }
+          const cs = data.draft.state;
+          if (cs._customer && cs._customer.toUpperCase().trim() !== _custKey) return;
+
+          const cloudTs = cs._savedAt || 0;
+          const localTs = localDraft ? (localDraft._savedAt || 0) : 0;
+
+          if (cloudTs > localTs) {
+            // Cloud lebih baru — override tampilan
+            _renderFromDraft(cs);
+            try { localStorage.setItem(_draftKey, JSON.stringify(cs)); } catch(_) {}
+            _showNotif('☁ Data BEO dimuat dari cloud', '#1a6e3a');
+            console.log('[BEO] Cloud draft override local | cloud:', new Date(cloudTs));
+          } else if (localDraft) {
+            // Lokal sama/lebih baru — sudah ter-render, push balik ke cloud
+            _showNotif('☁ BEO tersinkron', '#1a6e3a');
+            if (localTs > cloudTs) _pushToCloud(localDraft);
+          } else {
+            // Tidak ada lokal tapi ada cloud — render cloud
+            _renderFromDraft(cs);
+            try { localStorage.setItem(_draftKey, JSON.stringify(cs)); } catch(_) {}
+            _showNotif('☁ Data BEO dimuat dari cloud', '#1a6e3a');
+          }
+        })
+        .catch(e => {
+          if (localDraft) _showNotif('♻ Draft lokal dipulihkan', '');
+          console.warn('[BEO] cloud fetch error:', e);
+        });
     }
   }
 
