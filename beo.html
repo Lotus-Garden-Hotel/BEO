@@ -166,7 +166,7 @@
   .sig-ttl-s:focus{ color:var(--gold-dk); }
   .sig-badge{ display:none; }
 
-  /* Badge approval — ringkas agar muat di kolom sempit */
+  /* ── Digital Signature — Level A + B ── */
   .sig-bot-badge{
     display:none; font-size:5px; font-weight:800;
     padding:1px 3px; border-radius:4px; margin-top:2px;
@@ -186,6 +186,77 @@
     0%   { transform:scale(0.5); opacity:0; }
     70%  { transform:scale(1.15); }
     100% { transform:scale(1); opacity:1; }
+  }
+
+  /* Level A: Digital approval overlay di kotak tanda tangan */
+  .sig-digital-overlay {
+    display:none; position:absolute; inset:0;
+    background:rgba(212,237,218,.92);
+    border:1.5px solid #28a745;
+    border-radius:3px;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:2px;
+    z-index:2;
+    animation: badgePop .5s ease;
+  }
+  .sig-digital-overlay.show { display:flex; }
+  .sig-digital-check  { font-size:11px; line-height:1; color:#155724; }
+  .sig-digital-name   { font-size:5.5px; font-weight:800; color:#155724; text-align:center; line-height:1.2; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .sig-digital-time   { font-size:4.5px; color:#2d7a3a; text-align:center; margin-top:1px; line-height:1.2; }
+  .sig-digital-stamp  { font-size:4px; color:#2d7a3a; font-weight:700; letter-spacing:.05em; margin-top:1px; border:1px solid #2d7a3a; padding:0 2px; border-radius:2px; }
+
+  /* Level B: QR code di pojok kanan bawah kotak tanda tangan */
+  .sig-qr-wrap {
+    display:none; position:absolute; bottom:2px; right:2px;
+    z-index:3; cursor:pointer;
+  }
+  .sig-qr-wrap.show { display:block; }
+  .sig-qr-wrap canvas, .sig-qr-wrap img {
+    width:22px !important; height:22px !important;
+    border:1px solid #28a745; border-radius:2px;
+    display:block;
+  }
+
+  /* Wrapper sig-cell-s harus relative untuk overlay */
+  .sig-cell-s { position:relative; }
+
+  /* Print: digital overlay tampil, pending badge hilang */
+  @media print {
+    .sig-digital-overlay.show { display:flex !important; background:rgba(212,237,218,.7) !important; }
+    .sig-qr-wrap.show { display:block !important; }
+    .sig-bot-badge.pending { display:none !important; }
+    .sig-bot-badge.approved { display:none !important; } /* diganti oleh overlay */
+  }
+
+  /* Modal verifikasi QR */
+  #qr-verify-modal {
+    position:fixed; inset:0; z-index:700;
+    background:rgba(0,0,0,.85); backdrop-filter:blur(8px);
+    display:none; align-items:center; justify-content:center; padding:20px;
+  }
+  #qr-verify-modal.open { display:flex; animation:fadeIn .2s ease; }
+  .qr-verify-box {
+    background:var(--paper); border-radius:16px; padding:24px 20px;
+    max-width:320px; width:100%; text-align:center;
+    border:2px solid #28a745;
+  }
+  .qr-verify-icon  { font-size:40px; margin-bottom:8px; }
+  .qr-verify-title { font-size:16px; font-weight:800; color:#155724; margin-bottom:4px; }
+  .qr-verify-dept  { font-size:12px; font-weight:700; color:#1a1610; margin-bottom:2px; }
+  .qr-verify-beo   { font-size:10px; color:#5a4a30; margin-bottom:2px; }
+  .qr-verify-time  { font-size:10px; color:#5a4a30; margin-bottom:16px; }
+  .qr-verify-badge {
+    display:inline-block; background:#d4edda; color:#155724;
+    border:1.5px solid #28a745; border-radius:20px;
+    font-size:10px; font-weight:800; padding:4px 16px;
+    letter-spacing:.05em; margin-bottom:16px;
+  }
+  .qr-verify-close {
+    width:100%; padding:10px; border-radius:10px;
+    background:#f0ebe0; border:1px solid #c9a884;
+    color:#5a4a30; font-size:11px; font-weight:700; cursor:pointer;
   }
 
   /* Hint scroll di mobile */
@@ -370,6 +441,8 @@
     .bottom-stripe{ height:3px !important; }
   }
 </style>
+  <!-- QR Code generator (ringan 40KB, untuk Level B digital signature) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -630,67 +703,188 @@ Notes : Kebutuhan manning diluar standard harus atas persetujuan HRD &amp; GM</d
   <div class="sig-row-single">
     <div class="sig-cell-s">
       <div class="sig-ln-s"></div>
-      <div class="sig-nm-s" contenteditable="true" id="sig-se">—</div>
+      <div class="sig-nm-s" contenteditable="true" id="sig-se">
+      <!-- Digital signature overlay (Level A) -->
+      <div class="sig-digital-overlay" id="dov-se">
+        <div class="sig-digital-check">✓</div>
+        <div class="sig-digital-name" id="dov-name-se"></div>
+        <div class="sig-digital-time" id="dov-time-se"></div>
+        <div class="sig-digital-stamp">DIGITAL</div>
+      </div>
+      <!-- QR code (Level B) -->
+      <div class="sig-qr-wrap" id="qrw-se" onclick="_showQrVerify('se')">
+        <div id="qr-se"></div>
+      </div>—</div>
       <div class="sig-ttl-s" contenteditable="true">SE</div>
       <div class="sig-bot-badge" id="badge-se"></div>
     </div>
     <div class="sig-cell-s">
       <div class="sig-ln-s"></div>
-      <div class="sig-nm-s" contenteditable="true" id="sig-sm"></div>
+      <div class="sig-nm-s" contenteditable="true" id="sig-sm">
+      <!-- Digital signature overlay (Level A) -->
+      <div class="sig-digital-overlay" id="dov-sm">
+        <div class="sig-digital-check">✓</div>
+        <div class="sig-digital-name" id="dov-name-sm"></div>
+        <div class="sig-digital-time" id="dov-time-sm"></div>
+        <div class="sig-digital-stamp">DIGITAL</div>
+      </div>
+      <!-- QR code (Level B) -->
+      <div class="sig-qr-wrap" id="qrw-sm" onclick="_showQrVerify('sm')">
+        <div id="qr-sm"></div>
+      </div></div>
       <div class="sig-ttl-s" contenteditable="true">SM</div>
       <div class="sig-bot-badge" id="badge-sm-bot"></div>
     </div>
     <div class="sig-cell-s">
       <div class="sig-ln-s"></div>
-      <div class="sig-nm-s" contenteditable="true" id="sig-fom"></div>
+      <div class="sig-nm-s" contenteditable="true" id="sig-fom">
+      <!-- Digital signature overlay (Level A) -->
+      <div class="sig-digital-overlay" id="dov-fom">
+        <div class="sig-digital-check">✓</div>
+        <div class="sig-digital-name" id="dov-name-fom"></div>
+        <div class="sig-digital-time" id="dov-time-fom"></div>
+        <div class="sig-digital-stamp">DIGITAL</div>
+      </div>
+      <!-- QR code (Level B) -->
+      <div class="sig-qr-wrap" id="qrw-fom" onclick="_showQrVerify('fom')">
+        <div id="qr-fom"></div>
+      </div></div>
       <div class="sig-ttl-s" contenteditable="true">AST.FOM</div>
       <div class="sig-bot-badge" id="badge-fom"></div>
     </div>
     <div class="sig-cell-s">
       <div class="sig-ln-s"></div>
-      <div class="sig-nm-s" contenteditable="true" id="sig-fb"></div>
+      <div class="sig-nm-s" contenteditable="true" id="sig-fb">
+      <!-- Digital signature overlay (Level A) -->
+      <div class="sig-digital-overlay" id="dov-fb">
+        <div class="sig-digital-check">✓</div>
+        <div class="sig-digital-name" id="dov-name-fb"></div>
+        <div class="sig-digital-time" id="dov-time-fb"></div>
+        <div class="sig-digital-stamp">DIGITAL</div>
+      </div>
+      <!-- QR code (Level B) -->
+      <div class="sig-qr-wrap" id="qrw-fb" onclick="_showQrVerify('fb')">
+        <div id="qr-fb"></div>
+      </div></div>
       <div class="sig-ttl-s" contenteditable="true">FB</div>
       <div class="sig-bot-badge" id="badge-fb"></div>
     </div>
     <div class="sig-cell-s">
       <div class="sig-ln-s"></div>
-      <div class="sig-nm-s" contenteditable="true" id="sig-chef"></div>
+      <div class="sig-nm-s" contenteditable="true" id="sig-chef">
+      <!-- Digital signature overlay (Level A) -->
+      <div class="sig-digital-overlay" id="dov-chef">
+        <div class="sig-digital-check">✓</div>
+        <div class="sig-digital-name" id="dov-name-chef"></div>
+        <div class="sig-digital-time" id="dov-time-chef"></div>
+        <div class="sig-digital-stamp">DIGITAL</div>
+      </div>
+      <!-- QR code (Level B) -->
+      <div class="sig-qr-wrap" id="qrw-chef" onclick="_showQrVerify('chef')">
+        <div id="qr-chef"></div>
+      </div></div>
       <div class="sig-ttl-s" contenteditable="true">Sous Chef</div>
       <div class="sig-bot-badge" id="badge-chef"></div>
     </div>
     <div class="sig-cell-s">
       <div class="sig-ln-s"></div>
-      <div class="sig-nm-s" contenteditable="true" id="sig-eng"></div>
+      <div class="sig-nm-s" contenteditable="true" id="sig-eng">
+      <!-- Digital signature overlay (Level A) -->
+      <div class="sig-digital-overlay" id="dov-eng">
+        <div class="sig-digital-check">✓</div>
+        <div class="sig-digital-name" id="dov-name-eng"></div>
+        <div class="sig-digital-time" id="dov-time-eng"></div>
+        <div class="sig-digital-stamp">DIGITAL</div>
+      </div>
+      <!-- QR code (Level B) -->
+      <div class="sig-qr-wrap" id="qrw-eng" onclick="_showQrVerify('eng')">
+        <div id="qr-eng"></div>
+      </div></div>
       <div class="sig-ttl-s" contenteditable="true">ENG</div>
       <div class="sig-bot-badge" id="badge-eng"></div>
     </div>
     <div class="sig-cell-s">
       <div class="sig-ln-s"></div>
-      <div class="sig-nm-s" contenteditable="true" id="sig-hk"></div>
+      <div class="sig-nm-s" contenteditable="true" id="sig-hk">
+      <!-- Digital signature overlay (Level A) -->
+      <div class="sig-digital-overlay" id="dov-hk">
+        <div class="sig-digital-check">✓</div>
+        <div class="sig-digital-name" id="dov-name-hk"></div>
+        <div class="sig-digital-time" id="dov-time-hk"></div>
+        <div class="sig-digital-stamp">DIGITAL</div>
+      </div>
+      <!-- QR code (Level B) -->
+      <div class="sig-qr-wrap" id="qrw-hk" onclick="_showQrVerify('hk')">
+        <div id="qr-hk"></div>
+      </div></div>
       <div class="sig-ttl-s" contenteditable="true">HK</div>
       <div class="sig-bot-badge" id="badge-hk"></div>
     </div>
     <div class="sig-cell-s">
       <div class="sig-ln-s"></div>
-      <div class="sig-nm-s" contenteditable="true" id="sig-security"></div>
+      <div class="sig-nm-s" contenteditable="true" id="sig-security">
+      <!-- Digital signature overlay (Level A) -->
+      <div class="sig-digital-overlay" id="dov-security">
+        <div class="sig-digital-check">✓</div>
+        <div class="sig-digital-name" id="dov-name-security"></div>
+        <div class="sig-digital-time" id="dov-time-security"></div>
+        <div class="sig-digital-stamp">DIGITAL</div>
+      </div>
+      <!-- QR code (Level B) -->
+      <div class="sig-qr-wrap" id="qrw-security" onclick="_showQrVerify('security')">
+        <div id="qr-security"></div>
+      </div></div>
       <div class="sig-ttl-s" contenteditable="true">Security</div>
       <div class="sig-bot-badge" id="badge-security"></div>
     </div>
     <div class="sig-cell-s">
       <div class="sig-ln-s"></div>
-      <div class="sig-nm-s" contenteditable="true" id="sig-hr"></div>
+      <div class="sig-nm-s" contenteditable="true" id="sig-hr">
+      <!-- Digital signature overlay (Level A) -->
+      <div class="sig-digital-overlay" id="dov-hr">
+        <div class="sig-digital-check">✓</div>
+        <div class="sig-digital-name" id="dov-name-hr"></div>
+        <div class="sig-digital-time" id="dov-time-hr"></div>
+        <div class="sig-digital-stamp">DIGITAL</div>
+      </div>
+      <!-- QR code (Level B) -->
+      <div class="sig-qr-wrap" id="qrw-hr" onclick="_showQrVerify('hr')">
+        <div id="qr-hr"></div>
+      </div></div>
       <div class="sig-ttl-s" contenteditable="true">HR</div>
       <div class="sig-bot-badge" id="badge-hr"></div>
     </div>
     <div class="sig-cell-s">
       <div class="sig-ln-s"></div>
-      <div class="sig-nm-s" contenteditable="true" id="sig-ca"></div>
+      <div class="sig-nm-s" contenteditable="true" id="sig-ca">
+      <!-- Digital signature overlay (Level A) -->
+      <div class="sig-digital-overlay" id="dov-ca">
+        <div class="sig-digital-check">✓</div>
+        <div class="sig-digital-name" id="dov-name-ca"></div>
+        <div class="sig-digital-time" id="dov-time-ca"></div>
+        <div class="sig-digital-stamp">DIGITAL</div>
+      </div>
+      <!-- QR code (Level B) -->
+      <div class="sig-qr-wrap" id="qrw-ca" onclick="_showQrVerify('ca')">
+        <div id="qr-ca"></div>
+      </div></div>
       <div class="sig-ttl-s" contenteditable="true">CA</div>
       <div class="sig-bot-badge" id="badge-ca"></div>
     </div>
     <div class="sig-cell-s">
       <div class="sig-ln-s"></div>
-      <div class="sig-nm-s" contenteditable="true" id="sig-gm"></div>
+      <div class="sig-nm-s" contenteditable="true" id="sig-gm">
+      <!-- Digital signature overlay (Level A) -->
+      <div class="sig-digital-overlay" id="dov-gm">
+        <div class="sig-digital-check">✓</div>
+        <div class="sig-digital-name" id="dov-name-gm"></div>
+        <div class="sig-digital-time" id="dov-time-gm"></div>
+        <div class="sig-digital-stamp">DIGITAL</div>
+      </div>
+      <!-- QR code (Level B) -->
+      <div class="sig-qr-wrap" id="qrw-gm" onclick="_showQrVerify('gm')">
+        <div id="qr-gm"></div>
+      </div></div>
       <div class="sig-ttl-s" contenteditable="true">GM</div>
       <div class="sig-bot-badge" id="badge-gm"></div>
     </div>
@@ -2102,48 +2296,100 @@ async function _fetchApprovalStatus(gasUrl, beoId) {
     console.warn('[APPROVAL] fetch error:', e.message);
   }
 }
+// ── Peta dept label/key → dept key internal ────────────────────────────────
+const _DEPT_KEY_MAP = {
+  'sm':'sm', 'fb':'fb', 'chef':'chef', 'eng':'eng', 'hk':'hk',
+  'security':'security', 'hr':'hr', 'ca':'ca', 'gm':'gm',
+  'sales manager':'sm', 'f&b manager':'fb', 'sous chef':'chef',
+  'engineering mgr':'eng', 'hk manager':'hk', 'chief security':'security',
+  'hrd manager':'hr', 'cost accounting':'ca', 'general manager':'gm',
+};
+const _DEPT_BADGE_MAP = {
+  'sm':'badge-sm-bot','fb':'badge-fb','chef':'badge-chef',
+  'eng':'badge-eng','hk':'badge-hk','security':'badge-security',
+  'hr':'badge-hr','ca':'badge-ca','gm':'badge-gm',
+};
+// Storage approval data untuk QR verify
+const _approvalData = {};
+
+// Verifikasi QR — tampilkan modal detail
+function _showQrVerify(deptKey) {
+  const data = _approvalData[deptKey];
+  if (!data) return;
+  document.getElementById('qrv-dept').textContent = data.dept || deptKey.toUpperCase();
+  document.getElementById('qrv-beo').textContent  = 'BEO: ' + (data.beoId || '—');
+  document.getElementById('qrv-time').textContent = '⏱ ' + (data.approvedAt || '—');
+  document.getElementById('qr-verify-modal').classList.add('open');
+}
+
 function _renderApprovalBadges(approvals) {
-  // Map dept label/key → badge element IDs di signature row
-  // GAS bisa return dept sebagai key (sm) atau label (Sales Manager)
-  const DEPT_BADGE_MAP = {
-    // by key
-    'sm':       ['badge-sm-bot'],
-    'fb':       ['badge-fb'],
-    'chef':     ['badge-chef'],
-    'eng':      ['badge-eng'],
-    'hk':       ['badge-hk'],
-    'security': ['badge-security'],
-    'hr':       ['badge-hr'],
-    'ca':       ['badge-ca'],
-    'gm':       ['badge-gm'],
-    // by label (case-insensitive match di bawah)
-    'sales manager':   ['badge-sm-bot'],
-    'f&b manager':     ['badge-fb'],
-    'sous chef':       ['badge-chef'],
-    'engineering mgr': ['badge-eng'],
-    'hk manager':      ['badge-hk'],
-    'chief security':  ['badge-security'],
-    'hrd manager':     ['badge-hr'],
-    'chief accounting': ['badge-ca'],
-    'general manager': ['badge-gm'],
-  };
+  const gasUrl  = _getGasUrl();
+  const baseUrl = location.origin + location.pathname.replace(/\/[^\/]*$/, '/');
+  const verifyBase = baseUrl + 'verify.html';
 
   approvals.forEach(a => {
-    const deptKey = (a.dept || a.key || '').toString().toLowerCase().trim();
-    const badgeIds = DEPT_BADGE_MAP[deptKey] || [];
+    const rawKey   = (a.dept || a.key || '').toString().toLowerCase().trim();
+    const deptKey  = _DEPT_KEY_MAP[rawKey] || rawKey;
+    const badgeId  = _DEPT_BADGE_MAP[deptKey];
+    const isApproved = (a.status||'').toUpperCase() === 'APPROVED'
+                    || (a.status||'').toUpperCase() === 'DONE';
 
-    badgeIds.forEach(bid => {
-      const b = document.getElementById(bid);
-      if (!b) return;
-      const isApproved = (a.status||'').toUpperCase() === 'APPROVED'
-                      || (a.status||'').toUpperCase() === 'DONE';
-      b.className   = 'sig-bot-badge ' + (isApproved ? 'approved' : 'pending');
-      // Text ringkas agar muat di kolom sempit, detail di title tooltip
-      b.textContent = isApproved ? '✓ OK' : '⏳';
-      b.title = isApproved
-        ? '✓ Approved' + (a.approvedAt ? ' · ' + a.approvedAt : '')
-        : 'Belum Approve';
-    });
+    // Simpan data untuk QR verify
+    if (isApproved) _approvalData[deptKey] = { dept: a.dept, beoId: a.beoId||_getBeoId(), approvedAt: a.approvedAt };
+
+    // ── Level A: Digital overlay di kotak tanda tangan ──────────────────
+    const ovl = document.getElementById('dov-' + deptKey);
+    if (ovl) {
+      if (isApproved) {
+        // Isi nama dari sig-nm-s (nama yang sudah di-set)
+        const sigNm = document.getElementById('sig-' + deptKey);
+        const nama  = sigNm ? sigNm.textContent.trim() : '';
+        document.getElementById('dov-name-' + deptKey).textContent = nama || a.dept || deptKey.toUpperCase();
+        // Format tanggal ringkas
+        const ts    = a.approvedAt || '';
+        const tsShort = ts ? ts.replace(/(\d+)\/(\d+)\/(\d+) (\d+):(\d+).*/, '$1/$2 $4:$5') : '';
+        document.getElementById('dov-time-' + deptKey).textContent = tsShort;
+        ovl.classList.add('show');
+      } else {
+        ovl.classList.remove('show');
+      }
+    }
+
+    // ── Level B: QR code verifikasi ────────────────────────────────────
+    const qrWrap = document.getElementById('qrw-' + deptKey);
+    const qrDiv  = document.getElementById('qr-' + deptKey);
+    if (qrWrap && qrDiv && isApproved && typeof QRCode !== 'undefined') {
+      qrDiv.innerHTML = '';
+      // URL verifikasi: gasUrl?action=READ_APPROVE_STATUS&beoId=xxx → buka halaman verifikasi
+      const beoId = a.beoId || _getBeoId();
+      const verifyUrl = verifyBase + '?beoId=' + encodeURIComponent(beoId)
+                      + '&dept=' + encodeURIComponent(deptKey)
+                      + '&at='   + encodeURIComponent(a.approvedAt||'');
+      new QRCode(qrDiv, {
+        text:   verifyUrl,
+        width:  44,
+        height: 44,
+        colorDark:  '#155724',
+        colorLight: '#d4edda',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+      qrWrap.classList.add('show');
+    } else if (qrWrap && !isApproved) {
+      qrWrap.classList.remove('show');
+      if (qrDiv) qrDiv.innerHTML = '';
+    }
+
+    // ── Badge kecil (tetap ada untuk mobile scroll view) ────────────────
+    if (badgeId) {
+      const b = document.getElementById(badgeId);
+      if (b) {
+        b.className   = 'sig-bot-badge ' + (isApproved ? 'approved' : 'pending');
+        b.textContent = isApproved ? '✓' : '⏳';
+        b.title       = isApproved
+          ? '✓ ' + (a.dept||deptKey) + ' · ' + (a.approvedAt||'')
+          : 'Belum Approve';
+      }
+    }
   });
 }
 
@@ -2198,6 +2444,25 @@ function _manualRefreshApproval() {
 })();
 
 </script>
+
+<!-- ─── QR VERIFY MODAL ──────────────────────────────────────── -->
+<div id="qr-verify-modal">
+  <div class="qr-verify-box">
+    <div class="qr-verify-icon">✅</div>
+    <div class="qr-verify-title">Tanda Tangan Digital Sah</div>
+    <div class="qr-verify-badge" id="qrv-badge">● VERIFIED</div>
+    <div class="qr-verify-dept" id="qrv-dept">—</div>
+    <div class="qr-verify-beo"  id="qrv-beo">—</div>
+    <div class="qr-verify-time" id="qrv-time">—</div>
+    <div style="font-size:8px;color:#8a7a5a;margin-bottom:16px;line-height:1.6;">
+      Dokumen ini telah disetujui secara digital melalui WhatsApp.<br>
+      Token terenkripsi tersimpan di sistem Lotus Garden.
+    </div>
+    <button class="qr-verify-close" onclick="document.getElementById('qr-verify-modal').classList.remove('open')">
+      Tutup
+    </button>
+  </div>
+</div>
 
 <!-- ─── SAVE TEMPLATE MODAL ─────── -->
 <div id="tpl-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;padding:24px;overflow-y:auto;">

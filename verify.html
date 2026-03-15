@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Verifikasi BEO — Lotus Garden</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{--gold:#c9a84c;--ink:#1a1610;--green:#155724;--green-lt:#d4edda;--red:#8b2020;}
+  html,body{min-height:100vh;background:#0d0b08;display:flex;align-items:center;
+    justify-content:center;font-family:'Segoe UI',system-ui,sans-serif;padding:20px;}
+  .wrap{width:100%;max-width:380px;}
+  .logo-row{text-align:center;margin-bottom:20px;}
+  .logo-ttl{font-size:11px;font-weight:800;color:var(--gold);letter-spacing:.25em;
+    text-transform:uppercase;margin-top:8px;}
+  .card{border-radius:18px;padding:28px 22px;text-align:center;}
+  /* Verified */
+  .card-ok{background:#0d1a0f;border:2px solid #28a745;}
+  .check-anim{font-size:56px;margin-bottom:12px;
+    animation:popIn .5s cubic-bezier(.175,.885,.32,1.275) both;}
+  @keyframes popIn{0%{transform:scale(0);opacity:0}100%{transform:scale(1);opacity:1}}
+  .v-title{font-size:20px;font-weight:800;color:#28a745;margin-bottom:6px;}
+  .v-badge{display:inline-block;background:var(--green-lt);color:var(--green);
+    border:1.5px solid #28a745;border-radius:20px;font-size:10px;font-weight:800;
+    padding:4px 18px;letter-spacing:.08em;margin:10px 0 16px;}
+  .v-row{display:flex;justify-content:space-between;align-items:center;
+    padding:8px 12px;border-radius:8px;margin-bottom:6px;background:rgba(255,255,255,.04);}
+  .v-lbl{font-size:9px;color:#6a8a6a;font-weight:700;letter-spacing:.08em;text-transform:uppercase;}
+  .v-val{font-size:11px;color:#e8f5e9;font-weight:600;text-align:right;max-width:60%;}
+  .v-divider{border:none;border-top:1px solid rgba(40,167,69,.2);margin:14px 0;}
+  .v-footer{font-size:8px;color:#3a6a3a;line-height:1.7;margin-top:14px;}
+  /* Invalid */
+  .card-err{background:#1a0d0d;border:2px solid #8b2020;}
+  .e-title{font-size:18px;font-weight:800;color:#e74c3c;margin-bottom:8px;}
+  .e-sub{font-size:11px;color:#7a4040;line-height:1.6;}
+  /* Loading */
+  .card-loading{background:#13100d;border:1px solid #3d3028;}
+  .spinner{width:44px;height:44px;border:3px solid #3d3028;border-top-color:var(--gold);
+    border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-txt{color:#7a6a54;font-size:12px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo-row">
+    <div class="logo-ttl">✦ LOTUS GARDEN BY WH</div>
+    <div style="font-size:9px;color:#4a3a2a;letter-spacing:.15em;margin-top:3px;">BANQUET DIGITAL VERIFICATION</div>
+  </div>
+
+  <!-- Loading -->
+  <div class="card card-loading" id="state-loading">
+    <div class="spinner"></div>
+    <div class="loading-txt">Memverifikasi tanda tangan digital...</div>
+  </div>
+
+  <!-- Verified OK -->
+  <div class="card card-ok" id="state-ok" style="display:none">
+    <div class="check-anim">✅</div>
+    <div class="v-title">Tanda Tangan Digital Sah</div>
+    <div class="v-badge" id="v-dept-badge">● VERIFIED</div>
+
+    <div class="v-row">
+      <span class="v-lbl">Departemen</span>
+      <span class="v-val" id="v-dept">—</span>
+    </div>
+    <div class="v-row">
+      <span class="v-lbl">No. BEO</span>
+      <span class="v-val" id="v-beo">—</span>
+    </div>
+    <div class="v-row">
+      <span class="v-lbl">Disetujui Pada</span>
+      <span class="v-val" id="v-time">—</span>
+    </div>
+    <div class="v-row">
+      <span class="v-lbl">Status</span>
+      <span class="v-val" style="color:#28a745;font-weight:800;">✓ APPROVED</span>
+    </div>
+
+    <hr class="v-divider">
+    <div class="v-footer">
+      Persetujuan ini diberikan secara digital melalui WhatsApp<br>
+      dan tercatat dalam sistem Banquet Lotus Garden by WH.<br>
+      Token terenkripsi · Tidak dapat dipalsukan
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div class="card card-err" id="state-err" style="display:none">
+    <div style="font-size:44px;margin-bottom:12px;">⚠️</div>
+    <div class="e-title">Verifikasi Gagal</div>
+    <div class="e-sub" id="err-msg">Token tidak ditemukan atau tidak valid.<br>Hubungi tim Sales untuk informasi lebih lanjut.</div>
+  </div>
+</div>
+
+<script>
+const DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbyQTrvw2WtHV0zpItsVA2hG_02R0gscUrOua2rnOqw750PvT3PODSaO6LaM3HWUTXJi/exec';
+function getGasUrl() {
+  try { const c=JSON.parse(localStorage.getItem('banquet_elite_config')||'{}'); return c.gasUrl||DEFAULT_GAS; }
+  catch(_){ return DEFAULT_GAS; }
+}
+
+const params = new URLSearchParams(location.search);
+const beoId  = params.get('beoId') || '';
+const dept   = params.get('dept')  || '';
+const at     = params.get('at')    || '';
+
+function show(id) {
+  ['state-loading','state-ok','state-err'].forEach(s => {
+    document.getElementById(s).style.display = s===id ? 'block' : 'none';
+  });
+}
+
+async function verify() {
+  if (!beoId) {
+    document.getElementById('err-msg').textContent = 'Parameter BEO ID tidak ditemukan di link ini.';
+    show('state-err'); return;
+  }
+  try {
+    const res  = await fetch(getGasUrl() + '?' + new URLSearchParams({ action:'READ_APPROVE_STATUS', beoId }));
+    const data = await res.json();
+
+    if (!data.ok) {
+      document.getElementById('err-msg').textContent = data.msg || 'Gagal memverifikasi.';
+      show('state-err'); return;
+    }
+
+    const depts = data.depts || [];
+    // Cari dept yang diminta
+    const found = depts.find(d =>
+      d.dept.toLowerCase().includes(dept.toLowerCase()) ||
+      dept.toLowerCase().includes(d.dept.toLowerCase().split(' ')[0])
+    ) || (depts.length === 1 ? depts[0] : null);
+
+    if (!found || found.status !== 'DONE') {
+      document.getElementById('err-msg').textContent =
+        found ? 'Departemen ' + (found.dept||dept) + ' belum memberikan persetujuan.'
+               : 'Departemen "' + dept + '" tidak ditemukan dalam record approval BEO ini.';
+      show('state-err'); return;
+    }
+
+    // Tampilkan verified
+    const DEPT_LABELS = {
+      sm:'Sales Manager', fb:'F&B Manager', chef:'Sous Chef',
+      eng:'Engineering Mgr', hk:'HK Manager', security:'Chief Security',
+      hr:'HRD Manager', ca:'Cost Accounting', gm:'General Manager'
+    };
+    const deptLabel = DEPT_LABELS[dept] || found.dept || dept.toUpperCase();
+    document.getElementById('v-dept-badge').textContent = '● ' + deptLabel.toUpperCase();
+    document.getElementById('v-dept').textContent = deptLabel;
+    document.getElementById('v-beo').textContent  = beoId;
+    document.getElementById('v-time').textContent = found.approvedAt || at || '—';
+    show('state-ok');
+
+  } catch(e) {
+    document.getElementById('err-msg').textContent = 'Tidak dapat terhubung ke server. Periksa koneksi internet.';
+    show('state-err');
+  }
+}
+
+verify();
+</script>
+</body>
+</html>

@@ -358,6 +358,22 @@
     .confirm-yes.danger { background:rgba(192,57,43,.1); border-color:rgba(192,57,43,.3); color:#e74c3c; }
     .confirm-yes.danger:hover { background:rgba(192,57,43,.18); }
 
+    /* ── Reset BEO Seq Modal ── */
+    #reset-seq-modal{ position:fixed; inset:0; z-index:600; background:rgba(8,7,6,.95);
+      display:none; align-items:center; justify-content:center; padding:20px; }
+    #reset-seq-modal.open{ display:flex; animation:fadeIn .2s ease; }
+    .reset-seq-box{ background:var(--card); border:1px solid var(--border); border-radius:18px;
+      padding:24px 20px; max-width:360px; width:100%; animation:fadeUp .25s ease; }
+    .reset-seq-title{ font-family:'Cormorant Garamond',serif; font-size:18px; font-weight:700;
+      color:var(--gold2); margin-bottom:4px; }
+    .reset-seq-sub{ font-size:10px; color:var(--muted); margin-bottom:16px; line-height:1.6; }
+    .reset-seq-row{ display:grid; grid-template-columns:1fr 1fr 80px; gap:8px; margin-bottom:10px; }
+    .reset-seq-inp{ background:var(--surface); border:1px solid var(--border); border-radius:8px;
+      padding:8px 10px; color:var(--text); font-size:11px; outline:none; width:100%; }
+    .reset-seq-inp:focus{ border-color:var(--gold); }
+    .reset-seq-hint{ font-size:8px; color:var(--muted); margin-bottom:14px; letter-spacing:.04em; }
+    .reset-seq-result{ font-size:10px; min-height:18px; letter-spacing:.04em; margin-top:8px; }
+
     ::-webkit-scrollbar { width:3px; }
     ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
 
@@ -940,6 +956,57 @@
 <!-- ─── TOAST ──────────────────────────────────────── -->
 <div id="toast" class="toast"></div>
 
+<!-- ─── RESET BEO SEQ MODAL ─────────────────────────── -->
+<div id="reset-seq-modal">
+  <div class="reset-seq-box">
+    <div class="reset-seq-title">🔄 Reset Nomor BEO</div>
+    <div class="reset-seq-sub">
+      Reset counter urutan nomor BEO. Kosongkan field untuk reset semua.
+      BEO berikutnya akan mulai dari nomor yang ditentukan.
+    </div>
+
+    <div class="reset-seq-row">
+      <div>
+        <div style="font-size:8px;color:var(--muted);margin-bottom:4px;letter-spacing:.08em;">VENUE (3 huruf)</div>
+        <input class="reset-seq-inp" id="rst-venue" placeholder="BAL / VIP / TER" maxlength="3"
+          style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()">
+      </div>
+      <div>
+        <div style="font-size:8px;color:var(--muted);margin-bottom:4px;letter-spacing:.08em;">BULAN (MMYY)</div>
+        <input class="reset-seq-inp" id="rst-month" placeholder="0326" maxlength="4">
+      </div>
+      <div>
+        <div style="font-size:8px;color:var(--muted);margin-bottom:4px;letter-spacing:.08em;">MULAI DARI</div>
+        <input class="reset-seq-inp" id="rst-to" placeholder="0" value="0" type="number" min="0" max="999">
+      </div>
+    </div>
+
+    <div class="reset-seq-hint">
+      Contoh: Venue=<b>BAL</b>, Bulan=<b>0326</b> → reset Ball Room Maret 2026 saja<br>
+      Kosong semua → reset SEMUA venue semua bulan (hati-hati!)
+    </div>
+
+    <!-- Preview key yang akan di-reset -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:9px;color:var(--muted);margin-bottom:14px;">
+      Key: <span id="rst-preview" style="color:var(--gold);font-weight:700;font-family:monospace;">—</span>
+      &nbsp;→&nbsp; BEO berikutnya: <span id="rst-next" style="color:var(--green);font-weight:700;">001</span>
+    </div>
+
+    <div style="display:flex;gap:10px;">
+      <button onclick="closeResetSeqModal()"
+        style="flex:1;height:42px;border-radius:10px;background:var(--surface);border:1px solid var(--border);color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;">
+        Batal
+      </button>
+      <button onclick="doResetBeoSeq()"
+        style="flex:1;height:42px;border-radius:10px;background:rgba(231,76,60,.12);border:1px solid rgba(231,76,60,.3);color:#e74c3c;font-size:11px;font-weight:700;cursor:pointer;"
+        id="btn-do-reset">
+        🔄 Reset Sekarang
+      </button>
+    </div>
+    <div class="reset-seq-result" id="rst-result"></div>
+  </div>
+</div>
+
 <!-- ─── UNIFIED SEARCH POPUP (Scanner + Ketersediaan) ─── -->
 <div id="unified-popup">
 
@@ -1065,6 +1132,10 @@
       </div>
       <div class="btn-icon btn-icon-red"  onclick="resetForm(true)" title="Reset Form">✕</div>
       <div class="btn-icon btn-icon-blue" onclick="openLogsPopup()" title="Activity Logs">📋</div>
+      <div class="btn-icon" id="btn-reset-seq" onclick="openResetSeqModal()" title="Reset Nomor BEO"
+        style="display:none;background:rgba(231,76,60,.08);border-color:rgba(231,76,60,.25);color:#e74c3c;font-size:10px;font-weight:800;">
+        #⟳
+      </div>
       <div class="btn-icon" id="btn-menu-tpl" onclick="openMenuTemplate()" title="Template Menu"
         style="background:rgba(243,156,18,.08);border-color:rgba(243,156,18,.25);color:#f39c12;">🍽</div>
       <!-- 👤 Customer History — kanan -->
@@ -1393,6 +1464,8 @@ _auth.onAuthStateChanged(async user => {
       if (res.role === 'MANAGER' || res.role === 'ADMIN') {
         const btnCust = document.getElementById('btn-cust-history');
         if (btnCust) btnCust.style.display = 'flex';
+        const btnReset = document.getElementById('btn-reset-seq');
+        if (btnReset) btnReset.style.display = 'flex';
       }
       // [FIX] Trigger load data setelah auth berhasil
       // window.load sudah jalan sebelumnya tapi gagal karena belum auth
@@ -1450,9 +1523,94 @@ function logoutUser() {
   if (confirm('Keluar dari sistem?')) {
     window._cachedToken    = null;
     window._tokenFetchedAt = 0;
-    _authVerified          = false;  // [FIX] reset agar login ulang bisa proses normal
+    _authVerified          = false;
     _authInFlight          = false;
     _auth.signOut();
+  }
+}
+
+// ── Reset BEO Sequence Number ─────────────────────────────────────────────
+function openResetSeqModal() {
+  // Set default bulan = bulan ini
+  const now = new Date();
+  const mm  = String(now.getMonth()+1).padStart(2,'0');
+  const yy  = String(now.getFullYear()).slice(2);
+  document.getElementById('rst-month').value = mm + yy;
+  document.getElementById('rst-venue').value = '';
+  document.getElementById('rst-to').value    = '0';
+  document.getElementById('rst-result').textContent = '';
+  _updateResetPreview();
+  document.getElementById('reset-seq-modal').classList.add('open');
+}
+
+function closeResetSeqModal() {
+  document.getElementById('reset-seq-modal').classList.remove('open');
+}
+
+function _updateResetPreview() {
+  const venue = (document.getElementById('rst-venue').value||'').trim().toUpperCase();
+  const month = (document.getElementById('rst-month').value||'').trim();
+  const to    = parseInt(document.getElementById('rst-to').value||'0',10);
+  const next  = String(to + 1).padStart(3,'0');
+
+  let keyStr = '';
+  if (venue && month)  keyStr = venue + '_' + month;
+  else if (venue)      keyStr = venue + '_*';
+  else if (month)      keyStr = '*_' + month;
+  else                 keyStr = '* (SEMUA)';
+
+  document.getElementById('rst-preview').textContent = keyStr;
+  document.getElementById('rst-next').textContent    = next + '/BEO-' + (venue||'???') + '/' + (month||'??') + '/20' + (month?month.slice(2):'??');
+}
+
+// Live preview saat user ketik
+['rst-venue','rst-month','rst-to'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', _updateResetPreview);
+});
+
+async function doResetBeoSeq() {
+  const venue  = (document.getElementById('rst-venue').value||'').trim().toUpperCase();
+  const month  = (document.getElementById('rst-month').value||'').trim();
+  const resetTo = parseInt(document.getElementById('rst-to').value||'0',10);
+  const result  = document.getElementById('rst-result');
+  const btn     = document.getElementById('btn-do-reset');
+
+  // Konfirmasi extra jika reset semua
+  const isAll = !venue && !month;
+  const confirmMsg = isAll
+    ? '⚠ RESET SEMUA nomor BEO semua venue semua bulan?
+
+Ini tidak bisa dibatalkan!'
+    : 'Reset nomor BEO untuk ' + (venue||'semua venue') + ' bulan ' + (month||'semua') + '?
+BEO berikutnya akan mulai dari ' + String(resetTo+1).padStart(3,'0');
+
+  if (!confirm(confirmMsg)) return;
+
+  btn.textContent = '⏳ Mereset...'; btn.disabled = true;
+  result.textContent = '';
+
+  try {
+    const idToken = await getIdToken();
+    const params  = { action:'RESET_BEO_SEQ', idToken, resetTo };
+    if (venue) params.venue = venue;
+    if (month) params.month = month;
+
+    const res  = await gas(params);
+    if (res.ok) {
+      result.style.color = 'var(--green)';
+      result.textContent = '✓ ' + res.msg + ' — Keys: ' + (res.resetKeys||[]).join(', ');
+      toast('✓ ' + res.msg, 'success', 3000);
+      setTimeout(closeResetSeqModal, 2000);
+    } else {
+      result.style.color = '#e74c3c';
+      result.textContent = '✗ ' + (res.msg||'Gagal reset.');
+    }
+  } catch(e) {
+    result.style.color = '#e74c3c';
+    result.textContent = '✗ Error: ' + e.message;
+  } finally {
+    btn.textContent = '🔄 Reset Sekarang'; btn.disabled = false;
   }
 }
 
