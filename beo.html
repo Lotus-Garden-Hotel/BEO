@@ -1054,7 +1054,36 @@ function addBillingRow() {
     const raw = params.get('data');
     if (raw) { try { d = JSON.parse(raw); } catch(e) {} }
   }
-  // Link share dari WA: ?shareData=JSON — data lengkap
+  // Short link: ?r=CODE — resolve dari GAS dulu
+  if (!d.customer && params.get('r')) {
+    const _r = params.get('r').trim().toUpperCase();
+    const _gasUrl2 = (function() {
+      const DEFAULT = 'https://script.google.com/macros/s/AKfycbyQTrvw2WtHV0zpItsVA2hG_02R0gscUrOua2rnOqw750PvT3PODSaO6LaM3HWUTXJi/exec';
+      try { const c2=JSON.parse(localStorage.getItem('banquet_elite_config')||'{}'); return c2.gasUrl||DEFAULT; } catch(_) { return DEFAULT; }
+    })();
+    // Fetch shortcode data dari GAS (async, tapi block init dulu)
+    // Pakai sync-like trick: simpan promise, resolve sebelum render
+    window._shortCodePromise = fetch(_gasUrl2 + '?action=GET_SHORT_LINK&r=' + encodeURIComponent(_r))
+      .then(res => res.json())
+      .then(data => {
+        if (data.ok && data.data) {
+          try {
+            const sd = JSON.parse(data.data);
+            d.customer   = sd.customer   || '';
+            d.eventTitle = sd.eventTitle || '';
+            d.venue      = sd.venue      || '';
+            d.time       = sd.time       || '';
+            d.pax        = sd.pax        || '';
+            d.sales      = sd.sales      || '';
+            d.price      = sd.price      || '';
+            d._beoNo     = sd.beoNo      || '';
+            d._fromShare = true;
+          } catch(e) {}
+        }
+      }).catch(() => {});
+  }
+
+  // Link share dari WA: ?shareData=JSON — data lengkap (legacy/fallback)
   if (!d.customer && params.get('shareData')) {
     try {
       const sd = JSON.parse(decodeURIComponent(params.get('shareData')));
@@ -1064,8 +1093,8 @@ function addBillingRow() {
       d.time       = sd.time       || '';
       d.pax        = sd.pax        || '';
       d.sales      = sd.sales      || '';
-      d.price      = sd.price      || ''; // RATE per-pax untuk validasi billing
-      d._beoNo     = sd.beoNo      || ''; // No. BEO dari pengirim
+      d.price      = sd.price      || '';
+      d._beoNo     = sd.beoNo      || '';
       d._fromShare = true;
     } catch(e) {}
   }
@@ -1416,9 +1445,25 @@ function addBillingRow() {
   // ════════════════════════════════════════════════════════════════════════
   // STEP 2 & 3: Load draft (cloud/local) DULU, baru render list
   // Jika tidak ada draft → render default
-  // Ini menghilangkan duplikat dan render yang salah
+  // Jika ada shortcode (?r=) → tunggu resolve selesai dulu
   // ════════════════════════════════════════════════════════════════════════
   function _loadAndRender() {
+    // Jika ada shortcode yang sedang di-resolve, tunggu dulu lalu re-run
+    if (window._shortCodePromise) {
+      const _pr = window._shortCodePromise;
+      window._shortCodePromise = null;
+      _pr.then(() => {
+        // Setelah resolve, re-isi booking info dengan data dari shortcode
+        _fillBookingInfo();
+        _fillBilling();
+        _fillDeptDefaults();
+        _doLoadAndRender();
+      });
+      return;
+    }
+    _doLoadAndRender();
+  }
+  function _doLoadAndRender() {
     // ── INSTANT: cek localStorage dulu (0ms, tidak perlu network) ────────
     let localDraft = null;
     if (_draftKey) {
@@ -1489,6 +1534,8 @@ function addBillingRow() {
         });
     }
   }
+
+  } // end _doLoadAndRender
 
   _loadAndRender();
 
@@ -1848,10 +1895,10 @@ async function sendApprovalLinks() {
     const _beoTime    = (document.getElementById('i-time')||{}).textContent?.replace(/^—$/,'').trim()||'';
     const _beoSales   = (document.getElementById('i-sales')||{}).textContent?.replace(/^—$/,'').trim()||'';
     // Encode semua data penting ke URL agar penerima bisa lihat BEO lengkap
-    // Ambil RATE dari billing row pertama (sudah per-pax, hasil fix index.html)
+    // Ambil RATE dari billing row pertama
     const _billingRow0 = document.querySelector('#billing-body tr');
     const _beoRate = _billingRow0 ? (_billingRow0.cells[3]||{}).textContent||'' : '';
-    const _shareData  = encodeURIComponent(JSON.stringify({
+    const _sharePayload = JSON.stringify({
       customer:   custName,
       eventTitle: eventTitle,
       venue:      venueText,
@@ -1860,9 +1907,31 @@ async function sendApprovalLinks() {
       pax:        _beoPax,
       sales:      _beoSales,
       beoNo:      beoId,
-      price:      _beoRate,   // RATE per-pax — untuk validasi billing di penerima
-    }));
-    const beoLink = _beoOrigin + _beoPathDir + 'beo.html?shareData=' + _shareData;
+      price:      _beoRate,
+    });
+
+    // Generate shortlink via GAS — pendek & permanen
+    progress.textContent = '⏳ Membuat short link BEO...';
+    let beoLink;
+    try {
+      const slRes = await fetch(gasUrl + '?' + new URLSearchParams({
+        action:  'CREATE_SHORT_LINK',
+        data:    _sharePayload,
+        beoId:   beoId,
+        baseUrl: baseUrl,
+      }));
+      const slData = await slRes.json();
+      if (slData.ok && slData.shortUrl) {
+        beoLink = slData.shortUrl;
+        console.log('[SHORTLINK]', beoLink);
+      } else {
+        throw new Error('GAS shortlink gagal');
+      }
+    } catch(_slErr) {
+      // Fallback ke shareData langsung jika shortlink gagal
+      beoLink = _beoOrigin + _beoPathDir + 'beo.html?shareData=' + encodeURIComponent(_sharePayload);
+      console.warn('[SHORTLINK] fallback ke shareData');
+    }
 
     const msg = [
       '📋 *BANQUET EVENT ORDER — APPROVAL REQUEST*', '',
