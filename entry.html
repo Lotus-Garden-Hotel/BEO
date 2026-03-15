@@ -2063,8 +2063,18 @@ function clearFields() {
 
 function show(id) { document.getElementById(id).classList.add('visible'); }
 function hide(id) { document.getElementById(id).classList.remove('visible'); }
-function val(id)  { return document.getElementById(id).value; }
-function set(id,v){ document.getElementById(id).value = v; }
+// [FIX-DISABLED] val() membaca value meskipun field sedang disabled
+function val(id)  {
+  const el = document.getElementById(id);
+  if (!el) return '';
+  // Simpan state disabled, sementara enable, baca value, kembalikan ke disabled
+  const wasDisabled = el.disabled;
+  if (wasDisabled) el.disabled = false;
+  const v = el.value;
+  if (wasDisabled) el.disabled = true;
+  return v;
+}
+function set(id,v){ const el = document.getElementById(id); if(el) el.value = v; }
 function fmt(n)   { return new Intl.NumberFormat('id-ID').format(n); }
 
 // [SEC-05] Escape HTML — wajib dipakai sebelum inject string dari server ke innerHTML
@@ -2246,7 +2256,11 @@ async function checkRange() {
         // Ada event — bisa 1 (slot 1) atau 2 (slot 1 + OVERFLOW)
         const filledEvents = events.filter(e => e.customer);
         const count        = filledEvents.length;
-        const allTent      = filledEvents.every(e => e.status === 'TENTATIVE');
+        // [FIX-STATUS] Cek status dengan benar — status kosong/null = No Status, bukan CONFIRM
+        const firstStatus  = (filledEvents[0] && filledEvents[0].status) ? filledEvents[0].status.toUpperCase() : '';
+        const allTent      = filledEvents.every(e => (e.status || '').toUpperCase() === 'TENTATIVE');
+        const allConf      = filledEvents.every(e => (e.status || '').toUpperCase() === 'CONFIRM' || (e.status || '').toUpperCase() === 'DONE');
+        const hasNoStatus  = filledEvents.some(e => !e.status || e.status.trim() === '');
         const hasDouble    = count >= 2; // [OVF] ada 2 event di venue ini hari ini
 
         if (hasDouble) {
@@ -2264,6 +2278,13 @@ async function checkRange() {
           const timeStr = filledEvents[0].time ? `<span class="slot-time">${esc(filledEvents[0].time)}</span>` : '';
           html += `<td data-iso="${esc(iso)}" data-venue="${esc(venue)}" onclick="pickSlotFromRangeEl(this)" style="cursor:pointer">
             <div class="slot-tentative">⚡ TENT<span class="slot-name">${label}</span>${timeStr}</div></td>`;
+
+        } else if (hasNoStatus || (!allConf && !allTent)) {
+          // [FIX] Status kosong / No Status — tampilkan sebagai No Status, bukan CONF
+          const label   = esc(filledEvents[0].customer);
+          const timeStr = filledEvents[0].time ? `<span class="slot-time">${esc(filledEvents[0].time)}</span>` : '';
+          html += `<td data-iso="${esc(iso)}" data-venue="${esc(venue)}" onclick="pickSlotFromRangeEl(this)" style="cursor:pointer" title="No Status — klik untuk edit">
+            <div class="slot-tentative" style="background:rgba(100,100,100,.35);border-color:rgba(150,150,150,.4);">— N/S<span class="slot-name">${label}</span>${timeStr}</div></td>`;
 
         } else {
           cntConf += count;
@@ -2731,7 +2752,7 @@ function openBEO(template) {
     time:          val('f-time'),
     setup:         val('f-setup'),
     pax:           val('f-pax'),
-    price:         val('f-price-display'),
+    price:         val('f-price') || val('f-price-display') || '0',
     notes:         val('f-notes'),
     // [MNU] inject template data jika ada
     menuItems:           menuItems,
@@ -2740,8 +2761,16 @@ function openBEO(template) {
     hrdManning:          template ? (template.hrdManning         || '') : '',
     templateName:        template ? (template.templateName       || '') : '',
   };
-  const encoded = encodeURIComponent(JSON.stringify(data));
-  window.open('beo.html?data=' + encoded, '_blank');
+  // [FIX-CROSSTAB] sessionStorage tidak dibagikan antar tab — pakai localStorage dengan key unik
+  const beoKey = 'beoData_' + Date.now();
+  try {
+    localStorage.setItem(beoKey, JSON.stringify(data));
+    window.open('beo.html?beoKey=' + beoKey, '_blank');
+  } catch(e) {
+    // Fallback ke URL param jika localStorage tidak tersedia
+    const encoded = encodeURIComponent(JSON.stringify(data));
+    window.open('beo.html?data=' + encoded, '_blank');
+  }
   // [MNU] Auto-save konteks terbaru tiap buka BEO (tidak timpa template yang ada menu)
   if (customer) autoSaveMenuTemplate(customer);
 }
@@ -3056,12 +3085,16 @@ async function _loadMenuTemplates(customer) {
 // ── Render daftar template ──
 function _renderMenuTemplates(templates) {
   const body = document.getElementById('mtpl-body');
-  if (!templates || templates.length === 0) {
+  // [FIX-DELETED] Filter template yang sudah ditandai __DELETED__ sebelum render
+  const visible = (templates || []).filter(t => !(t.templateName || '').includes('__DELETED__'));
+  if (!visible || visible.length === 0) {
     body.innerHTML = `<div class="mtpl-empty">Belum ada template tersimpan untuk customer ini.<br><br>Simpan pilihan menu dari form yang sedang aktif.</div>`;
     return;
   }
+  // Update window._menuTemplates ke list yang sudah difilter agar index applyMenuTemplate sinkron
+  window._menuTemplates = visible;
 
-  body.innerHTML = templates.map((tpl, idx) => {
+  body.innerHTML = visible.map((tpl, idx) => {
     const items = Array.isArray(tpl.menuItems) ? tpl.menuItems : [];
     const previewChips = items.slice(0, 6).map(m =>
       `<span class="mtpl-menu-chip${m.type === 'time' ? ' time-chip' : ''}">${esc(m.text || '')}</span>`
@@ -3090,8 +3123,7 @@ function _renderMenuTemplates(templates) {
     </div>`;
   }).join('');
 
-  // Store templates in window for apply access
-  window._menuTemplates = templates;
+  // window._menuTemplates sudah di-assign di atas dengan list yang sudah difilter (visible)
 }
 
 // ── Apply template → buka BEO dengan data template ──
@@ -3123,13 +3155,14 @@ async function deleteMenuTemplate(idx, ev) {
   });
   if (!ok) return;
 
-  // Hapus dari cache
+  // [FIX-DELETE] Hapus dari cache berdasarkan templateName, bukan index
+  // (index di cache bisa berbeda dari index di window._menuTemplates yang sudah difilter)
   const key = _menuTplCustomer.toUpperCase().trim();
   if (_menuTplCache[key]) {
-    _menuTplCache[key] = _menuTplCache[key].filter((_, i) => i !== idx);
+    _menuTplCache[key] = _menuTplCache[key].filter(t => t.templateName !== tpl.templateName);
   }
   if (window._menuTemplates) {
-    window._menuTemplates = window._menuTemplates.filter((_, i) => i !== idx);
+    window._menuTemplates = window._menuTemplates.filter(t => t.templateName !== tpl.templateName);
   }
 
   // Simpan ulang dengan text kosong = override (tidak ada delete endpoint di GAS,
