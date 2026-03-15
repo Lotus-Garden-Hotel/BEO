@@ -689,7 +689,10 @@ Notes : Kebutuhan manning diluar standard harus atas persetujuan HRD &amp; GM</d
   </div>
   </div><!-- /sig-scroll-inner -->
   </div><!-- /sig-scroll-wrap -->
-  <div class="sig-scroll-hint">← Geser untuk lihat semua tanda tangan →</div>
+  <div class="sig-scroll-hint" style="display:flex;align-items:center;justify-content:center;gap:10px;">
+    <span>← Geser untuk lihat semua tanda tangan →</span>
+    <button onclick="_manualRefreshApproval()" style="background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.3);color:#c9a84c;font-size:7px;font-weight:700;padding:2px 8px;border-radius:6px;cursor:pointer;white-space:nowrap;" id="btn-refresh-approval">↻ Refresh</button>
+  </div>
 
     <div class="bottom-stripe"></div>
 </div><!-- /beo-sheet -->
@@ -1613,13 +1616,13 @@ function _markCloudSaved() {
 // ══ APPROVAL SYSTEM ══════════════════════════════════════════════════════
 const APR_DEPTS = [
   { key:'sm',       label:'Sales Manager'   },
-  { key:'fb',       label:'F&B Manager'     },
+  { key:'fb',       label:'F&B Ast.'     },
   { key:'chef',     label:'Sous Chef'       },
-  { key:'eng',      label:'Engineering Mgr' },
+  { key:'eng',      label:'Engineering Spv' },
   { key:'hk',       label:'HK Manager'      },
-  { key:'security', label:'Chief Security'  },
+  { key:'security', label:'Leader Security'  },
   { key:'hr',       label:'HRD Manager'     },
-  { key:'ca',       label:'Cost Accounting' },
+  { key:'ca',       label:'Chief Accounting' },
   { key:'gm',       label:'General Manager' },
 ];
 
@@ -1910,21 +1913,28 @@ function _startApprovalPolling(gasUrl, beoId) {
   _pollTimer = setInterval(() => _fetchApprovalStatus(gasUrl, beoId), 30000);
 }
 async function _fetchApprovalStatus(gasUrl, beoId) {
+  if (!beoId || !gasUrl) return;
+  const cleanId = beoId.trim();
   try {
-    // [FIX] action name: READ_APPROVE_STATUS (sesuai GAS)
-    // [FIX] response field: depts (bukan approvals), status: DONE (bukan APPROVED)
-    const d = await (await fetch(gasUrl + '?' + new URLSearchParams({
+    const res = await fetch(gasUrl + '?' + new URLSearchParams({
       action: 'READ_APPROVE_STATUS',
-      beoId:  beoId
-    }))).json();
+      beoId:  cleanId
+    }));
+    const d = await res.json();
+    console.log('[APPROVAL] status response:', JSON.stringify(d));
     if (!d.ok) return;
     const list = d.depts || d.approvals || [];
-    if (!list.length) return;
+    if (!list.length) {
+      console.log('[APPROVAL] no depts found for beoId:', cleanId);
+      return;
+    }
     _renderApprovalBadges(list);
     if (list.every(a => (a.status||'').toUpperCase() === 'DONE')) {
       clearInterval(_pollTimer); _pollTimer = null;
     }
-  } catch(_) {}
+  } catch(e) {
+    console.warn('[APPROVAL] fetch error:', e.message);
+  }
 }
 function _renderApprovalBadges(approvals) {
   // Map dept label/key → badge element IDs di signature row
@@ -1971,28 +1981,51 @@ function _renderApprovalBadges(approvals) {
   });
 }
 
+// Refresh manual — user tap tombol ↻
+function _manualRefreshApproval() {
+  const btn    = document.getElementById('btn-refresh-approval');
+  const gasUrl = _getGasUrl();
+  const beoId  = _getBeoId ? _getBeoId() : ((document.getElementById('i-beo-no')||{}).textContent||'').trim();
+  if (!gasUrl || !beoId || beoId === '—' || beoId.includes('···')) {
+    if (btn) { btn.textContent = '✗ BEO ID belum ada'; setTimeout(() => btn.textContent = '↻ Refresh', 2000); }
+    return;
+  }
+  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+  _fetchApprovalStatus(gasUrl, beoId).finally
+    ? _fetchApprovalStatus(gasUrl, beoId).finally(() => { if(btn){btn.textContent='↻ Refresh';btn.disabled=false;} })
+    : _fetchApprovalStatus(gasUrl, beoId).then(() => { if(btn){btn.textContent='↻ Refresh';btn.disabled=false;} });
+}
+
 (function() {
   const gasUrl = _getGasUrl();
   if (!gasUrl) return;
   // Coba ambil beoId dari i-beo-no, retry sampai 10 detik (menunggu fetch dari GAS)
   let _pollRetry = 0;
+  function _getBeoId() {
+    // Trim whitespace/newline dari textContent
+    return ((document.getElementById('i-beo-no')||{}).textContent||'').trim();
+  }
+  function _isValidBeoId(id) {
+    return id && id !== '—' && !id.includes('···') && !id.includes('—/BEO') && id.length > 5;
+  }
   function _tryStartPolling() {
-    const beoId = (document.getElementById('i-beo-no')||{}).textContent||'';
-    const validId = beoId && beoId !== '—' && !beoId.includes('···');
-    if (validId) {
+    const beoId = _getBeoId();
+    if (_isValidBeoId(beoId)) {
+      console.log('[APPROVAL] Start polling beoId:', JSON.stringify(beoId));
       _fetchApprovalStatus(gasUrl, beoId);
-      // Poll setiap 30 detik untuk update badge realtime
       if (!_pollTimer) {
         _pollTimer = setInterval(() => {
-          const id = (document.getElementById('i-beo-no')||{}).textContent||'';
-          if (id && id !== '—' && !id.includes('···')) _fetchApprovalStatus(gasUrl, id);
-        }, 30000);
+          const id = _getBeoId();
+          if (_isValidBeoId(id)) _fetchApprovalStatus(gasUrl, id);
+        }, 20000); // poll tiap 20 detik
       }
-    } else if (_pollRetry++ < 20) {
-      setTimeout(_tryStartPolling, 500); // retry tiap 500ms max 10 detik
+    } else if (_pollRetry++ < 30) {
+      setTimeout(_tryStartPolling, 500);
+    } else {
+      console.warn('[APPROVAL] beoId tidak valid setelah 15 detik:', JSON.stringify(_getBeoId()));
     }
   }
-  setTimeout(_tryStartPolling, 1000);
+  setTimeout(_tryStartPolling, 800);
 })();
 
 </script>
