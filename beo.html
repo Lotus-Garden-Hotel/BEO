@@ -240,6 +240,7 @@
   <button class="btn-back" onclick="goBack()">← Dashboard</button>
   <span class="toolbar-title">◆ Banquet Event Order</span>
   <button class="btn-tool" onclick="resetForm()">↺ Reset</button>
+  <button class="btn-tool" id="btn-clear-draft" onclick="clearBeoDraft()" style="background:rgba(192,57,43,.1);border-color:rgba(192,57,43,.3);color:#e74c3c;display:none;" title="Hapus draft tersimpan untuk customer ini">🗑 Hapus Draft</button>
   <button class="btn-tool" id="btn-save-tpl" onclick="saveMenuTemplateFromBeo()" style="background:rgba(243,156,18,.12);border-color:rgba(243,156,18,.3);color:#f39c12;">💾 Simpan Template</button>
   <button class="btn-approval" onclick="openApprovalModal()">✉ Kirim Approval</button>
   <button class="btn-tool primary" onclick="window.print()">🖨 Print / PDF</button>
@@ -814,23 +815,55 @@ function addBillingRow() {
 // ══════════════════════════════════════════════════════════════════════════
 // LOAD FROM SESSIONSTORAGE + URL PARAMS + AUTO-FILL
 // ══════════════════════════════════════════════════════════════════════════
+// LOAD FROM LOCALSTORAGE KEY + FALLBACK sessionStorage / URL PARAMS + AUTO-FILL
+// ══════════════════════════════════════════════════════════════════════════
 (function init() {
   const params = new URLSearchParams(window.location.search);
   let d = {};
 
-  // 1) sessionStorage (dari klik card di index.html)
-  const _stored = sessionStorage.getItem('beoData');
-  if (_stored) {
-    try { d = JSON.parse(_stored); } catch(e) { console.warn('[BEO] sessionStorage parse error:', e); }
-    sessionStorage.removeItem('beoData');
-  } else {
-    const raw = params.get('data');
-    if (raw) {
-      try { d = JSON.parse(raw); } catch(e) { console.warn('[BEO] parse error:', e); }
+  // 1) localStorage via beoKey unik (cross-tab safe)
+  const beoKey = params.get('beoKey');
+  if (beoKey) {
+    const _stored = localStorage.getItem(beoKey);
+    if (_stored) {
+      try { d = JSON.parse(_stored); } catch(e) { console.warn('[BEO] localStorage parse error:', e); }
+      localStorage.removeItem(beoKey);
     }
+  }
+  // 2) sessionStorage fallback (backward compat)
+  if (!d || !d.customer) {
+    const _ss = sessionStorage.getItem('beoData');
+    if (_ss) {
+      try { const _p = JSON.parse(_ss); if (_p && _p.customer) d = _p; } catch(e) {}
+      sessionStorage.removeItem('beoData');
+    }
+  }
+  // 3) URL param data (legacy)
+  if (!d || !d.customer) {
+    const raw = params.get('data');
+    if (raw) { try { d = JSON.parse(raw); } catch(e) {} }
   }
   console.log('[BEO] data loaded:', d);
 
+  // ── Draft key per customer ──────────────────────────────────────────────
+  const _draftCustomer = (d.customer || '').toUpperCase().trim();
+  const _draftKey      = _draftCustomer ? ('beo_draft_' + _draftCustomer) : null;
+  const _gasUrl        = _getGasUrl();
+
+  // Baca draft dari localStorage (cache lokal) — cloud akan di-fetch async di STEP 3
+  let _draft = null;
+  if (_draftKey) {
+    try {
+      const raw = localStorage.getItem(_draftKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const age    = Date.now() - (parsed._savedAt || 0);
+        if (age < 7 * 24 * 60 * 60 * 1000) _draft = parsed; // max 7 hari
+      }
+    } catch(e) { console.warn('[BEO] draft read error:', e); }
+  }
+
+  // ── Helpers format ──────────────────────────────────────────────────────
   function fmtDate(iso) {
     if (!iso) return '—';
     const DAYS = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
@@ -847,9 +880,9 @@ function addBillingRow() {
   }
   function genBeoNo(venue, dateStr, customer) {
     if (!dateStr) return '—/BEO-—/—/—';
-    const dt = new Date(dateStr + 'T00:00:00');
-    const mm = String(dt.getMonth()+1).padStart(2,'0');
-    const yy = dt.getFullYear();
+    const dt  = new Date(dateStr + 'T00:00:00');
+    const mm  = String(dt.getMonth()+1).padStart(2,'0');
+    const yy  = dt.getFullYear();
     const seq = String(Math.floor(Math.random()*900)+100);
     const va  = (venue||'VN').replace(/[^A-Za-z]/g,'').substring(0,3).toUpperCase();
     return `${seq}/BEO-${va}/${mm}${yy.toString().slice(2)}/2026`;
@@ -857,40 +890,34 @@ function addBillingRow() {
 
   const todayStr = new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
 
-  // Fill info table — pakai global set() di bawah
-
-  set('i-beo-no',       genBeoNo(d.venue, d.date, d.customer));
-  set('i-issued-date',  todayStr);
-  set('i-customer',     d.customer   || '');
-  set('i-date',         fmtDate(d.date));
-  set('i-contact',      d.contact    || '');
-  set('i-time',         d.time       || '');
-  set('i-phone',        d.phone      || '');
-  set('i-venue',        d.venue      || '');
-  set('i-event-title',  d.eventTitle || d.customer || '');
-  set('i-pax',          d.pax ? d.pax + ' Pax' : '');
-  set('i-sales',        d.sales      || '');
+  // ── STEP 1: Selalu isi info fields dari data booking (d) ─────────────────
+  set('i-beo-no',      genBeoNo(d.venue, d.date, d.customer));
+  set('i-issued-date', todayStr);
+  set('i-customer',    d.customer   || '');
+  set('i-date',        fmtDate(d.date));
+  set('i-contact',     d.contact    || '');
+  set('i-time',        d.time       || '');
+  set('i-phone',       d.phone      || '');
+  set('i-venue',       d.venue      || '');
+  set('i-event-title', d.eventTitle || d.customer || '');
+  set('i-pax',         d.pax ? d.pax + ' Pax' : '');
+  set('i-sales',       d.sales      || '');
   document.getElementById('i-address').textContent = 'Kediri';
 
-  // Lobby posting — pre-fill event title
-  if (d.eventTitle || d.customer) {
+  if (d.eventTitle || d.customer)
     document.getElementById('lbp-lobby').textContent = d.eventTitle || d.customer;
-  }
 
-  // Signature sales name
   set('sig-prepare', d.sales || '');
 
-  // Billing — auto-fill baris pertama dari data pax × price
+  // Billing init
   (function initBilling() {
     const tbody = document.getElementById('billing-body');
-    // Tambah oninput ke semua row yang sudah ada
     Array.from(tbody.rows).forEach(function(tr) {
       Array.from(tr.cells).forEach(function(td, ci) {
         if (ci > 0) td.setAttribute('oninput', 'calcBillingRow(this);calcBillingTotal()');
       });
     });
     if (d.price || d.pax) {
-      // _parseNum handles formatted strings like "150.000" or "1.500.000"
       const pax   = _parseNum(d.pax)   || 0;
       const price = _parseNum(d.price) || 0;
       const total = pax > 0 && price > 0 ? pax * price : 0;
@@ -906,32 +933,26 @@ function addBillingRow() {
     calcBillingTotal();
   })();
 
-  // F&B notes
+  // F&B, Security, FO, Notes default
   const fnbNotes = document.getElementById('op-fnb');
   if (fnbNotes && (d.package || d.pax)) {
     fnbNotes.textContent = [
       d.package ? `Package : ${d.package}` : '',
       d.pax     ? `Pax     : ${d.pax} orang` : '',
-      '',
-      'Mohon siapkan menu sesuai package yang telah disepakati.',
+      '', 'Mohon siapkan menu sesuai package yang telah disepakati.',
       'Serving time sesuai rundown acara.',
     ].filter(Boolean).join('\n');
   }
-
-  // Security notes
   const secEl = document.getElementById('op-security');
   if (secEl) {
     secEl.textContent = [
-      d.venue   ? `Venue : ${d.venue}` : '',
-      d.time    ? `Waktu : ${d.time}` : '',
-      '',
-      '• Petugas di pintu masuk venue',
+      d.venue ? `Venue : ${d.venue}` : '',
+      d.time  ? `Waktu : ${d.time}`  : '',
+      '', '• Petugas di pintu masuk venue',
       '• Pengaturan area parkir tamu',
       '• Akses kontrol ruang event',
     ].filter(l => l !== '—').join('\n');
   }
-
-  // FO notes
   const foEl = document.getElementById('op-fo');
   if (foEl) {
     foEl.textContent = [
@@ -941,18 +962,16 @@ function addBillingRow() {
       d.venue      ? `Venue : ${d.venue}` : '',
     ].filter(l => l && l !== '—').join('\n');
   }
-
-  // Notes / special request
   if (d.notes) document.getElementById('op-notes').textContent = d.notes;
 
-  // Render set instruction & menu lists
+  // ── STEP 2: Render list default dulu (selalu) ───────────────────────────
   renderSetList('set-rows', DEFAULT_SET_ROWS);
   renderSetList('eng-rows', DEFAULT_ENG_ROWS);
   renderSetList('hk-rows',  DEFAULT_HK_ROWS);
 
-  // [MNU] Load menu dari template jika ada
   const hasTemplateMenu = d.menuItems && Array.isArray(d.menuItems) && d.menuItems.length > 0;
   renderMenuList(hasTemplateMenu ? d.menuItems : DEFAULT_MENU);
+
   if (d.backdropLettering) {
     const el = document.getElementById('lbp-backdrop');
     if (el) el.textContent = d.backdropLettering;
@@ -972,9 +991,228 @@ function addBillingRow() {
     if (el) el.textContent = d.hrdManning;
   }
 
-  // Init chips & visibility
   buildChips();
   applyDeptVis();
+
+  // ── STEP 3: Restore draft — cek localStorage dulu, lalu fetch cloud ──────
+  const _templateHasRealMenu = hasTemplateMenu && d.menuItems.some(m => m.text && m.text.trim());
+
+  function _showDraftRestored(label) {
+    const ind = document.getElementById('edit-ind');
+    if (ind) {
+      ind.textContent = label || '♻ Draft dipulihkan';
+      ind.classList.add('show');
+      setTimeout(() => { ind.textContent = '✎ EDITING'; ind.classList.remove('show'); }, 3000);
+    }
+    const btnDraft = document.getElementById('btn-clear-draft');
+    if (btnDraft) btnDraft.style.display = '';
+  }
+
+  // 3a) Restore dari localStorage dulu (instan, tidak tunggu network)
+  if (_draft && !_templateHasRealMenu) {
+    _restoreBeoState(_draft);
+    _showDraftRestored('♻ Draft lokal dipulihkan...');
+  } else if (_draft && _templateHasRealMenu) {
+    const btnDraft = document.getElementById('btn-clear-draft');
+    if (btnDraft) btnDraft.style.display = '';
+  }
+
+  // 3b) Fetch draft dari CLOUD (GAS) — async, menimpa localStorage jika lebih baru
+  if (_draftCustomer && _gasUrl && !_templateHasRealMenu) {
+    (async function fetchCloudDraft() {
+      try {
+        const res = await fetch(_gasUrl + '?action=GET_BEO_DRAFT&customer=' +
+          encodeURIComponent(d.customer));
+        const data = await res.json();
+        if (data.ok && data.found && data.draft && data.draft.state && !data.draft.state._deleted) {
+          const cloudState  = data.draft.state;
+          const cloudSaved  = cloudState._savedAt || 0;
+          const localSaved  = _draft ? (_draft._savedAt || 0) : 0;
+          // Pakai cloud jika lebih baru dari localStorage
+          if (cloudSaved > localSaved) {
+            _restoreBeoState(cloudState);
+            // Update localStorage dengan data cloud terbaru
+            try { localStorage.setItem(_draftKey, JSON.stringify(cloudState)); } catch(_) {}
+            _showDraftRestored('☁ Draft cloud dipulihkan');
+          } else if (_draft) {
+            // localStorage sudah dipakai — update cloud dengan versi lokal yang lebih baru
+            // (akan di-push oleh auto-save berikutnya)
+            _showDraftRestored('♻ Draft lokal dipulihkan');
+          }
+        }
+      } catch(e) {
+        console.warn('[BEO] cloud draft fetch error:', e);
+        // Tidak apa-apa — localStorage sudah dipakai
+      }
+    })();
+  }
+
+  // ── STEP 4: Setup auto-save realtime ───────────────────────────────────
+  // Fungsi kumpulkan seluruh state BEO
+  function _collectBeoState() {
+    const infoIds = ['i-beo-no','i-issued-date','i-customer','i-date','i-contact',
+                     'i-time','i-phone','i-venue','i-event-title','i-pax','i-sales','i-address'];
+    const info = {};
+    infoIds.forEach(id => { const el = document.getElementById(id); if (el) info[id] = el.textContent; });
+
+    const lbp = {};
+    ['lbp-lobby','lbp-backdrop','lbp-pr'].forEach(id => {
+      const el = document.getElementById(id); if (el) lbp[id] = el.textContent;
+    });
+
+    const setRows = Array.from(document.querySelectorAll('#set-rows .set-row')).map(r => ({
+      checked: r.querySelector('.set-check') ? r.querySelector('.set-check').checked : false,
+      text:    r.querySelector('.set-text')  ? r.querySelector('.set-text').textContent : ''
+    }));
+    const engRows = Array.from(document.querySelectorAll('#eng-rows .set-row')).map(r => ({
+      checked: r.querySelector('.set-check') ? r.querySelector('.set-check').checked : false,
+      text:    r.querySelector('.set-text')  ? r.querySelector('.set-text').textContent : ''
+    }));
+    const hkRows = Array.from(document.querySelectorAll('#hk-rows .set-row')).map(r => ({
+      checked: r.querySelector('.set-check') ? r.querySelector('.set-check').checked : false,
+      text:    r.querySelector('.set-text')  ? r.querySelector('.set-text').textContent : ''
+    }));
+
+    const menuItems = Array.from(document.querySelectorAll('#menu-rows .menu-item')).map(row => {
+      const el = row.querySelector('.menu-text');
+      if (!el) return null;
+      const text = el.textContent.trim();
+      if (!text) return null;
+      const styleAttr = el.getAttribute('style') || '';
+      const isTime = styleAttr.includes('linear-gradient') || styleAttr.includes('1a5c22');
+      return { type: isTime ? 'time' : 'item', text };
+    }).filter(Boolean);
+
+    const deptIds = ['op-fnb','op-security','op-fo','op-notes','op-banquet-extra',
+                     'eng-content','hk-content','fo-content'];
+    const depts = {};
+    deptIds.forEach(id => { const el = document.getElementById(id); if (el) depts[id] = el.textContent; });
+
+    const hrdRatio = (document.getElementById('hrd-ratio') || {}).textContent || '';
+
+    const billingRows = [];
+    const tbody = document.getElementById('billing-body');
+    if (tbody) Array.from(tbody.rows).forEach(tr => {
+      billingRows.push(Array.from(tr.cells).map(td => td.textContent));
+    });
+
+    const sigs = [];
+    document.querySelectorAll('.sig-row-single .sig-cell-s').forEach(cell => {
+      const nm  = cell.querySelector('.sig-nm-s');
+      const ttl = cell.querySelector('.sig-ttl-s');
+      sigs.push({ name: nm?nm.textContent:'', title: ttl?ttl.textContent:'' });
+    });
+
+    const deptVis = {};
+    Object.keys(deptOn).forEach(k => { deptVis[k] = deptOn[k]; });
+
+    return { _savedAt: Date.now(), info, lbp, setRows, engRows, hkRows,
+             menuItems, depts, hrdRatio, billingRows, sigs, deptVis };
+  }
+
+  // Fungsi restore draft ke DOM
+  function _restoreBeoState(state) {
+    if (!state) return;
+    if (state.info) Object.entries(state.info).forEach(([id,v]) => {
+      const el = document.getElementById(id); if (el) el.textContent = v;
+    });
+    if (state.lbp) Object.entries(state.lbp).forEach(([id,v]) => {
+      const el = document.getElementById(id); if (el) el.textContent = v;
+    });
+    if (state.setRows && state.setRows.length) renderSetList('set-rows', state.setRows);
+    if (state.engRows && state.engRows.length) renderSetList('eng-rows', state.engRows);
+    if (state.hkRows  && state.hkRows.length)  renderSetList('hk-rows',  state.hkRows);
+    if (state.menuItems && state.menuItems.length) renderMenuList(state.menuItems);
+    if (state.depts) Object.entries(state.depts).forEach(([id,v]) => {
+      const el = document.getElementById(id); if (el) el.textContent = v;
+    });
+    if (state.hrdRatio) {
+      const el = document.getElementById('hrd-ratio'); if (el) el.textContent = state.hrdRatio;
+    }
+    if (state.billingRows && state.billingRows.length) {
+      const tbody = document.getElementById('billing-body');
+      if (tbody) {
+        tbody.innerHTML = '';
+        state.billingRows.forEach(cells => {
+          const tr = document.createElement('tr');
+          cells.forEach((txt, ci) => {
+            const td = document.createElement('td');
+            td.textContent = txt;
+            if (ci === 0) td.className = 'align-left';
+            td.setAttribute('contenteditable','true');
+            if (ci > 0) td.setAttribute('oninput','calcBillingRow(this);calcBillingTotal()');
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        });
+        calcBillingTotal();
+      }
+    }
+    if (state.sigs && state.sigs.length) {
+      const cells = document.querySelectorAll('.sig-row-single .sig-cell-s');
+      state.sigs.forEach((s, i) => {
+        if (!cells[i]) return;
+        const nm  = cells[i].querySelector('.sig-nm-s');
+        const ttl = cells[i].querySelector('.sig-ttl-s');
+        if (nm  && s.name)  nm.textContent  = s.name;
+        if (ttl && s.title) ttl.textContent = s.title;
+      });
+    }
+    if (state.deptVis) {
+      Object.entries(state.deptVis).forEach(([k,v]) => { deptOn[k] = v; });
+      buildChips(); applyDeptVis();
+    }
+  }
+
+  // ── Auto-save: localStorage instan (1.5s) + cloud GAS (5s debounce) ────
+  if (_draftKey) {
+    let _localTimer  = null;
+    let _cloudTimer  = null;
+    let _cloudSaving = false;
+
+    function _triggerAutoSave() {
+      // 1) Save ke localStorage — cepat, offline-safe
+      clearTimeout(_localTimer);
+      _localTimer = setTimeout(function() {
+        try {
+          const state = _collectBeoState();
+          localStorage.setItem(_draftKey, JSON.stringify(state));
+          const btn = document.getElementById('btn-clear-draft');
+          if (btn) btn.style.display = '';
+        } catch(e) { console.warn('[BEO] localStorage save error:', e); }
+      }, 1500);
+
+      // 2) Push ke cloud GAS — lebih lambat, lintas device
+      if (_gasUrl && _draftCustomer) {
+        clearTimeout(_cloudTimer);
+        _cloudTimer = setTimeout(async function() {
+          if (_cloudSaving) return; // hindari overlap
+          _cloudSaving = true;
+          try {
+            const state   = _collectBeoState();
+            const payload = new URLSearchParams({
+              action:     'SAVE_BEO_DRAFT',
+              customer:   d.customer,
+              draftState: JSON.stringify(state)
+            });
+            await fetch(_gasUrl + '?' + payload);
+            // Update localStorage juga dengan timestamp terbaru
+            localStorage.setItem(_draftKey, JSON.stringify(state));
+          } catch(e) { console.warn('[BEO] cloud save error:', e); }
+          finally { _cloudSaving = false; }
+        }, 5000); // 5 detik setelah berhenti mengetik → push ke cloud
+      }
+    }
+
+    document.addEventListener('input',  _triggerAutoSave);
+    document.addEventListener('change', _triggerAutoSave);
+    const _mutObs = new MutationObserver(_triggerAutoSave);
+    ['menu-rows','set-rows','eng-rows','hk-rows','billing-body'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) _mutObs.observe(el, { childList: true, subtree: true });
+    });
+  }
+
 })();
 
 // ══ HELPERS ══════════════════════════════════════════════════════════════
@@ -996,6 +1234,34 @@ function goBack() {
 function resetForm() {
   if (!confirm('Reset semua isian ke data awal?')) return;
   window.location.reload();
+}
+
+// ══ CLEAR DRAFT ══════════════════════════════════════════════════════════
+async function clearBeoDraft() {
+  const custEl = document.getElementById('i-customer');
+  const cust   = custEl ? custEl.textContent.replace(/^—$/,'').trim() : '';
+  if (!cust) { alert('Tidak ada draft aktif.'); return; }
+  // Hapus dari localStorage
+  const key = 'beo_draft_' + cust.toUpperCase().trim();
+  try { localStorage.removeItem(key); } catch(_) {}
+  // Hapus dari cloud — simpan state kosong sebagai penanda deleted
+  try {
+    const gasUrl = _getGasUrl();
+    if (gasUrl) {
+      const payload = new URLSearchParams({
+        action: 'SAVE_BEO_DRAFT', customer: cust,
+        draftState: JSON.stringify({ _deleted: true, _savedAt: 0 })
+      });
+      fetch(gasUrl + '?' + payload).catch(() => {});
+    }
+  } catch(_) {}
+  document.getElementById('btn-clear-draft').style.display = 'none';
+  const ind = document.getElementById('edit-ind');
+  if (ind) {
+    ind.textContent = '🗑 Draft dihapus';
+    ind.classList.add('show');
+    setTimeout(() => { ind.textContent = '✎ EDITING'; ind.classList.remove('show'); }, 2000);
+  }
 }
 
 // ══ EDIT INDICATOR ═══════════════════════════════════════════════════════
