@@ -193,6 +193,12 @@
   .apr-dept-label{ font-size:11px; color:#c0b090; flex:1; font-weight:600; }
   .apr-dept-phone{ background:#0d0b08; border:1px solid #3d3028; border-radius:5px; color:#e8e0c8; font-size:10px; padding:5px 8px; outline:none; width:140px; }
   .apr-dept-phone:focus{ border-color:#b8962e; }
+  .apr-save-bar{ display:flex; align-items:center; justify-content:space-between; margin:10px 0 2px; }
+  .apr-save-btn{ background:rgba(201,168,76,.15); border:1px solid rgba(201,168,76,.4); color:#c9a84c; font-size:10px; font-weight:700; padding:6px 14px; border-radius:8px; cursor:pointer; letter-spacing:.06em; transition:all .2s; }
+  .apr-save-btn:hover{ background:rgba(201,168,76,.28); }
+  .apr-save-btn:active{ transform:scale(.96); }
+  .apr-save-status{ font-size:9px; color:#6a5a44; min-height:14px; letter-spacing:.04em; }
+  .apr-cloud-badge{ font-size:8px; background:rgba(46,204,113,.1); border:1px solid rgba(46,204,113,.25); color:#2ecc71; padding:2px 8px; border-radius:10px; }
   .apr-actions{ display:flex; gap:8px; margin-top:16px; }
   .apr-btn{ flex:1; padding:11px; border:none; border-radius:9px; font-size:11px; font-weight:800; letter-spacing:.08em; cursor:pointer; transition:all .18s; }
   .apr-btn-send{ background:linear-gradient(135deg,#1e4a26,#2d7a3a); color:#b0ffb8; }
@@ -571,7 +577,14 @@ Notes : Kebutuhan manning diluar standard harus atas persetujuan HRD &amp; GM</d
         <input class="apr-inp" id="apr-base-url" placeholder="https://site.com/approve.html">
       </div>
     </div>
-    <div class="apr-lbl" style="margin-bottom:8px;">Pilih Dept + Nomor WA Head:</div>
+    <div class="apr-save-bar">
+      <div class="apr-lbl">Dept + Nomor WA Head:</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span id="apr-cloud-indicator"></span>
+        <button class="apr-save-btn" onclick="saveApprovalConfig()">💾 Simpan Config</button>
+      </div>
+    </div>
+    <div class="apr-save-status" id="apr-save-status"></div>
     <div class="apr-dept-list" id="apr-dept-list"></div>
     <div class="apr-actions">
       <button class="apr-btn apr-btn-cancel" onclick="closeApprovalModal()">Batal</button>
@@ -1456,6 +1469,7 @@ const APR_DEPTS = [
   { key:'hk',       label:'HK Manager'      },
   { key:'security', label:'Chief Security'  },
   { key:'hr',       label:'HRD Manager'     },
+  { key:'ca',       label:'Cost Accounting' },
   { key:'gm',       label:'General Manager' },
 ];
 
@@ -1476,38 +1490,115 @@ function _getBaseUrl() {
   return location.origin + location.pathname.replace(/\/[^\/]*$/, '/approve.html');
 }
 
-function openApprovalModal() {
-  document.getElementById('apr-token').value    = _getWaToken();
-  document.getElementById('apr-base-url').value = _getBaseUrl();
-  let saved = {};
-  try { saved = JSON.parse(localStorage.getItem('beo_approval_phones')||'{}'); } catch(_) {}
+// ── Render dept list dari data config ────────────────────────────────────
+function _renderAprDeptList(saved) {
   const list = document.getElementById('apr-dept-list');
   list.innerHTML = APR_DEPTS.map(d => `
     <div class="apr-dept-item">
-      <input class="apr-dept-check" type="checkbox" id="acheck-${d.key}"${saved['_chk_'+d.key] !== false ? ' checked' : ''}>
+      <input class="apr-dept-check" type="checkbox" id="acheck-${d.key}"
+        ${saved['_chk_'+d.key] !== false ? 'checked' : ''}>
       <label class="apr-dept-label" for="acheck-${d.key}">${d.label}</label>
-      <input class="apr-dept-phone" type="tel" id="aphone-${d.key}" placeholder="628xxx" value="${saved[d.key]||''}">
+      <input class="apr-dept-phone" type="tel" id="aphone-${d.key}"
+        placeholder="628xxx..." value="${(saved[d.key]||'').replace(/"/g,'&quot;')}">
     </div>`).join('');
-  // Auto-save on every change
   APR_DEPTS.forEach(d => {
     const inp = document.getElementById('aphone-'+d.key);
     const chk = document.getElementById('acheck-'+d.key);
-    if (inp) inp.addEventListener('input', _saveApprovalPhones);
+    if (inp) inp.addEventListener('input',  _saveApprovalPhones);
     if (chk) chk.addEventListener('change', _saveApprovalPhones);
   });
-  document.getElementById('apr-progress').textContent = '';
-  document.getElementById('apr-modal').classList.add('open');
 }
 
-function _saveApprovalPhones() {
-  const data = {};
+// ── Kumpulkan state form ke object config ────────────────────────────────
+function _collectAprConfig() {
+  const data = {
+    fonnteToken: document.getElementById('apr-token').value.trim(),
+    baseUrl:     document.getElementById('apr-base-url').value.trim(),
+  };
   APR_DEPTS.forEach(d => {
     const inp = document.getElementById('aphone-'+d.key);
     const chk = document.getElementById('acheck-'+d.key);
-    if (inp) data[d.key] = inp.value;
+    if (inp) data[d.key]         = inp.value.trim();
     if (chk) data['_chk_'+d.key] = chk.checked;
   });
-  try { localStorage.setItem('beo_approval_phones', JSON.stringify(data)); } catch(_) {}
+  return data;
+}
+
+// ── Auto-save ke localStorage saja (cepat, tidak blocking) ──────────────
+function _saveApprovalPhones() {
+  try { localStorage.setItem('beo_approval_phones', JSON.stringify(_collectAprConfig())); }
+  catch(_) {}
+}
+
+// ── Simpan ke cloud GAS (tombol 💾) ─────────────────────────────────────
+async function saveApprovalConfig() {
+  const gasUrl  = _getGasUrl();
+  const statusEl = document.getElementById('apr-save-status');
+  const btn      = document.querySelector('.apr-save-btn');
+  if (!gasUrl) { statusEl.textContent = '⚠ GAS URL belum dikonfigurasi.'; return; }
+
+  const config = _collectAprConfig();
+  _saveApprovalPhones(); // simpan localStorage juga
+
+  if (btn) { btn.textContent = '⏳ Menyimpan...'; btn.disabled = true; }
+  statusEl.textContent = '';
+  try {
+    const res = await fetch(gasUrl + '?' + new URLSearchParams({
+      action:     'SAVE_APPROVAL_CONFIG',
+      configJson: JSON.stringify(config)
+    }));
+    const d = await res.json();
+    if (d.ok) {
+      statusEl.innerHTML = '☁ Tersimpan di cloud — data akan otomatis terisi saat dibuka di HP manapun';
+      statusEl.style.color = '#2ecc71';
+      const ci = document.getElementById('apr-cloud-indicator');
+      if (ci) ci.innerHTML = '<span class="apr-cloud-badge">☁ Cloud</span>';
+    } else {
+      statusEl.textContent = '⚠ ' + (d.msg||'Gagal menyimpan.');
+      statusEl.style.color = '#e74c3c';
+    }
+  } catch(e) {
+    statusEl.textContent = '⚠ Gagal koneksi.';
+    statusEl.style.color = '#e74c3c';
+  } finally {
+    if (btn) { btn.textContent = '💾 Simpan Config'; btn.disabled = false; }
+  }
+}
+
+// ── Buka modal — load cloud dulu, fallback localStorage ─────────────────
+async function openApprovalModal() {
+  document.getElementById('apr-token').value    = _getWaToken();
+  document.getElementById('apr-base-url').value = _getBaseUrl();
+  document.getElementById('apr-progress').textContent = '';
+  document.getElementById('apr-save-status').textContent = '';
+
+  // Load localStorage dulu (instan)
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem('beo_approval_phones')||'{}'); } catch(_) {}
+  _renderAprDeptList(saved);
+  if (saved.fonnteToken) document.getElementById('apr-token').value    = saved.fonnteToken;
+  if (saved.baseUrl)     document.getElementById('apr-base-url').value = saved.baseUrl;
+  document.getElementById('apr-modal').classList.add('open');
+
+  // Fetch cloud config di background — update jika lebih lengkap
+  const gasUrl = _getGasUrl();
+  if (!gasUrl) return;
+  try {
+    const res = await fetch(gasUrl + '?action=GET_APPROVAL_CONFIG');
+    const d   = await res.json();
+    if (d.ok && d.config) {
+      const cloud = d.config;
+      // Merge: cloud menang untuk nomor WA, localStorage menang untuk checkbox state
+      const merged = Object.assign({}, saved, cloud);
+      _renderAprDeptList(merged);
+      if (cloud.fonnteToken) document.getElementById('apr-token').value    = cloud.fonnteToken;
+      if (cloud.baseUrl)     document.getElementById('apr-base-url').value = cloud.baseUrl;
+      // Simpan ke localStorage juga sebagai cache
+      try { localStorage.setItem('beo_approval_phones', JSON.stringify(merged)); } catch(_) {}
+      const ci = document.getElementById('apr-cloud-indicator');
+      if (ci) ci.innerHTML = '<span class="apr-cloud-badge">☁ Cloud</span>';
+    }
+  } catch(_) {} // silent — localStorage sudah terpakai
 }
 
 function closeApprovalModal() {

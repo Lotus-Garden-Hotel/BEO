@@ -102,8 +102,16 @@
 </div>
 
 <script>
-const GAS_URL = localStorage.getItem('https://script.google.com/macros/s/AKfycbxspkLL20a_kgR7OKPWjoNr0tebcS77VxiNX8smdmylh_xz1_ZgQPv-b24Ob_uw2RqS/exec') ||
-                'https://script.google.com/macros/s/AKfycbxspkLL20a_kgR7OKPWjoNr0tebcS77VxiNX8smdmylh_xz1_ZgQPv-b24Ob_uw2RqS/exec';
+// Auto-detect GAS URL dari config yang tersimpan di browser (sama dengan beo.html)
+function _getGasUrl() {
+  const DEFAULT = 'https://script.google.com/macros/s/AKfycbyQTrvw2WtHV0zpItsVA2hG_02R0gscUrOua2rnOqw750PvT3PODSaO6LaM3HWUTXJi/exec';
+  try {
+    const c = JSON.parse(localStorage.getItem('banquet_elite_config') ||
+                         localStorage.getItem('banquet_master_cfg_v4') || '{}');
+    return c.gasUrl || c.gasUrl_entry || DEFAULT;
+  } catch(_) { return DEFAULT; }
+}
+const GAS_URL = _getGasUrl();
 
 const params  = new URLSearchParams(location.search);
 const token   = params.get('t');
