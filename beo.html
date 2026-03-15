@@ -446,21 +446,21 @@ Notes : Kebutuhan manning diluar standard harus atas persetujuan HRD &amp; GM</d
         <td class="align-left" contenteditable="true"></td>
         <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()"></td>
         <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()"></td>
-        <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()"></td>
+        <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()" onblur="_fmtInputRate(this)"></td>
         <td contenteditable="true" oninput="calcBillingTotal()"></td>
       </tr>
       <tr>
         <td class="align-left" contenteditable="true"></td>
         <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()"></td>
         <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()"></td>
-        <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()"></td>
+        <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()" onblur="_fmtInputRate(this)"></td>
         <td contenteditable="true" oninput="calcBillingTotal()"></td>
       </tr>
       <tr>
         <td class="align-left" contenteditable="true"></td>
         <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()"></td>
         <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()"></td>
-        <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()"></td>
+        <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()" onblur="_fmtInputRate(this)"></td>
         <td contenteditable="true" oninput="calcBillingTotal()"></td>
       </tr>
     </tbody>
@@ -758,15 +758,80 @@ function addMenuItemTime() { addMenuItem('time'); }
 // calcBillingTotal()   — sum semua baris kolom Total → isi #billing-total
 
 function _parseNum(str) {
-  // Hapus semua non-digit kecuali titik/koma lalu parse
+  // Parse angka format Indonesia (20.000 = dua puluh ribu) maupun raw (20000)
   if (!str) return 0;
-  const cleaned = str.toString().replace(/[^0-9.,]/g, '').replace(/\./g, '').replace(',', '.');
-  return parseFloat(cleaned) || 0;
+  let s = str.toString().trim();
+
+  // Hapus semua karakter non-angka kecuali titik dan koma
+  s = s.replace(/[^0-9.,]/g, '');
+  if (!s) return 0;
+
+  // Deteksi format:
+  // "20.000"    → titik = ribuan, tidak ada desimal  → 20000
+  // "20.000,50" → titik = ribuan, koma = desimal     → 20000.50
+  // "20,000"    → koma = ribuan (EN format)           → 20000
+  // "20,5"      → koma = desimal                      → 20.5
+  // "20000"     → raw                                 → 20000
+  // "1.500.000" → titik = ribuan                      → 1500000
+
+  const dotCount   = (s.match(/\./g)  || []).length;
+  const commaCount = (s.match(/,/g)   || []).length;
+  const lastDot    = s.lastIndexOf('.');
+  const lastComma  = s.lastIndexOf(',');
+
+  if (dotCount === 0 && commaCount === 0) {
+    // Angka bersih — langsung parse
+    return parseFloat(s) || 0;
+  }
+
+  if (dotCount > 0 && commaCount === 0) {
+    // Hanya titik: bisa ribuan (20.000) atau desimal (20.5)
+    // Jika bagian setelah titik terakhir tepat 3 digit → separator ribuan
+    const afterLastDot = s.substring(lastDot + 1);
+    if (afterLastDot.length === 3) {
+      // Separator ribuan: hapus semua titik
+      return parseFloat(s.replace(/\./g, '')) || 0;
+    } else {
+      // Desimal biasa (20.5, 1.50)
+      return parseFloat(s) || 0;
+    }
+  }
+
+  if (dotCount === 0 && commaCount > 0) {
+    // Hanya koma: bisa ribuan (20,000 EN) atau desimal (20,5 ID)
+    const afterLastComma = s.substring(lastComma + 1);
+    if (afterLastComma.length === 3 && commaCount === 1) {
+      // Koma sebagai ribuan EN format
+      return parseFloat(s.replace(/,/g, '')) || 0;
+    } else {
+      // Koma sebagai desimal ID (20,5)
+      return parseFloat(s.replace(',', '.')) || 0;
+    }
+  }
+
+  // Ada keduanya (titik DAN koma): tentukan mana ribuan, mana desimal
+  if (lastComma > lastDot) {
+    // Format ID: 20.000,50 → titik=ribuan, koma=desimal
+    return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
+  } else {
+    // Format EN: 20,000.50 → koma=ribuan, titik=desimal
+    return parseFloat(s.replace(/,/g, '')) || 0;
+  }
 }
 
 function _fmtRp(n) {
   if (!n || isNaN(n)) return '';
+  // Format Indonesia: 1.500.000 (titik sebagai separator ribuan)
   return Math.round(n).toLocaleString('id-ID');
+}
+
+// Format angka saat user selesai input di kolom RATE (auto-format ke ribuan)
+function _fmtInputRate(td) {
+  const raw = _parseNum(td.textContent);
+  if (raw > 0) {
+    // Simpan posisi kursor tidak perlu — contenteditable number cell
+    td.textContent = _fmtRp(raw);
+  }
 }
 
 function calcBillingRow(td) {
@@ -808,7 +873,7 @@ function addBillingRow() {
   tr.innerHTML = `<td class="align-left" contenteditable="true"></td>
     <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()"></td>
     <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()"></td>
-    <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()"></td>
+    <td contenteditable="true" oninput="calcBillingRow(this);calcBillingTotal()" onblur="_fmtInputRate(this)"></td>
     <td contenteditable="true" oninput="calcBillingTotal()"></td>`;
   tbody.appendChild(tr);
   tr.querySelector('td').focus();
@@ -923,6 +988,7 @@ function addBillingRow() {
     Array.from(tbody.rows).forEach(tr => {
       Array.from(tr.cells).forEach((td,ci) => {
         if (ci>0) td.setAttribute('oninput','calcBillingRow(this);calcBillingTotal()');
+        if (ci===3) td.setAttribute('onblur','_fmtInputRate(this)');
       });
     });
     if (d.price || d.pax) {
@@ -1050,6 +1116,7 @@ function addBillingRow() {
             if(ci===0) td.className='align-left';
             td.setAttribute('contenteditable','true');
             if(ci>0) td.setAttribute('oninput','calcBillingRow(this);calcBillingTotal()');
+            if(ci===3) td.setAttribute('onblur','_fmtInputRate(this)');
             tr.appendChild(td);
           });
           tbody.appendChild(tr);
