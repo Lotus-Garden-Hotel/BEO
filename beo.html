@@ -917,6 +917,13 @@ function addBillingRow() {
     const raw = params.get('data');
     if (raw) { try { d = JSON.parse(raw); } catch(e) {} }
   }
+  // Link share dari WA: ?customer=xxx&venue=xxx&beoId=xxx
+  // Data minimal — cloud draft akan load penuh di STEP 3
+  if (!d.customer && params.get('customer')) {
+    d.customer   = decodeURIComponent(params.get('customer') || '');
+    d.venue      = decodeURIComponent(params.get('venue')    || '');
+    d._fromShare = true;
+  }
   console.log('[BEO] booking data loaded:', d.customer, d.date, d.venue);
 
   // ── Config ────────────────────────────────────────────────────────────────
@@ -1463,11 +1470,11 @@ function _markCloudSaved() {
 // ══ APPROVAL SYSTEM ══════════════════════════════════════════════════════
 const APR_DEPTS = [
   { key:'sm',       label:'Sales Manager'   },
-  { key:'fb',       label:'F&B Manager'     },
+  { key:'fb',       label:'F&B Ast.'     },
   { key:'chef',     label:'Sous Chef'       },
-  { key:'eng',      label:'Engineering SPV' },
-  { key:'hk',       label:'EHKr'      },
-  { key:'security', label:'Chief Security'  },
+  { key:'eng',      label:'Engineering Spv' },
+  { key:'hk',       label:'EHK'      },
+  { key:'security', label:'Leader Security'  },
   { key:'hr',       label:'HRD Manager'     },
   { key:'ca',       label:'Chief Accounting' },
   { key:'gm',       label:'General Manager' },
@@ -1658,16 +1665,44 @@ async function sendApprovalLinks() {
   const results = [];
 
   for (const apr of approvals) {
-    const link = apr.link + '&dept=' + encodeURIComponent(apr.label) + '&beo=' + encodeURIComponent(beoId);
-    const msg  = [
+    // Link sudah lengkap dari GAS (termasuk ?t=token&dept=&beo=)
+    const link = apr.link;
+
+    // Ambil data event dari BEO untuk isi pesan
+    const custName   = (document.getElementById('i-customer')   ||{}).textContent?.replace(/^—$/,'').trim() || '';
+    const eventTitle = (document.getElementById('i-event-title')||{}).textContent?.replace(/^—$/,'').trim() || '';
+    const eventLine  = eventTitle && eventTitle !== custName ? eventTitle + ' / ' + custName : custName;
+    const dateText   = (document.getElementById('i-date')       ||{}).textContent?.replace(/^—$/,'').trim() || '';
+    const venueText  = (document.getElementById('i-venue')      ||{}).textContent?.replace(/^—$/,'').trim() || '';
+    const paxText    = (document.getElementById('i-pax')        ||{}).textContent?.replace(/^—$/,'').trim() || '';
+
+    // Link BEO: pakai customer sebagai draft key — cloud draft sudah tersimpan
+    // Siapapun yang buka link ini akan load draft BEO dari cloud (GET_BEO_DRAFT)
+    const _beoOrigin   = location.origin;
+    const _beoPathDir  = location.pathname.replace(/\/[^\/]*$/, '/');
+    const beoLink = _beoOrigin + _beoPathDir + 'beo.html'
+                  + '?customer=' + encodeURIComponent(custName)
+                  + '&venue='    + encodeURIComponent(venueText)
+                  + '&beoId='    + encodeURIComponent(beoId);
+
+    const msg = [
       '📋 *BANQUET EVENT ORDER — APPROVAL REQUEST*', '',
       'Kepada Yth. *' + apr.label + '*',
       'Lotus Garden by WH — Kediri', '',
-      'BEO No: *' + beoId + '*', '',
-      'Mohon berikan persetujuan Anda melalui link berikut:',
+      'BEO No : *' + beoId + '*',
+      eventLine  ? '🎪 Event  : *' + eventLine  + '*' : '',
+      dateText   ? '📅 Tgl    : ' + dateText           : '',
+      venueText  ? '🏛 Venue  : ' + venueText           : '',
+      paxText    ? '👥 Pax    : ' + paxText             : '',
+      '',
+      '━━━━━━━━━━━━━━━━━━━━━',
+      '📄 *Lihat BEO lengkap:*',
+      beoLink,
+      '━━━━━━━━━━━━━━━━━━━━━',
+      '✅ *Link Approval (untuk ' + apr.label + '):*',
       link, '',
-      '_Tekan tombol *SETUJU & APPROVE* untuk mengkonfirmasi._'
-    ].join('\n');
+      '_Tekan SETUJU & APPROVE untuk mengkonfirmasi._'
+    ].filter(l => l !== '').join('\n');
 
     progress.textContent = '⏳ Mengirim ke ' + apr.label + ' (' + apr.phone + ')...';
 
@@ -1722,31 +1757,58 @@ function _startApprovalPolling(gasUrl, beoId) {
 }
 async function _fetchApprovalStatus(gasUrl, beoId) {
   try {
+    // [FIX] action name: READ_APPROVE_STATUS (sesuai GAS)
+    // [FIX] response field: depts (bukan approvals), status: DONE (bukan APPROVED)
     const d = await (await fetch(gasUrl + '?' + new URLSearchParams({
-      action:'GET_APPROVAL_STATUS', beoId,
-      idToken: sessionStorage.getItem('beo_idToken')||''
+      action: 'READ_APPROVE_STATUS',
+      beoId:  beoId
     }))).json();
-    if (!d.ok || !d.approvals) return;
-    _renderApprovalBadges(d.approvals);
-    if (d.approvals.length && d.approvals.every(a => a.status==='APPROVED')) {
+    if (!d.ok) return;
+    const list = d.depts || d.approvals || [];
+    if (!list.length) return;
+    _renderApprovalBadges(list);
+    if (list.every(a => (a.status||'').toUpperCase() === 'DONE')) {
       clearInterval(_pollTimer); _pollTimer = null;
     }
   } catch(_) {}
 }
 function _renderApprovalBadges(approvals) {
+  // Map dept label/key → badge element IDs di signature row
+  // GAS bisa return dept sebagai key (sm) atau label (Sales Manager)
+  const DEPT_BADGE_MAP = {
+    // by key
+    'sm':       ['badge-sm-bot'],
+    'fb':       ['badge-fb'],
+    'chef':     ['badge-chef'],
+    'eng':      ['badge-eng'],
+    'hk':       ['badge-hk'],
+    'security': ['badge-security'],
+    'hr':       ['badge-hr'],
+    'ca':       ['badge-ca'],
+    'gm':       ['badge-gm'],
+    // by label (case-insensitive match di bawah)
+    'sales manager':   ['badge-sm-bot'],
+    'f&b manager':     ['badge-fb'],
+    'sous chef':       ['badge-chef'],
+    'engineering mgr': ['badge-eng'],
+    'hk manager':      ['badge-hk'],
+    'chief security':  ['badge-security'],
+    'hrd manager':     ['badge-hr'],
+    'cost accounting': ['badge-ca'],
+    'general manager': ['badge-gm'],
+  };
+
   approvals.forEach(a => {
-    // map to badge IDs
-    const ids = {
-      sm:['badge-sm','badge-sm-bot'], fb:['badge-fb'], chef:['badge-chef'],
-      eng:['badge-eng'], hk:['badge-hk'], security:['badge-security'],
-      hr:['badge-hr'], gm:['badge-gm','badge-gm-top'],
-    };
-    (ids[a.dept]||[]).forEach(bid => {
+    const deptKey = (a.dept || a.key || '').toString().toLowerCase().trim();
+    const badgeIds = DEPT_BADGE_MAP[deptKey] || [];
+
+    badgeIds.forEach(bid => {
       const b = document.getElementById(bid);
       if (!b) return;
-      b.className = (b.className.includes('sig-bot') ? 'sig-bot-badge' : 'sig-badge') +
-                    (a.status==='APPROVED' ? ' approved' : ' pending');
-      b.textContent = a.status==='APPROVED' ? '✓ Approved' : '⏳';
+      const isApproved = (a.status||'').toUpperCase() === 'APPROVED'
+                      || (a.status||'').toUpperCase() === 'DONE';
+      b.className  = 'sig-bot-badge ' + (isApproved ? 'approved' : 'pending');
+      b.textContent = isApproved ? '✓ Approved' : '⏳ Pending';
     });
   });
 }
