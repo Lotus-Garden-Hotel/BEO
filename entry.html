@@ -5,7 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>LOTUS GARDEN HOTEL — Live Edition</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Non-render-blocking font load: media=print → onload switch ke all -->
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"></noscript>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <style>
@@ -115,7 +119,26 @@
     }
     input:focus, select:focus { border-color:var(--gold); box-shadow:0 0 0 3px rgba(201,168,76,.1); }
     input.error, select.error { border-color:var(--red)!important; box-shadow:0 0 0 3px rgba(192,57,43,.12)!important; }
+    input.valid, select.valid { border-color:rgba(46,204,113,.5)!important; }
+    .field-msg { font-size:8px; margin-top:3px; min-height:12px; letter-spacing:.04em; }
+    .field-msg.err { color:var(--red); }
+    .field-msg.ok  { color:var(--green); }
     input:disabled, select:disabled { opacity:.35; pointer-events:none; }
+    input.field-error, select.field-error {
+      border-color:var(--red)!important;
+      box-shadow:0 0 0 3px rgba(192,57,43,.12)!important;
+      animation:shake .3s ease;
+    }
+    @keyframes shake {
+      0%,100%{transform:translateX(0)}
+      25%{transform:translateX(-4px)}
+      75%{transform:translateX(4px)}
+    }
+    .field-hint {
+      font-size:9px; color:var(--red); margin-top:3px;
+      display:none; letter-spacing:.03em;
+    }
+    .field-hint.show { display:block; animation:fadeIn .2s ease; }
     select option { background:#1c1a17; }
 
     /* ── Status banner ── */
@@ -1031,7 +1054,7 @@
   <div class="header">
     <div>
       <div class="brand-name" id="ui-brand">BANQUET ELITE</div>
-      <div class="brand-sub"  id="ui-version">V.5.3 · Gold Edition</div>
+      <div class="brand-sub"  id="ui-version">V.6.3 · Cloud Edition</div>
     </div>
     <div class="header-actions">
       <!-- 🔍 Search BEO — kiri (gabungan Scanner + Ketersediaan) -->
@@ -1498,7 +1521,7 @@ function applyConfig() {
 }
 
 const MONTHS = ["JANUARI","FEBRUARI","MARET","APRIL","MEI","JUNI","JULI","AGUSTUS","SEPTEMBER","OKTOBER","NOVEMBER","DESEMBER"];
-const TIMEOUT_MS = 12000;
+const TIMEOUT_MS = 8000; // [PERF] 8s cukup, down dari 12s
 // GAS URL diambil dari config (window._GAS), di-set saat applyConfig()
 const GAS_FN = () => window._GAS;
 
@@ -2447,6 +2470,43 @@ function clearFields() {
 
 function show(id) { document.getElementById(id).classList.add('visible'); }
 function hide(id) { document.getElementById(id).classList.remove('visible'); }
+
+// ── Validasi real-time ────────────────────────────────────────────────────
+function _validateField(inputEl, rules) {
+  const v   = (inputEl.value || '').trim();
+  const msg = inputEl.parentElement.querySelector('.field-msg');
+  let err   = '';
+  if (rules.required && !v)         err = '⚠ Wajib diisi';
+  else if (rules.minLen && v.length < rules.minLen) err = `⚠ Min ${rules.minLen} karakter`;
+  else if (rules.pattern && !rules.pattern.test(v)) err = rules.patternMsg || '⚠ Format tidak valid';
+
+  inputEl.classList.toggle('error', !!err);
+  inputEl.classList.toggle('valid', !err && !!v);
+  if (msg) { msg.textContent = err; msg.className = 'field-msg' + (err ? ' err' : (v?' ok':'')); }
+  return !err;
+}
+
+function _validateAllFields() {
+  let valid = true;
+  if (!_validateField(document.getElementById('f-date'),     { required:true })) valid = false;
+  if (!_validateField(document.getElementById('f-venue'),    { required:true })) valid = false;
+  if (!_validateField(document.getElementById('f-customer'), { required:true, minLen:2 })) valid = false;
+  if (!_validateField(document.getElementById('f-status'),   { required:true })) valid = false;
+  return valid;
+}
+
+// Auto-validate saat blur (user pindah field)
+['f-date','f-venue','f-customer','f-status','f-pax'].forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('blur', () => {
+    const rules = id === 'f-customer' ? { required:true, minLen:2 } : { required:true };
+    _validateField(el, rules);
+  });
+  el.addEventListener('input', () => {
+    if (el.classList.contains('error')) _validateField(el, { required:true });
+  });
+});
 // [FIX-DISABLED] val() membaca value meskipun field sedang disabled
 function val(id)  {
   const el = document.getElementById(id);

@@ -9,7 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        /* Font loaded via <link> tag in <head> */
         :root { --bg-deep: #020617; --glass: rgba(255, 255, 255, 0.03); --glass-border: rgba(255, 255, 255, 0.08); --neon: #6366f1; --gate-bg: radial-gradient(circle at top right, #1e1b4b 0%, #020617 100%); }
         body.night-mode { --bg-deep: #000000; --glass: rgba(255, 255, 255, 0.05); --glass-border: #1e1b4b; --neon: #4f46e5; --gate-bg: #000000; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg-deep); color: #f8fafc; padding: 8px; margin: 0; display: flex; flex-direction: column; height: 100dvh; gap: 6px; overflow: hidden; transition: background 0.3s ease; }
@@ -191,6 +191,11 @@
 
 
     </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet"></noscript>
 </head>
 <body class="no-scrollbar">
 
