@@ -344,6 +344,7 @@
     [contenteditable]{ border:none !important; outline:none !important; }
     .set-add-btn,.menu-add-btn,.billing-add-btn,.menu-del{ display:none !important; }
     .sig-badge,.sig-bot-badge{ display:none !important; }
+    #btn-save-sigs, .sig-scroll-hint{ display:none !important; }
     .kop-logo img{ height:55px !important; }
     .kop-addr{ font-size:7px !important; }
     .beo-titlebar{ font-size:9px !important; padding:3px !important; }
@@ -609,7 +610,14 @@ Notes : Kebutuhan manning diluar standard harus atas persetujuan HRD &amp; GM</d
   </div><!-- /billing-wrap -->
   <button class="billing-add-btn" onclick="addBillingRow()">+ Tambah baris</button>
 
-  <!-- SIGNATURE — scrollable di mobile agar tidak terpotong -->
+  <!-- SIGNATURE — toolbar nama + scrollable -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;background:var(--paper-dk);border:1.5px solid var(--ink);border-bottom:none;font-size:8px;">
+    <span style="color:#8a6e1e;font-weight:700;letter-spacing:.08em;">✍ TANDA TANGAN — klik nama untuk edit</span>
+    <button id="btn-save-sigs" onclick="saveSigNames()"
+      style="background:rgba(184,150,46,.12);border:1px solid rgba(184,150,46,.35);color:#b8962e;font-size:8px;font-weight:700;padding:3px 10px;border-radius:6px;cursor:pointer;white-space:nowrap;">
+      💾 Simpan Nama
+    </button>
+  </div>
   <div class="sig-scroll-wrap">
   <div class="sig-scroll-inner">
   <div class="sig-header-row">
@@ -622,7 +630,7 @@ Notes : Kebutuhan manning diluar standard harus atas persetujuan HRD &amp; GM</d
   <div class="sig-row-single">
     <div class="sig-cell-s">
       <div class="sig-ln-s"></div>
-      <div class="sig-nm-s" contenteditable="true" id="sig-prepare">—</div>
+      <div class="sig-nm-s" contenteditable="true" id="sig-se">—</div>
       <div class="sig-ttl-s" contenteditable="true">SE</div>
       <div class="sig-bot-badge" id="badge-se"></div>
     </div>
@@ -634,55 +642,55 @@ Notes : Kebutuhan manning diluar standard harus atas persetujuan HRD &amp; GM</d
     </div>
     <div class="sig-cell-s">
       <div class="sig-ln-s"></div>
-      <div class="sig-nm-s" contenteditable="true" id="sig-checked"></div>
+      <div class="sig-nm-s" contenteditable="true" id="sig-fom"></div>
       <div class="sig-ttl-s" contenteditable="true">AST.FOM</div>
       <div class="sig-bot-badge" id="badge-fom"></div>
     </div>
     <div class="sig-cell-s">
       <div class="sig-ln-s"></div>
-      <div class="sig-nm-s" contenteditable="true" id="sig-ack"></div>
+      <div class="sig-nm-s" contenteditable="true" id="sig-fb"></div>
       <div class="sig-ttl-s" contenteditable="true">FB</div>
       <div class="sig-bot-badge" id="badge-fb"></div>
     </div>
     <div class="sig-cell-s">
       <div class="sig-ln-s"></div>
-      <div class="sig-nm-s" contenteditable="true"></div>
+      <div class="sig-nm-s" contenteditable="true" id="sig-chef"></div>
       <div class="sig-ttl-s" contenteditable="true">Sous Chef</div>
       <div class="sig-bot-badge" id="badge-chef"></div>
     </div>
     <div class="sig-cell-s">
       <div class="sig-ln-s"></div>
-      <div class="sig-nm-s" contenteditable="true" id="sig-issued"></div>
+      <div class="sig-nm-s" contenteditable="true" id="sig-eng"></div>
       <div class="sig-ttl-s" contenteditable="true">ENG</div>
       <div class="sig-bot-badge" id="badge-eng"></div>
     </div>
     <div class="sig-cell-s">
       <div class="sig-ln-s"></div>
-      <div class="sig-nm-s" contenteditable="true"></div>
+      <div class="sig-nm-s" contenteditable="true" id="sig-hk"></div>
       <div class="sig-ttl-s" contenteditable="true">HK</div>
       <div class="sig-bot-badge" id="badge-hk"></div>
     </div>
     <div class="sig-cell-s">
       <div class="sig-ln-s"></div>
-      <div class="sig-nm-s" contenteditable="true"></div>
+      <div class="sig-nm-s" contenteditable="true" id="sig-security"></div>
       <div class="sig-ttl-s" contenteditable="true">Security</div>
       <div class="sig-bot-badge" id="badge-security"></div>
     </div>
     <div class="sig-cell-s">
       <div class="sig-ln-s"></div>
-      <div class="sig-nm-s" contenteditable="true"></div>
+      <div class="sig-nm-s" contenteditable="true" id="sig-hr"></div>
       <div class="sig-ttl-s" contenteditable="true">HR</div>
       <div class="sig-bot-badge" id="badge-hr"></div>
     </div>
     <div class="sig-cell-s">
       <div class="sig-ln-s"></div>
-      <div class="sig-nm-s" contenteditable="true"></div>
+      <div class="sig-nm-s" contenteditable="true" id="sig-ca"></div>
       <div class="sig-ttl-s" contenteditable="true">CA</div>
       <div class="sig-bot-badge" id="badge-ca"></div>
     </div>
     <div class="sig-cell-s">
       <div class="sig-ln-s"></div>
-      <div class="sig-nm-s" contenteditable="true"></div>
+      <div class="sig-nm-s" contenteditable="true" id="sig-gm"></div>
       <div class="sig-ttl-s" contenteditable="true">GM</div>
       <div class="sig-bot-badge" id="badge-gm"></div>
     </div>
@@ -1176,7 +1184,7 @@ function addBillingRow() {
     document.getElementById('i-address').textContent = 'Kediri';
     if (d.eventTitle || d.customer)
       document.getElementById('lbp-lobby').textContent = d.eventTitle || d.customer;
-    set('sig-prepare', d.sales || '');
+    set('sig-se', '');
   }
 
   // A2. Billing dari d
@@ -1339,15 +1347,17 @@ function addBillingRow() {
       }
     }
 
-    // Signatures
+    // Signatures — hanya restore title (jabatan), bukan nama
+    // Nama signature dimuat dari cloud config agar konsisten semua BEO
     if (state.sigs && state.sigs.length) {
       const cells=document.querySelectorAll('.sig-row-single .sig-cell-s');
       state.sigs.forEach((s,i) => {
         if (!cells[i]) return;
-        const nm=cells[i].querySelector('.sig-nm-s');
         const ttl=cells[i].querySelector('.sig-ttl-s');
-        if(nm&&s.name!==undefined) nm.textContent=s.name;
         if(ttl&&s.title!==undefined) ttl.textContent=s.title;
+        // Nama hanya restore jika cloud belum load (fallback)
+        const nm=cells[i].querySelector('.sig-nm-s');
+        if(nm && s.name && !nm.textContent.trim()) nm.textContent=s.name;
       });
     }
 
@@ -1675,13 +1685,95 @@ const APR_DEPTS = [
 ];
 
 function _getGasUrl() {
-  // Fallback hardcoded — sama dengan entry_live_secure.html DEFAULT_CFG
   const DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbyQTrvw2WtHV0zpItsVA2hG_02R0gscUrOua2rnOqw750PvT3PODSaO6LaM3HWUTXJi/exec';
   try {
     const c = JSON.parse(localStorage.getItem('banquet_master_cfg_v4') ||
                          localStorage.getItem('banquet_elite_config') || '{}');
     return c.gasUrl_entry || c.gasUrl || DEFAULT_GAS;
   } catch(_) { return DEFAULT_GAS; }
+}
+
+// ── Nama Signature: Load/Save ke cloud APPROVAL_CONFIG ───────────────────
+const _SIG_IDS = ['se','sm','fom','fb','chef','eng','hk','security','hr','ca','gm'];
+const _SIG_LABELS = {
+  se:'SE', sm:'SM', fom:'AST.FOM', fb:'FB', chef:'Sous Chef',
+  eng:'ENG', hk:'HK', security:'Security', hr:'HR', ca:'CA', gm:'GM'
+};
+
+function _collectSigNames() {
+  const names = {};
+  _SIG_IDS.forEach(id => {
+    const el = document.getElementById('sig-' + id);
+    if (el) names[id] = el.textContent.trim();
+  });
+  return names;
+}
+
+function _applySigNames(names) {
+  if (!names) return;
+  _SIG_IDS.forEach(id => {
+    if (names[id] !== undefined) {
+      const el = document.getElementById('sig-' + id);
+      if (el) el.textContent = names[id];
+    }
+  });
+}
+
+async function saveSigNames() {
+  const gasUrl = _getGasUrl();
+  if (!gasUrl) return;
+  const btn = document.getElementById('btn-save-sigs');
+  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+
+  // Merge dengan config yang sudah ada
+  let existing = {};
+  try {
+    const lr = localStorage.getItem('beo_approval_phones');
+    if (lr) existing = JSON.parse(lr);
+  } catch(_) {}
+
+  const config = Object.assign({}, existing, { sigNames: _collectSigNames() });
+  try { localStorage.setItem('beo_approval_phones', JSON.stringify(config)); } catch(_) {}
+
+  try {
+    const res = await fetch(gasUrl + '?' + new URLSearchParams({
+      action:     'SAVE_APPROVAL_CONFIG',
+      configJson: JSON.stringify(config)
+    }));
+    const d = await res.json();
+    if (btn) {
+      btn.textContent = d.ok ? '✓ Tersimpan' : '✗ Gagal';
+      btn.style.color = d.ok ? '#2ecc71' : '#e74c3c';
+      setTimeout(() => { btn.textContent = '💾 Simpan Nama'; btn.style.color = ''; btn.disabled = false; }, 2000);
+    }
+  } catch(e) {
+    if (btn) { btn.textContent = '✗ Error'; setTimeout(() => { btn.textContent='💾 Simpan Nama'; btn.disabled=false; }, 2000); }
+  }
+}
+
+async function _loadSigNamesFromCloud() {
+  // 1. Coba localStorage dulu (instan)
+  try {
+    const lr = JSON.parse(localStorage.getItem('beo_approval_phones') || '{}');
+    if (lr.sigNames) _applySigNames(lr.sigNames);
+  } catch(_) {}
+
+  // 2. Fetch cloud di background
+  const gasUrl = _getGasUrl();
+  if (!gasUrl) return;
+  try {
+    const res = await fetch(gasUrl + '?action=GET_APPROVAL_CONFIG');
+    const d   = await res.json();
+    if (d.ok && d.config && d.config.sigNames) {
+      _applySigNames(d.config.sigNames);
+      // Update localStorage cache
+      try {
+        const lr = JSON.parse(localStorage.getItem('beo_approval_phones') || '{}');
+        lr.sigNames = d.config.sigNames;
+        localStorage.setItem('beo_approval_phones', JSON.stringify(lr));
+      } catch(_) {}
+    }
+  } catch(_) {}
 }
 function _getWaToken() {
   try { return (JSON.parse(localStorage.getItem('lg_wa_dept_config')||'{}')).token || ''; }
@@ -2100,6 +2192,9 @@ function _manualRefreshApproval() {
     }
   }
   setTimeout(_tryStartPolling, 800);
+
+  // Load nama signature dari cloud (setelah BEO render)
+  setTimeout(_loadSigNamesFromCloud, 1200);
 })();
 
 </script>
