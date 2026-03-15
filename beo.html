@@ -1064,6 +1064,7 @@ function addBillingRow() {
       d.time       = sd.time       || '';
       d.pax        = sd.pax        || '';
       d.sales      = sd.sales      || '';
+      d.price      = sd.price      || ''; // RATE per-pax untuk validasi billing
       d._beoNo     = sd.beoNo      || ''; // No. BEO dari pengirim
       d._fromShare = true;
     } catch(e) {}
@@ -1274,10 +1275,27 @@ function addBillingRow() {
       const tbody=document.getElementById('billing-body');
       if (tbody) {
         tbody.innerHTML='';
-        state.billingRows.forEach(cells => {
+        state.billingRows.forEach((cells,rowIdx) => {
           const tr=document.createElement('tr');
           cells.forEach((txt,ci) => {
             const td=document.createElement('td');
+            // [FIX] Baris pertama kolom RATE (ci=3): validasi tidak melebihi akal
+            // Jika d.price tersedia (dari booking data), pakai itu untuk baris 0
+            if (rowIdx===0 && ci===3 && d.price) {
+              const correctRate = _parseNum(d.price);
+              const draftRate   = _parseNum(txt);
+              // Jika draft rate > 10x correct rate → kemungkinan draft lama (harga total, bukan per-pax)
+              // Override dengan nilai yang benar
+              if (correctRate > 0 && draftRate > correctRate * 5) {
+                txt = _fmtRp(correctRate);
+              }
+            }
+            if (rowIdx===0 && ci===4 && d.price && d.pax) {
+              const rate  = _parseNum(d.price);
+              const pax   = _parseNum(d.pax);
+              const total = rate * pax;
+              if (total > 0) txt = _fmtRp(total);
+            }
             td.textContent=txt;
             if(ci===0) td.className='align-left';
             td.setAttribute('contenteditable','true');
@@ -1615,7 +1633,7 @@ function _markCloudSaved() {
 
 // ══ APPROVAL SYSTEM ══════════════════════════════════════════════════════
 const APR_DEPTS = [
-  { key:'sm',       label:'Sales Manager'   },
+   { key:'sm',       label:'Sales Manager'   },
   { key:'fb',       label:'F&B Ast.'     },
   { key:'chef',     label:'Sous Chef'       },
   { key:'eng',      label:'Engineering Spv' },
@@ -1830,6 +1848,9 @@ async function sendApprovalLinks() {
     const _beoTime    = (document.getElementById('i-time')||{}).textContent?.replace(/^—$/,'').trim()||'';
     const _beoSales   = (document.getElementById('i-sales')||{}).textContent?.replace(/^—$/,'').trim()||'';
     // Encode semua data penting ke URL agar penerima bisa lihat BEO lengkap
+    // Ambil RATE dari billing row pertama (sudah per-pax, hasil fix index.html)
+    const _billingRow0 = document.querySelector('#billing-body tr');
+    const _beoRate = _billingRow0 ? (_billingRow0.cells[3]||{}).textContent||'' : '';
     const _shareData  = encodeURIComponent(JSON.stringify({
       customer:   custName,
       eventTitle: eventTitle,
@@ -1839,6 +1860,7 @@ async function sendApprovalLinks() {
       pax:        _beoPax,
       sales:      _beoSales,
       beoNo:      beoId,
+      price:      _beoRate,   // RATE per-pax — untuk validasi billing di penerima
     }));
     const beoLink = _beoOrigin + _beoPathDir + 'beo.html?shareData=' + _shareData;
 
@@ -1958,7 +1980,7 @@ function _renderApprovalBadges(approvals) {
     'hk manager':      ['badge-hk'],
     'chief security':  ['badge-security'],
     'hrd manager':     ['badge-hr'],
-    'cost accounting': ['badge-ca'],
+    'chief accounting': ['badge-ca'],
     'general manager': ['badge-gm'],
   };
 
