@@ -899,117 +899,38 @@
         let _beoLoadingEl = null;
         const _beoDataMap = {};
         let _beoDataIdx = 0;
-        async function openBeoFull(key, event) {
-            // Prevent double-tap
+        // INSTANT OPEN: buka tab BEO langsung tanpa await apapun
+        // Semua data sudah ada di _beoDataMap (dari READ_MONTH saat kalender render)
+        // beo.html handle GET_BEO_DRAFT cloud draft sendiri via _loadAndRender()
+        function openBeoFull(key, event) {
             if (_beoLoadingEl) return;
-            if (event && event.currentTarget) {
-                _beoLoadingEl = event.currentTarget;
-                _beoLoadingEl.style.opacity = '.5';
-                _beoLoadingEl.style.pointerEvents = 'none';
-            }
             const entry = _beoDataMap[key];
-            if (!entry) {
-                _beoLoadingEl = null;   // reset agar bisa klik lagi
-                console.warn('[BEO] entry not found for key:', key);
-                return;
-            }
-            const isoDate = entry.date;
-            const venue   = entry.venue;
-            const basic   = entry;
+            if (!entry) { console.warn('[BEO] entry not found:', key); return; }
+
+            const beoData = {
+                date:       entry.date       || '',
+                venue:      entry.venue      || '',
+                customer:   entry.customer   || '',
+                status:     entry.status     || '',
+                package:    entry.package    || '',
+                sales:      entry.sales      || '',
+                time:       entry.time       || '',
+                setup:      entry.setup      || '',
+                pax:        entry.pax        || '',
+                price:      entry.price      || '',
+                eventTitle: entry.eventTitle || '',
+                contact:    entry.contact    || '',
+                phone:      entry.phone      || '',
+                notes:      entry.notes      || '',
+            };
+
+            // Buka tab BEO SEKARANG — tidak ada await sebelum ini
+            const beoKey = 'beoData_' + Date.now();
             try {
-                // Step 1: Redirect immediately dengan basic data (customer, venue, date, pax, etc.)
-                // Step 2: GAS CHECK dijalankan di background — beo.html tidak perlu menunggu
-                const beoData = {
-                    date:       isoDate,
-                    venue:      venue,
-                    customer:   basic.customer   || '',
-                    status:     basic.status     || '',
-                    package:    basic.package    || '',
-                    sales:      basic.sales      || '',
-                    time:       basic.time       || '',
-                    setup:      basic.setup      || '',
-                    pax:        basic.pax        || '',
-                    price:      basic.price      || '',
-                    eventTitle: basic.eventTitle || '',
-                    contact:    basic.contact    || '',
-                    phone:      basic.phone      || '',
-                    notes:      basic.notes      || '',
-                    _needEnrich: '1',   // flag: beo.html akan enrichment sendiri via CHECK
-                };
-                // Enrich dengan GAS CHECK — jika berhasil, update beoData sebelum redirect
-                try {
-                    const sheetName = AVAIL_MONTHS[parseInt(isoDate.split('-')[1]) - 1];
-                    const idToken   = await getIdToken();
-                    const res = await Promise.race([
-                        gasRaw({ action:'CHECK', date:isoDate, venue, sheetName, idToken }),
-                        new Promise((_,rej) => setTimeout(() => rej(new Error('timeout')), 4000))
-                    ]);
-                    const d = (res && res.ok && res.occupied && res.data) ? res.data : null;
-                    if (d) {
-                        beoData.customer   = d.customer    || beoData.customer;
-                        beoData.status     = d.status      || beoData.status;
-                        beoData.package    = d.package     || beoData.package;
-                        beoData.sales      = d.sales       || beoData.sales;
-                        beoData.time       = d.time        || beoData.time;
-                        beoData.setup      = d.setup       || beoData.setup;
-                        beoData.pax        = d.pax         || beoData.pax;
-                        beoData.price      = d.price       || beoData.price;
-                        beoData.eventTitle = d.eventTitle  || beoData.eventTitle;
-                        beoData.contact    = d.contactPerson || d.contact || beoData.contact;
-                        beoData.phone      = d.phone       || beoData.phone;
-                        beoData.notes      = d.notes       || beoData.notes;
-                    }
-                    beoData._needEnrich = '0';
-                } catch(_) { /* timeout or error — pakai basic data saja */ }
-
-                // [AUTO-LOAD] Fetch template terakhir customer dari GAS (sama seperti entry_live_secure)
-                if (beoData.customer) {
-                    try {
-                        const tplRes = await Promise.race([
-                            gasRaw({ action: 'GET_MENU_HISTORY', customer: beoData.customer }),
-                            new Promise((_,rej) => setTimeout(() => rej(new Error('tpl-timeout')), 3000))
-                        ]);
-                        if (tplRes && tplRes.ok && tplRes.templates && tplRes.templates.length > 0) {
-                            const valid = tplRes.templates.filter(t =>
-                                !(t.templateName || '').includes('__DELETED__')
-                            );
-                            if (valid.length > 0) {
-                                const tpl = valid[valid.length - 1];
-                                let menuItems = [];
-                                if (Array.isArray(tpl.menuItems)) {
-                                    menuItems = tpl.menuItems;
-                                } else if (typeof tpl.menuItems === 'string' && tpl.menuItems !== '[]') {
-                                    try { menuItems = JSON.parse(tpl.menuItems); } catch(_) {}
-                                }
-                                beoData.menuItems           = menuItems;
-                                beoData.banquetInstruction  = tpl.banquetInstruction || '';
-                                beoData.backdropLettering   = tpl.backdropLettering  || '';
-                                beoData.hrdManning          = tpl.hrdManning         || '';
-                                beoData.templateName        = tpl.templateName       || '';
-                            }
-                        }
-                    } catch(_) { /* template fetch gagal — tidak apa-apa */ }
-                }
-
-                _beoLoadingEl = null;
-                // [FIX-CROSSTAB] localStorage + beoKey — cross-tab, tidak terpotong URL limit
-                const beoKey = 'beoData_' + Date.now();
-                try {
-                    localStorage.setItem(beoKey, JSON.stringify(beoData));
-                    window.open('beo.html?beoKey=' + beoKey, '_blank');
-                } catch(_) {
-                    window.location.href = 'beo.html?data=' + encodeURIComponent(JSON.stringify(beoData));
-                }
-            } catch(e) {
-                _beoLoadingEl = null;
-                const beoKey = 'beoData_' + Date.now();
-                const fallback = { ...basic, date: isoDate, venue };
-                try {
-                    localStorage.setItem(beoKey, JSON.stringify(fallback));
-                    window.open('beo.html?beoKey=' + beoKey, '_blank');
-                } catch(_) {
-                    window.location.href = 'beo.html?data=' + encodeURIComponent(JSON.stringify(fallback));
-                }
+                localStorage.setItem(beoKey, JSON.stringify(beoData));
+                window.open('beo.html?beoKey=' + beoKey, '_blank');
+            } catch(_) {
+                window.open('beo.html?data=' + encodeURIComponent(JSON.stringify(beoData)), '_blank');
             }
         }
 
