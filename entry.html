@@ -1455,6 +1455,9 @@ async function getMonthData(sheetName) {
 
 function invalidateMonthCache(sheetName) {
   if (sheetName && _monthCache[sheetName]) delete _monthCache[sheetName];
+  // [PERF] Invalidate juga cache customer history agar data fresh setelah perubahan
+  _custAllRows = null;
+  _prefetchPromise = null;
 }
 
 function toast(msg, type='success', dur=3000) {
@@ -2102,6 +2105,18 @@ async function initAppData() {
   } catch(_) {}
   // Load scanner setelah badge
   loadScanner(activeTab);
+
+  // [PERF] Prefetch semua bulan di background setelah login
+  // Saat user buka Customer History, data sudah siap → langsung tampil
+  const role = window._userRole || '';
+  if (role === 'MANAGER' || role === 'ADMIN') {
+    setTimeout(() => {
+      if (!_custAllRows) {
+        console.log('[PERF] Background prefetch customer data...');
+        _prefetchCustData();
+      }
+    }, 2000); // tunda 2 detik agar tidak bentrok dengan scanner load
+  }
 }
 
 window.addEventListener('load', () => {
@@ -2728,8 +2743,30 @@ async function sendWABEO() {
 
 // ─── OPEN BEO ──────────────────────────────────────────────────────────────
 // openBEO(template) — template opsional: object dari menu template drawer
-function openBEO(template) {
+// [AUTO-LOAD] Jika tidak ada template eksplisit → auto-fetch template terakhir customer
+async function openBEO(template) {
   const customer = val('f-customer');
+
+  // Jika tidak ada template eksplisit, cari template terakhir dari cache / GAS
+  if (!template && customer) {
+    const key = customer.toUpperCase().trim();
+    let cached = _menuTplCache[key];
+    if (cached === undefined) {
+      try {
+        const res = await gas({ action: 'GET_MENU_HISTORY', customer });
+        cached = (res.ok && res.templates) ? res.templates : [];
+        _menuTplCache[key] = cached;
+      } catch(_) { cached = []; }
+    }
+    // Ambil template valid terbaru (tidak deleted, diabaikan yang kosong menuItems)
+    const valid = (cached || []).filter(t =>
+      !(t.templateName || '').includes('__DELETED__')
+    );
+    if (valid.length > 0) {
+      template = valid[valid.length - 1]; // paling baru = index terakhir
+    }
+  }
+
   // menuItems dari template: pastikan array, bukan string JSON
   let menuItems = [];
   if (template && template.menuItems) {
@@ -2754,7 +2791,7 @@ function openBEO(template) {
     pax:           val('f-pax'),
     price:         val('f-price') || val('f-price-display') || '0',
     notes:         val('f-notes'),
-    // [MNU] inject template data jika ada
+    // [MNU] inject template data
     menuItems:           menuItems,
     banquetInstruction:  template ? (template.banquetInstruction || '') : '',
     backdropLettering:   template ? (template.backdropLettering  || '') : '',
@@ -2767,11 +2804,9 @@ function openBEO(template) {
     localStorage.setItem(beoKey, JSON.stringify(data));
     window.open('beo.html?beoKey=' + beoKey, '_blank');
   } catch(e) {
-    // Fallback ke URL param jika localStorage tidak tersedia
     const encoded = encodeURIComponent(JSON.stringify(data));
     window.open('beo.html?data=' + encoded, '_blank');
   }
-  // [MNU] Auto-save konteks terbaru tiap buka BEO (tidak timpa template yang ada menu)
   if (customer) autoSaveMenuTemplate(customer);
 }
 
@@ -2804,19 +2839,37 @@ function onCustSearchInput() {
   _custSearchTO = setTimeout(searchCustomer, 400);
 }
 
-// Pre-fetch semua bulan ke cache (fire & forget saat drawer dibuka)
+// [PERF] Pre-fetch semua bulan PARALEL + pakai _monthCache
+// Serial (lama): 12 × ~1.5s = 18 detik
+// Paralel (baru): semua sekaligus ≈ 1.5 detik
+let _prefetchPromise = null; // guard agar tidak double-fetch
+
 async function _prefetchCustData() {
-  if (_custAllRows) return;
-  const MONTH_LIST = ["JANUARI","FEBRUARI","MARET","APRIL","MEI","JUNI",
-                      "JULI","AGUSTUS","SEPTEMBER","OKTOBER","NOVEMBER","DESEMBER"];
-  const all = [];
-  for (const m of MONTH_LIST) {
-    try {
-      const res = await gas({ action: 'READ_MONTH', sheetName: m });
-      if (res.ok && res.rows) res.rows.forEach(r => { r._bulan = m; all.push(r); });
-    } catch(_) {}
-  }
-  _custAllRows = all;
+  if (_custAllRows) return;          // sudah ada data — langsung pakai
+  if (_prefetchPromise) return _prefetchPromise; // sedang fetch — tunggu yang sama
+
+  _prefetchPromise = (async () => {
+    const MONTH_LIST = ["JANUARI","FEBRUARI","MARET","APRIL","MEI","JUNI",
+                        "JULI","AGUSTUS","SEPTEMBER","OKTOBER","NOVEMBER","DESEMBER"];
+
+    // Fetch semua bulan sekaligus — pakai getMonthData agar _monthCache diisi
+    const results = await Promise.allSettled(
+      MONTH_LIST.map(m => getMonthData(m).then(res => ({ m, res })))
+    );
+
+    const all = [];
+    results.forEach(r => {
+      if (r.status === 'fulfilled' && r.value.res.ok && r.value.res.rows) {
+        r.value.res.rows.forEach(row => { row._bulan = r.value.m; all.push(row); });
+      }
+    });
+
+    _custAllRows = all;
+    _prefetchPromise = null;
+    console.log('[CUST] prefetch selesai:', all.length, 'rows dari', MONTH_LIST.length, 'bulan');
+  })();
+
+  return _prefetchPromise;
 }
 
 async function searchCustomer() {
