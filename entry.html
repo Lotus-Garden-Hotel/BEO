@@ -262,6 +262,23 @@
     .tab.active { background:var(--card); border-color:var(--border); color:var(--gold); }
     .list-scroll { flex:1; overflow-y:auto; }
 
+    /* ── Scanner search bar ── */
+    .scanner-search-wrap { display:flex; gap:6px; margin-bottom:10px; }
+    .scanner-search-inp {
+      flex:1; background:var(--surface); border:1px solid var(--border); border-radius:10px;
+      padding:9px 12px; color:var(--text); font-family:'DM Sans',sans-serif;
+      font-size:12px; outline:none; transition:border-color .2s;
+    }
+    .scanner-search-inp:focus { border-color:var(--gold); }
+    .scanner-filter-row { display:flex; gap:5px; margin-bottom:10px; flex-wrap:wrap; }
+    .scanner-filter-chip {
+      padding:4px 10px; border-radius:20px; font-size:8px; font-weight:700;
+      letter-spacing:.08em; cursor:pointer; border:1px solid var(--border);
+      background:var(--surface); color:var(--muted); transition:all .18s; white-space:nowrap;
+    }
+    .scanner-filter-chip.active { background:rgba(201,168,76,.12); border-color:var(--gold); color:var(--gold); }
+    .scanner-count { font-size:8px; color:var(--muted); letter-spacing:.08em; margin-bottom:8px; }
+
     /* ── Event cards (scanner) ── */
     .event-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom:8px; cursor:pointer; transition:border-color .2s, transform .15s; }
     .event-card:active { transform:scale(.98); }
@@ -272,6 +289,8 @@
     .s-tentative { background:rgba(201,168,76,.1);   color:var(--gold);   border:1px solid rgba(201,168,76,.2); }
     .s-confirm   { background:rgba(46,204,113,.08);  color:var(--green);  border:1px solid rgba(46,204,113,.2); }
     .s-none      { background:rgba(192,57,43,.08);   color:#e74c3c;        border:1px solid rgba(192,57,43,.2); }
+    .s-done      { background:rgba(100,100,100,.08); color:#6b7280;        border:1px solid rgba(100,100,100,.2); }
+    mark.hl { background:rgba(201,168,76,.3); color:var(--gold2); border-radius:2px; padding:0 1px; }
 
     /* ── Force Venue slot cards ── */
     .slot-card {
@@ -561,7 +580,102 @@
     .log-sum-lbl  { font-size:8px; color:var(--dim); text-transform:uppercase; letter-spacing:.1em; }
 
     /* ── Customer History Drawer ── */
-    #cust-popup {
+    /* ── UNIFIED SEARCH POPUP (Scanner + Range gabung) ── */
+    #unified-popup {
+      position:fixed; inset:0; z-index:500;
+      background:var(--black);
+      display:flex; flex-direction:column;
+      transform:translateY(100%);
+      transition:transform .38s cubic-bezier(.4,0,.2,1);
+      will-change:transform;
+    }
+    #unified-popup.open { transform:translateY(0); }
+
+    .uni-header {
+      padding:12px 14px 0; background:var(--dark);
+      border-bottom:1px solid var(--border); flex-shrink:0;
+    }
+    .uni-header-top {
+      display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;
+    }
+    .uni-title {
+      font-family:'Cormorant Garamond',serif; font-size:17px; font-weight:700;
+      background:linear-gradient(90deg,var(--gold),var(--gold3));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    }
+    .uni-close {
+      width:32px; height:32px; border-radius:9px;
+      background:rgba(231,76,60,.08); border:1px solid rgba(231,76,60,.2);
+      color:var(--red); font-size:15px; cursor:pointer;
+      display:flex; align-items:center; justify-content:center; transition:all .2s;
+    }
+    .uni-close:hover { background:rgba(231,76,60,.18); }
+
+    /* Tab bar */
+    .uni-tabs {
+      display:flex; gap:4px; background:var(--surface);
+      padding:3px; border-radius:10px; margin-bottom:10px;
+    }
+    .uni-tab {
+      flex:1; padding:7px 4px; border-radius:8px; font-size:9px; font-weight:700;
+      letter-spacing:.08em; text-transform:uppercase; cursor:pointer;
+      text-align:center; transition:all .2s; color:var(--muted); border:1px solid transparent;
+    }
+    .uni-tab.active { background:var(--card); border-color:var(--border); color:var(--gold); }
+
+    /* Panel */
+    .uni-panel { display:none; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
+    .uni-panel.active { display:flex; }
+
+    /* ── Search panel ── */
+    .uni-search-bar {
+      padding:10px 14px; background:var(--dark);
+      border-bottom:1px solid var(--border); flex-shrink:0; display:flex; gap:6px;
+    }
+    .uni-search-inp {
+      flex:1; background:var(--surface); border:1px solid var(--border);
+      border-radius:10px; padding:9px 12px; color:var(--text);
+      font-family:'DM Sans',sans-serif; font-size:13px; outline:none;
+      transition:border-color .2s;
+    }
+    .uni-search-inp:focus { border-color:var(--gold); box-shadow:0 0 0 3px rgba(201,168,76,.08); }
+    .uni-filter-row { display:flex; gap:5px; padding:8px 14px 6px; flex-wrap:wrap; flex-shrink:0; }
+    .uni-chip {
+      padding:4px 11px; border-radius:20px; font-size:8px; font-weight:700;
+      letter-spacing:.08em; cursor:pointer; border:1px solid var(--border);
+      background:var(--surface); color:var(--muted); transition:all .18s; white-space:nowrap;
+    }
+    .uni-chip.active { background:rgba(201,168,76,.12); border-color:var(--gold); color:var(--gold); }
+    .uni-result-count { font-size:8px; color:var(--muted); padding:0 14px 6px; letter-spacing:.08em; flex-shrink:0; }
+    .uni-list { flex:1; overflow-y:auto; padding:0 14px 30px; }
+
+    /* ── Range panel ── */
+    .uni-range-inputs {
+      padding:12px 14px; background:var(--dark);
+      border-bottom:1px solid var(--border); flex-shrink:0;
+    }
+    .uni-range-row { display:grid; grid-template-columns:1fr 1fr auto; gap:8px; align-items:flex-end; }
+    .uni-range-field label { display:block; font-size:8px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--dim); margin-bottom:5px; }
+    .uni-range-field input[type=date] {
+      width:100%; background:var(--surface); border:1px solid var(--border);
+      border-radius:10px; padding:9px 10px; color:var(--text);
+      font-size:12px; outline:none; transition:border-color .2s; -webkit-appearance:none;
+    }
+    .uni-range-field input:focus { border-color:var(--gold); }
+    .uni-btn-check {
+      height:38px; padding:0 14px; border-radius:10px; border:none;
+      background:linear-gradient(135deg,var(--gold),var(--gold2));
+      color:var(--black); font-size:10px; font-weight:800;
+      letter-spacing:.1em; cursor:pointer; white-space:nowrap; transition:opacity .2s;
+    }
+    .uni-btn-check:disabled { opacity:.5; cursor:not-allowed; }
+    .uni-range-legend {
+      padding:6px 14px; display:flex; gap:10px; flex-shrink:0;
+      border-bottom:1px solid var(--border); background:var(--dark); flex-wrap:wrap;
+    }
+    .uni-range-body { flex:1; overflow:auto; padding:10px 14px 30px; }
+
+        #cust-popup {
       position:fixed; inset:0; z-index:400;
       background:var(--black);
       display:flex; flex-direction:column;
@@ -803,19 +917,76 @@
 <!-- ─── TOAST ──────────────────────────────────────── -->
 <div id="toast" class="toast"></div>
 
-<!-- ─── SCANNER MODAL ─────────────────────────────── -->
-<div id="modal-scanner" class="sheet-overlay" onclick="closeScanner()">
-  <div class="bottom-sheet" onclick="event.stopPropagation()">
-    <div class="sheet-handle"></div>
-    <div class="sheet-title">✦ Scanner Engine</div>
-    <div class="tabs">
-      <div class="tab active" id="tab-t" onclick="switchTab('TENTATIVE')">Tentative</div>
-      <div class="tab"        id="tab-c" onclick="switchTab('CONFIRM')">Confirm</div>
-      <div class="tab"        id="tab-n" onclick="switchTab('NONE')">No Status</div>
+<!-- ─── UNIFIED SEARCH POPUP (Scanner + Ketersediaan) ─── -->
+<div id="unified-popup">
+
+  <div class="uni-header">
+    <div class="uni-header-top">
+      <div class="uni-title">✦ Search BEO</div>
+      <button class="uni-close" onclick="closeUnifiedPopup()">✕</button>
     </div>
-    <div class="list-scroll" id="scanner-list"></div>
+    <div class="uni-tabs">
+      <div class="uni-tab active" id="uni-tab-search" onclick="switchUniTab('search')">🔍 Cari Event</div>
+      <div class="uni-tab"        id="uni-tab-range"  onclick="switchUniTab('range')">📅 Ketersediaan</div>
+    </div>
   </div>
+
+  <!-- ── Panel: Search BEO ── -->
+  <div class="uni-panel active" id="uni-panel-search">
+    <div class="uni-search-bar">
+      <input id="scanner-search" class="uni-search-inp" type="text"
+        placeholder="🔍 Nama customer, venue, tanggal..."
+        oninput="onScannerSearch()" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="uni-filter-row" id="scanner-chips">
+      <span class="uni-chip active" data-filter="ALL"       onclick="setScannerChip(this,'ALL')">Semua</span>
+      <span class="uni-chip"        data-filter="TENTATIVE" onclick="setScannerChip(this,'TENTATIVE')">Tentative</span>
+      <span class="uni-chip"        data-filter="CONFIRM"   onclick="setScannerChip(this,'CONFIRM')">Confirm</span>
+      <span class="uni-chip"        data-filter="DONE"      onclick="setScannerChip(this,'DONE')">Done</span>
+      <span class="uni-chip"        data-filter="NONE"      onclick="setScannerChip(this,'NONE')">No Status</span>
+    </div>
+    <div class="uni-filter-row" id="scanner-month-chips"></div>
+    <div class="uni-result-count" id="scanner-count"></div>
+    <div class="uni-list" id="scanner-list"></div>
+  </div>
+
+  <!-- ── Panel: Ketersediaan Venue ── -->
+  <div class="uni-panel" id="uni-panel-range">
+    <div class="uni-range-inputs">
+      <div class="uni-range-row">
+        <div class="uni-range-field">
+          <label>Dari Tanggal</label>
+          <input type="date" id="range-from" min="">
+        </div>
+        <div class="uni-range-field">
+          <label>Sampai Tanggal</label>
+          <input type="date" id="range-to" min="">
+        </div>
+        <button class="uni-btn-check" id="btn-range-check" onclick="checkRange()">🔍 Cek</button>
+      </div>
+      <div style="font-size:9px;color:var(--muted);margin-top:8px;" id="range-info">Maksimal 31 hari per pencarian.</div>
+    </div>
+    <div class="uni-range-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(46,204,113,.5);border:1px solid var(--green)"></div>Kosong</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(245,158,11,.5);border:1px solid #f59e0b"></div>Tentative</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(99,102,241,.5);border:1px solid #818cf8"></div>Confirm</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(255,255,255,.08)"></div>Done</div>
+    </div>
+    <div class="uni-range-body" id="range-body">
+      <div class="range-empty">Pilih rentang tanggal dan klik 🔍 Cek</div>
+    </div>
+    <div class="range-summary" id="range-summary" style="display:none">
+      <div class="sum-item"><span class="sum-val" id="sum-empty" style="color:var(--green)">0</span><span class="sum-lbl">Kosong</span></div>
+      <div class="sum-item"><span class="sum-val" id="sum-tent"  style="color:#f59e0b">0</span><span class="sum-lbl">Tentative</span></div>
+      <div class="sum-item"><span class="sum-val" id="sum-conf"  style="color:#818cf8">0</span><span class="sum-lbl">Confirm</span></div>
+      <div class="sum-item"><span class="sum-val" id="sum-done"  style="color:var(--dim)">0</span><span class="sum-lbl">Done</span></div>
+      <div class="sum-item" style="margin-left:auto"><span class="sum-val" id="sum-days" style="color:var(--text)">0</span><span class="sum-lbl">Hari</span></div>
+    </div>
+  </div>
+
 </div>
+
+<!-- ─── FORCE VENUE MODAL ─────────────────────────── -->
 
 <!-- ─── FORCE VENUE MODAL ─────────────────────────── -->
 <div id="modal-force" class="sheet-overlay" onclick="closeForce()">
@@ -863,15 +1034,19 @@
       <div class="brand-sub"  id="ui-version">V.5.3 · Gold Edition</div>
     </div>
     <div class="header-actions">
-      <div class="btn-icon" onclick="openScanner()" title="Scanner / Notifikasi">
-        🔔
+      <!-- 🔍 Search BEO — kiri (gabungan Scanner + Ketersediaan) -->
+      <div class="btn-icon" onclick="openUnifiedPopup('search')" title="Search BEO &amp; Ketersediaan"
+        style="background:rgba(201,168,76,.08);border-color:rgba(201,168,76,.25);color:var(--gold);">
+        🔍
         <span id="notif-badge" class="notif-badge hidden">0</span>
       </div>
-      <div class="btn-icon btn-icon-red" onclick="resetForm(true)" title="Reset Form">✕</div>
-      <div class="btn-icon btn-icon-gold" onclick="openRangePopup()" title="Cek Ketersediaan Range">📅</div>
+      <div class="btn-icon btn-icon-red"  onclick="resetForm(true)" title="Reset Form">✕</div>
       <div class="btn-icon btn-icon-blue" onclick="openLogsPopup()" title="Activity Logs">📋</div>
-      <div class="btn-icon" id="btn-menu-tpl" onclick="openMenuTemplate()" title="Template Menu" style="background:rgba(243,156,18,.08);border-color:rgba(243,156,18,.25);color:#f39c12;">🍽</div>
-      <div class="btn-icon" id="btn-cust-history" onclick="openCustHistory()" title="Customer History" style="display:none;background:rgba(46,204,113,.08);border-color:rgba(46,204,113,.25);color:#2ecc71;">👤</div>
+      <div class="btn-icon" id="btn-menu-tpl" onclick="openMenuTemplate()" title="Template Menu"
+        style="background:rgba(243,156,18,.08);border-color:rgba(243,156,18,.25);color:#f39c12;">🍽</div>
+      <!-- 👤 Customer History — kanan -->
+      <div class="btn-icon" id="btn-cust-history" onclick="openCustHistory()" title="Customer History"
+        style="display:none;background:rgba(46,204,113,.08);border-color:rgba(46,204,113,.25);color:#2ecc71;">👤</div>
       <div class="btn-icon btn-icon-logout" id="btn-logout" onclick="logoutUser()" title="Keluar" style="display:none">⎋</div>
     </div>
   </div>
@@ -1809,73 +1984,279 @@ async function deleteData() {
   finally { setBtn('btn-delete', false, '🗑 Hapus Data Ini'); }
 }
 
-// ─── SCANNER ───────────────────────────────────────────────────────────────
-function openScanner() {
-  document.getElementById('modal-scanner').classList.add('open');
-  loadScanner(activeTab);
+// ─── UNIFIED POPUP — Search BEO + Ketersediaan Venue ───────────────────────
+const _scanState = {
+  statusFilter: 'ALL',
+  monthFilter:  null,
+  query:        '',
+  rows:         [],
+  month:        null,
+};
+let _uniActiveTab = 'search'; // 'search' | 'range'
+
+function openUnifiedPopup(tab) {
+  _uniActiveTab = tab || 'search';
+  switchUniTab(_uniActiveTab);
+  document.getElementById('unified-popup').classList.add('open');
+
+  if (_uniActiveTab === 'search') {
+    const inp = document.getElementById('scanner-search');
+    if (inp) { inp.value = ''; inp.focus(); }
+    _scanState.query = '';
+    _initScannerMonthChips();
+    _doLoadScanner();
+  } else {
+    _initRangeDefaults();
+  }
 }
-function closeScanner() { document.getElementById('modal-scanner').classList.remove('open'); }
+
+function closeUnifiedPopup() {
+  document.getElementById('unified-popup').classList.remove('open');
+}
+
+function switchUniTab(tab) {
+  _uniActiveTab = tab;
+  ['search','range'].forEach(t => {
+    document.getElementById('uni-tab-'  + t).classList.toggle('active', t === tab);
+    document.getElementById('uni-panel-'+ t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'search') {
+    const inp = document.getElementById('scanner-search');
+    if (inp) setTimeout(() => inp.focus(), 100);
+    if (!_scanState.rows.length) _doLoadScanner();
+  }
+}
+
+// Backward compat — openScanner() masih dipanggil dari beberapa tempat
+function openScanner() { openUnifiedPopup('search'); }
+function closeScanner() { closeUnifiedPopup(); }
+
+// Range: init default dates
+function _initRangeDefaults() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = _fmtDateISO(today);
+  const toDate   = new Date(today); toDate.setDate(toDate.getDate() + 14);
+  const fromEl = document.getElementById('range-from');
+  const toEl   = document.getElementById('range-to');
+  if (fromEl) { fromEl.min = todayStr; fromEl.value = todayStr; }
+  if (toEl)   { toEl.min   = todayStr; toEl.value   = _fmtDateISO(toDate); }
+  document.getElementById('range-info').textContent = 'Maksimal 31 hari per pencarian.';
+  document.getElementById('range-info').style.color = 'var(--muted)';
+  document.getElementById('range-summary').style.display = 'none';
+  // Auto-check langsung saat tab range dibuka
+  checkRange();
+}
+function _fmtDateISO(d) {
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+// Chip status filter
+function setScannerChip(el, filter) {
+  document.querySelectorAll('#scanner-chips .uni-chip')
+    .forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  _scanState.statusFilter = filter;
+  // Sinkron activeTab untuk backward compat (pickEventFromCard, dll)
+  activeTab = filter === 'ALL' ? 'TENTATIVE' : filter;
+  _renderScannerResults();
+}
+
+// Chip bulan filter
+function setScannerMonth(el, month) {
+  document.querySelectorAll('#scanner-month-chips .scanner-filter-chip')
+    .forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  _scanState.monthFilter = month;
+  _doLoadScanner();
+}
+
+// Input search — debounce 200ms
+let _scanSearchTO = null;
+function onScannerSearch() {
+  clearTimeout(_scanSearchTO);
+  _scanSearchTO = setTimeout(() => {
+    _scanState.query = (document.getElementById('scanner-search').value || '').trim().toLowerCase();
+    _renderScannerResults();
+  }, 200);
+}
+
+// switchTab — backward compat (dipanggil dari range table)
 function switchTab(t) {
   activeTab = t;
-  ['t','c','n'].forEach(x => document.getElementById('tab-'+x).classList.remove('active'));
-  document.getElementById('tab-' + {TENTATIVE:'t',CONFIRM:'c',NONE:'n'}[t]).classList.add('active');
-  loadScanner(t);
+  const chipMap = { TENTATIVE:'TENTATIVE', CONFIRM:'CONFIRM', NONE:'NONE' };
+  _scanState.statusFilter = chipMap[t] || 'ALL';
+  // Update chip aktif
+  document.querySelectorAll('#scanner-chips .uni-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.filter === _scanState.statusFilter);
+  });
+  _renderScannerResults();
 }
 
-async function loadScanner(filter, filterDate) {
+// Build chip bulan berdasarkan bulan saat ini ± 1
+function _initScannerMonthChips() {
+  const now  = new Date();
+  const mi   = now.getMonth(); // 0-based
+  const yr   = now.getFullYear();
+  const wrap = document.getElementById('scanner-month-chips');
+  if (!wrap) return;
+
+  // Tampilkan bulan lalu, bulan ini, bulan depan
+  const months = [];
+  for (let i = -1; i <= 2; i++) {
+    const d = new Date(yr, mi + i, 1);
+    months.push({ name: MONTHS[d.getMonth()], label: MONTHS[d.getMonth()].slice(0,3) + ' ' + d.getFullYear(), year: d.getFullYear() });
+  }
+
+  wrap.innerHTML = months.map((m, idx) => {
+    const isActive = (idx === 1); // bulan ini default
+    if (isActive && !_scanState.monthFilter) _scanState.monthFilter = m.name;
+    return `<span class="scanner-filter-chip${isActive?' active':''}"
+      data-filter="${m.name}" onclick="setScannerMonth(this,'${m.name}')">${m.label}</span>`;
+  }).join('');
+}
+
+// Load data bulan aktif ke _scanState.rows (pakai cache getMonthData)
+async function _doLoadScanner() {
   const body = document.getElementById('scanner-list');
+  const targetMonth = _scanState.monthFilter || MONTHS[new Date().getMonth()];
+
+  // Jika bulan sama dan sudah ada data — langsung render (0ms)
+  if (_scanState.rows.length && _scanState.month === targetMonth) {
+    _renderScannerResults();
+    return;
+  }
+
   body.innerHTML = '<div class="empty-state"><span class="spinner spinner-light"></span></div>';
   try {
-    const now = new Date();
-    const res = await getMonthData(MONTHS[now.getMonth()]); // [PERF-01] pakai cache
-    // error dilempar oleh getMonthData sebagai exception
+    const res = await getMonthData(targetMonth); // pakai cache _monthCache
+    _scanState.rows  = res.rows || [];
+    _scanState.month = targetMonth;
 
-    const cnt = res.rows.filter(r => r.status === 'TENTATIVE').length;
-    const badge = document.getElementById('notif-badge');
-    badge.textContent = cnt; cnt > 0 ? badge.classList.remove('hidden') : badge.classList.add('hidden');
-
-    let filtered = res.rows.filter(r => {
-      if (filter==='TENTATIVE') return r.status==='TENTATIVE';
-      if (filter==='CONFIRM')   return r.status==='CONFIRM';
-      return r.customer && !r.status;
-    });
-    if (filterDate) {
-      const filterDay = parseInt(filterDate.split('-')[2], 10);
-      filtered = filtered.filter(r => r.day === filterDay);
+    // Update badge TENTATIVE (bulan ini saja)
+    if (targetMonth === MONTHS[new Date().getMonth()]) {
+      const cnt = _scanState.rows.filter(r => r.status === 'TENTATIVE').length;
+      const b   = document.getElementById('notif-badge');
+      b.textContent = cnt;
+      cnt > 0 ? b.classList.remove('hidden') : b.classList.add('hidden');
     }
-    if (!filtered.length) { body.innerHTML = '<div class="empty-state">— Tidak ada data —</div>'; return; }
 
-    const mo  = (now.getMonth()+1).toString().padStart(2,'0');
-    const yr  = now.getFullYear();
-    const shn = MONTHS[now.getMonth()];
+    _renderScannerResults();
+  } catch(e) {
+    body.innerHTML = '<div class="empty-state">✗ Gagal memuat data. Coba lagi.</div>';
+  }
+}
 
-    // [SEC-06] Semua data server di-escape sebelum masuk ke innerHTML
-    body.innerHTML = filtered.map(r => {
-      const dNum    = r.day ? String(r.day).padStart(2,'0') : (r.dateLabel.match(/\d+/)||['1'])[0].padStart(2,'0');
-      const iso     = yr + '-' + mo + '-' + dNum;
-      const cls     = r.status==='TENTATIVE' ? 's-tentative' : r.status==='CONFIRM' ? 's-confirm' : 's-none';
-      const rowNum  = parseInt(r.row, 10) || 0;
-      // Gunakan data-* attribute untuk pass parameter, bukan inject langsung ke onclick string
-      // [OVF] Embed semua field booking di data-* → pickEventFromCard isi form langsung
-      // tanpa network call tambahan (0 latency setelah klik)
-      const srcBadge = r.source === 'OVERFLOW'
-        ? `<span style="font-size:8px;color:var(--gold);margin-left:4px">✦ OVF</span>` : '';
-      return `<div class="event-card"
-          data-iso="${esc(iso)}" data-venue="${esc(r.venue)}"
-          data-shn="${esc(shn)}" data-row="${rowNum}" data-source="${esc(r.source||'BULAN')}"
-          data-customer="${esc(r.customer||'')}"       data-status="${esc(r.status||'')}"
-          data-package="${esc(r.package||'')}"          data-sales="${esc(r.sales||'')}"
-          data-time="${esc(r.time||'')}"                data-setup="${esc(r.setup||'')}"
-          data-pax="${esc(r.pax||'')}"                  data-price="${esc(r.price||'')}"
-          data-event-title="${esc(r.eventTitle||'')}"    data-contact-person="${esc(r.contactPerson||'')}"
-          data-phone="${esc(r.phone||'')}"              data-notes="${esc(r.notes||'')}"
-          onclick="pickEventFromCard(this)">
-        <div class="event-name">${esc(r.customer) || '—'}${srcBadge}</div>
-        <div class="event-meta">${esc(r.dateLabel)} · ${esc(r.venue)}</div>
-        <span class="event-status ${cls}">${esc(r.status) || 'No Status'}</span>
-      </div>`;
-    }).join('');
-  } catch(e) { body.innerHTML = '<div class="empty-state">✗ Gagal memuat data. Coba lagi.</div>'; }
+// Render hasil filter+search dari _scanState.rows — semua in-memory, 0ms network
+function _renderScannerResults() {
+  const body   = document.getElementById('scanner-list');
+  const countEl = document.getElementById('scanner-count');
+  const q      = _scanState.query;
+  const sf     = _scanState.statusFilter;
+  const now    = new Date();
+  const mo     = (_scanState.month ? (MONTHS.indexOf(_scanState.month)+1) : now.getMonth()+1)
+                  .toString().padStart(2,'0');
+  const yr     = _scanState.month
+    ? (new Date().getMonth() >= MONTHS.indexOf(_scanState.month)
+        ? new Date().getFullYear()
+        : new Date().getFullYear())
+    : now.getFullYear();
+  const shn    = _scanState.month || MONTHS[now.getMonth()];
+
+  // Hitung tahun yang benar berdasarkan bulan
+  const mIdx = MONTHS.indexOf(shn);
+  const curM = new Date().getMonth();
+  // Jika bulan yang dipilih sudah lewat → tahun ini, jika belum lewat → bisa tahun ini juga
+  const targetYr = new Date().getFullYear();
+
+  let rows = _scanState.rows.filter(r => r.customer && r.customer.trim());
+
+  // Filter status
+  if (sf === 'TENTATIVE') rows = rows.filter(r => (r.status||'').toUpperCase() === 'TENTATIVE');
+  else if (sf === 'CONFIRM') rows = rows.filter(r => (r.status||'').toUpperCase() === 'CONFIRM');
+  else if (sf === 'DONE')    rows = rows.filter(r => (r.status||'').toUpperCase() === 'DONE');
+  else if (sf === 'NONE')    rows = rows.filter(r => !(r.status||'').trim());
+  // ALL = semua status
+
+  // Filter search (nama, venue, tanggal)
+  if (q) {
+    rows = rows.filter(r => {
+      const name    = (r.customer  || '').toLowerCase();
+      const venue   = (r.venue     || '').toLowerCase();
+      const date    = (r.dateLabel || '').toLowerCase();
+      const pkg     = (r.package   || '').toLowerCase();
+      const evt     = (r.eventTitle|| '').toLowerCase();
+      return name.includes(q) || venue.includes(q) || date.includes(q)
+          || pkg.includes(q)  || evt.includes(q);
+    });
+  }
+
+  if (countEl) countEl.textContent = rows.length
+    ? `${rows.length} event ditemukan`
+    : '';
+
+  if (!rows.length) {
+    body.innerHTML = `<div class="empty-state">${q ? '— Tidak ada hasil untuk "<b>'+esc(q)+'</b>"' : '— Tidak ada data —'}</div>`;
+    return;
+  }
+
+  // Highlight fungsi
+  function hl(str, keyword) {
+    if (!keyword || !str) return esc(str||'');
+    const escaped = esc(str);
+    const escapedQ = keyword.replace(/[.*+?^${}()|\[\]\\]/g, '\\$&');
+    return escaped.replace(new RegExp('('+escapedQ+')', 'gi'), '<mark class="hl">$1</mark>');
+  }
+
+  body.innerHTML = rows.map(r => {
+    const dNum   = r.day ? String(r.day).padStart(2,'0') : (r.dateLabel.match(/[0-9]+/)||['1'])[0].padStart(2,'0');
+    const iso    = targetYr + '-' + mo + '-' + dNum;
+    const st     = (r.status||'').toUpperCase();
+    const cls    = st==='TENTATIVE' ? 's-tentative' : st==='CONFIRM' ? 's-confirm'
+                 : st==='DONE' ? 's-done' : 's-none';
+    const rowNum = parseInt(r.row, 10) || 0;
+    const srcBadge = r.source==='OVERFLOW'
+      ? `<span style="font-size:8px;color:var(--gold);margin-left:4px">✦ OVF</span>` : '';
+    return `<div class="event-card"
+        data-iso="${esc(iso)}" data-venue="${esc(r.venue)}"
+        data-shn="${esc(shn)}" data-row="${rowNum}" data-source="${esc(r.source||'BULAN')}"
+        data-customer="${esc(r.customer||'')}"      data-status="${esc(r.status||'')}"
+        data-package="${esc(r.package||'')}"         data-sales="${esc(r.sales||'')}"
+        data-time="${esc(r.time||'')}"               data-setup="${esc(r.setup||'')}"
+        data-pax="${esc(r.pax||'')}"                 data-price="${esc(r.price||'')}"
+        data-event-title="${esc(r.eventTitle||'')}"   data-contact-person="${esc(r.contactPerson||'')}"
+        data-phone="${esc(r.phone||'')}"             data-notes="${esc(r.notes||'')}"
+        onclick="pickEventFromCard(this)">
+      <div class="event-name">${hl(r.customer, q)}${srcBadge}</div>
+      <div class="event-meta">${hl(r.dateLabel, q)} · ${hl(r.venue, q)}${r.time?' · ⏰ '+esc(r.time):''}</div>
+      <span class="event-status ${cls}">${st || 'No Status'}</span>
+    </div>`;
+  }).join('');
+}
+
+// Backward compat — loadScanner dipanggil dari beberapa tempat
+async function loadScanner(filter, filterDate) {
+  if (filter && filter !== 'ALL') {
+    _scanState.statusFilter = filter;
+    activeTab = filter;
+    document.querySelectorAll('#scanner-chips .uni-chip').forEach(c => {
+      c.classList.toggle('active', c.dataset.filter === filter);
+    });
+  }
+  if (filterDate) {
+    // Jika ada filterDate, set chip bulan sesuai
+    const mIdx = parseInt(filterDate.split('-')[1], 10) - 1;
+    _scanState.monthFilter = MONTHS[mIdx];
+    // Update chip bulan aktif
+    document.querySelectorAll('#scanner-month-chips .scanner-filter-chip').forEach(c => {
+      c.classList.toggle('active', c.dataset.filter === MONTHS[mIdx]);
+    });
+    // Filter hari juga via search
+    const day = filterDate.split('-')[2];
+    _scanState.query = day;
+    const inp = document.getElementById('scanner-search');
+    if (inp) inp.value = day;
+  }
+  await _doLoadScanner();
 }
 
 // [PERF] Isi form langsung dari data-* di card — nol network call tambahan
@@ -2126,31 +2507,8 @@ window.addEventListener('load', () => {
 
 // ─── RANGE AVAILABILITY ────────────────────────────────────────────────────
 
-function openRangePopup() {
-  // Default: hari ini s/d 7 hari ke depan
-  const today = new Date();
-  today.setHours(0,0,0,0);
-  const todayStr = fmtDate(today);
-  const toDate   = new Date(today);
-  toDate.setDate(toDate.getDate() + 7);
-
-  // Set min = hari ini agar tidak bisa pilih masa lalu
-  document.getElementById('range-from').min   = todayStr;
-  document.getElementById('range-from').value = todayStr;
-  document.getElementById('range-to').min     = todayStr;
-  document.getElementById('range-to').value   = fmtDate(toDate);
-
-  // Reset info & body
-  document.getElementById('range-info').textContent  = 'Maksimal 31 hari per pencarian.';
-  document.getElementById('range-info').style.color  = 'var(--muted)';
-  document.getElementById('range-body').innerHTML    = '<div class="range-empty">Pilih rentang tanggal dan klik 🔍 Cek</div>';
-  document.getElementById('range-summary').style.display = 'none';
-  document.getElementById('range-popup').classList.add('open');
-}
-
-function closeRangePopup() {
-  document.getElementById('range-popup').classList.remove('open');
-}
+function openRangePopup() { openUnifiedPopup('range'); }
+function closeRangePopup() { closeUnifiedPopup(); }
 
 function fmtDate(d) {
   return d.getFullYear() + '-' +
@@ -2173,7 +2531,7 @@ async function checkRange() {
   const btn     = document.getElementById('btn-range-check');
   const info    = document.getElementById('range-info');
 
-  const todayStr = fmtDate(new Date());
+  const todayStr = _fmtDateISO(new Date());
 
   if (!fromVal || !toVal) { info.textContent = '⚠ Pilih tanggal dari & sampai dulu.'; info.style.color='var(--red)'; return; }
 
@@ -2348,10 +2706,9 @@ function openScannerByDateEl(el) {
 
 // Buka scanner filter ke tanggal tertentu
 function openScannerByDate(iso) {
-  closeRangePopup();
+  closeUnifiedPopup();
   document.getElementById('f-date').value = iso;
-  openScanner();
-  // [FIX-TAB] switchTab() sudah handle UI + state sekaligus, bukan selector manual
+  openUnifiedPopup('search');
   setTimeout(() => {
     switchTab('CONFIRM');
     loadScanner('CONFIRM', iso);
@@ -2359,50 +2716,6 @@ function openScannerByDate(iso) {
   }, 80);
 }
 </script>
-<!-- ─── RANGE AVAILABILITY POPUP ─────────────────────────── -->
-<div id="range-popup">
-
-  <div class="range-header">
-    <div>
-      <div class="range-title">📅 Cek Ketersediaan</div>
-      <div style="font-size:9px;color:var(--dim);letter-spacing:.1em;margin-top:2px;">RANGE DATE · SEMUA VENUE</div>
-    </div>
-    <button class="range-close" onclick="closeRangePopup()">✕</button>
-  </div>
-
-  <div class="range-inputs">
-    <div class="range-row">
-      <div class="range-field">
-        <label>Dari Tanggal</label>
-        <input type="date" id="range-from" min="">
-      </div>
-      <div class="range-field">
-        <label>Sampai Tanggal</label>
-        <input type="date" id="range-to" min="">
-      </div>
-      <button class="btn-range-check" id="btn-range-check" onclick="checkRange()">🔍 Cek</button>
-    </div>
-    <div style="font-size:9px;color:var(--muted);margin-top:8px;" id="range-info">Maksimal 31 hari per pencarian.</div>
-  </div>
-
-  <div class="range-legend">
-    <div class="legend-item"><div class="legend-dot" style="background:rgba(46,204,113,.5);border:1px solid var(--green)"></div>Kosong — klik untuk isi</div>
-    <div class="legend-item"><div class="legend-dot" style="background:rgba(245,158,11,.5);border:1px solid #f59e0b"></div>Tentative</div>
-    <div class="legend-item"><div class="legend-dot" style="background:rgba(99,102,241,.5);border:1px solid #818cf8"></div>Confirm</div>
-    <div class="legend-item"><div class="legend-dot" style="background:rgba(255,255,255,.08)"></div>Done</div>
-  </div>
-
-  <div class="range-body" id="range-body">
-    <div class="range-empty">Pilih rentang tanggal dan klik 🔍 Cek</div>
-  </div>
-
-  <div class="range-summary" id="range-summary" style="display:none">
-    <div class="sum-item"><span class="sum-val" id="sum-empty" style="color:var(--green)">0</span><span class="sum-lbl">Kosong</span></div>
-    <div class="sum-item"><span class="sum-val" id="sum-tent"  style="color:#f59e0b">0</span><span class="sum-lbl">Tentative</span></div>
-    <div class="sum-item"><span class="sum-val" id="sum-conf"  style="color:#818cf8">0</span><span class="sum-lbl">Confirm</span></div>
-    <div class="sum-item"><span class="sum-val" id="sum-done"  style="color:var(--dim)">0</span><span class="sum-lbl">Done</span></div>
-    <div class="sum-item" style="margin-left:auto"><span class="sum-val" id="sum-days"  style="color:var(--text)">0</span><span class="sum-lbl">Hari</span></div>
-  </div>
 
 </div>
 
@@ -2742,71 +3055,71 @@ async function sendWABEO() {
 
 
 // ─── OPEN BEO ──────────────────────────────────────────────────────────────
-// openBEO(template) — template opsional: object dari menu template drawer
-// [AUTO-LOAD] Jika tidak ada template eksplisit → auto-fetch template terakhir customer
-async function openBEO(template) {
+// openBEO(template) — INSTANT OPEN: buka tab langsung, fetch paralel di background
+// beo.html handle GET_BEO_DRAFT sendiri via _loadAndRender()
+// entry tidak perlu tunggu GET_MENU_HISTORY — sudah ada cache _menuTplCache
+function openBEO(template) {
   const customer = val('f-customer');
 
-  // Jika tidak ada template eksplisit, cari template terakhir dari cache / GAS
-  if (!template && customer) {
-    const key = customer.toUpperCase().trim();
-    let cached = _menuTplCache[key];
-    if (cached === undefined) {
-      try {
-        const res = await gas({ action: 'GET_MENU_HISTORY', customer });
-        cached = (res.ok && res.templates) ? res.templates : [];
-        _menuTplCache[key] = cached;
-      } catch(_) { cached = []; }
+  // Ambil dari cache jika ada (tidak await — tidak blocking)
+  let menuItems = [];
+  let tplData   = template;
+
+  if (!tplData && customer) {
+    const key    = customer.toUpperCase().trim();
+    const cached = _menuTplCache[key];
+    if (cached && cached.length > 0) {
+      const valid = cached.filter(t => !(t.templateName||'').includes('__DELETED__'));
+      if (valid.length > 0) tplData = valid[valid.length - 1];
     }
-    // Ambil template valid terbaru (tidak deleted, diabaikan yang kosong menuItems)
-    const valid = (cached || []).filter(t =>
-      !(t.templateName || '').includes('__DELETED__')
-    );
-    if (valid.length > 0) {
-      template = valid[valid.length - 1]; // paling baru = index terakhir
+    // Jika belum ada di cache, fetch di background (tidak blocking openBEO)
+    // beo.html akan load dari GET_BEO_DRAFT cloud draft yang lebih lengkap
+    if (!cached) {
+      gas({ action: 'GET_MENU_HISTORY', customer })
+        .then(res => {
+          if (res.ok && res.templates) _menuTplCache[key] = res.templates;
+        }).catch(() => {});
     }
   }
 
-  // menuItems dari template: pastikan array, bukan string JSON
-  let menuItems = [];
-  if (template && template.menuItems) {
-    if (Array.isArray(template.menuItems)) {
-      menuItems = template.menuItems;
-    } else if (typeof template.menuItems === 'string' && template.menuItems !== '[]') {
-      try { menuItems = JSON.parse(template.menuItems); } catch(_) {}
+  if (tplData && tplData.menuItems) {
+    if (Array.isArray(tplData.menuItems)) menuItems = tplData.menuItems;
+    else if (typeof tplData.menuItems === 'string' && tplData.menuItems !== '[]') {
+      try { menuItems = JSON.parse(tplData.menuItems); } catch(_) {}
     }
   }
+
   const data = {
-    date:          val('f-date'),
-    venue:         val('f-venue'),
-    customer:      customer,
-    eventTitle:    val('f-event-title'),
-    contact:       val('f-contact'),
-    phone:         val('f-phone'),
-    status:        val('f-status'),
-    package:       val('f-package'),
-    sales:         val('f-sales'),
-    time:          val('f-time'),
-    setup:         val('f-setup'),
-    pax:           val('f-pax'),
-    price:         val('f-price') || val('f-price-display') || '0',
-    notes:         val('f-notes'),
-    // [MNU] inject template data
+    date:         val('f-date'),
+    venue:        val('f-venue'),
+    customer:     customer,
+    eventTitle:   val('f-event-title'),
+    contact:      val('f-contact'),
+    phone:        val('f-phone'),
+    status:       val('f-status'),
+    package:      val('f-package'),
+    sales:        val('f-sales'),
+    time:         val('f-time'),
+    setup:        val('f-setup'),
+    pax:          val('f-pax'),
+    price:        val('f-price') || val('f-price-display') || '0',
+    notes:        val('f-notes'),
     menuItems:           menuItems,
-    banquetInstruction:  template ? (template.banquetInstruction || '') : '',
-    backdropLettering:   template ? (template.backdropLettering  || '') : '',
-    hrdManning:          template ? (template.hrdManning         || '') : '',
-    templateName:        template ? (template.templateName       || '') : '',
+    banquetInstruction:  tplData ? (tplData.banquetInstruction || '') : '',
+    backdropLettering:   tplData ? (tplData.backdropLettering  || '') : '',
+    hrdManning:          tplData ? (tplData.hrdManning         || '') : '',
+    templateName:        tplData ? (tplData.templateName       || '') : '',
   };
-  // [FIX-CROSSTAB] sessionStorage tidak dibagikan antar tab — pakai localStorage dengan key unik
+
+  // Buka tab LANGSUNG — tidak ada await sebelum ini
   const beoKey = 'beoData_' + Date.now();
   try {
     localStorage.setItem(beoKey, JSON.stringify(data));
     window.open('beo.html?beoKey=' + beoKey, '_blank');
   } catch(e) {
-    const encoded = encodeURIComponent(JSON.stringify(data));
-    window.open('beo.html?data=' + encoded, '_blank');
+    window.open('beo.html?data=' + encodeURIComponent(JSON.stringify(data)), '_blank');
   }
+
   if (customer) autoSaveMenuTemplate(customer);
 }
 
