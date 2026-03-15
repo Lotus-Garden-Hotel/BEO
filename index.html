@@ -146,6 +146,9 @@
         .slot-confirm { background:rgba(99,102,241,.08); border:1px solid rgba(99,102,241,.25); border-radius:7px; padding:5px 3px; color:#818cf8; font-size:8px; font-weight:700; }
         .slot-confirm .slot-name, .slot-done .slot-name { font-size:7px; display:block; margin-top:2px; opacity:.7; }
         .slot-done { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:7px; padding:5px 3px; color:#475569; font-size:8px; }
+        .slot-nostatus { background:rgba(100,100,100,.07); border:1px solid rgba(150,150,150,.2); border-radius:7px; padding:5px 3px; color:#6b7280; font-size:8px; font-weight:700; cursor:pointer; transition:all .15s; }
+        .slot-nostatus:hover { background:rgba(100,100,100,.15); border-color:rgba(150,150,150,.4); }
+        .slot-nostatus .slot-name { font-size:7px; display:block; margin-top:2px; opacity:.8; max-width:65px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .slot-double { background:linear-gradient(135deg,rgba(99,102,241,.1),rgba(201,168,76,.1)); border:1px solid rgba(201,168,76,.4); border-radius:7px; padding:5px 3px; color:#c9a84c; font-size:8px; font-weight:700; cursor:pointer; transition:all .15s; }
         .slot-double:hover { background:rgba(201,168,76,.18); }
         .slot-double .slot-name { font-size:7px; display:block; margin-top:2px; opacity:.8; }
@@ -321,7 +324,7 @@
             return fresh;
         }
 
-        const GAS_URL    = 'https://script.google.com/macros/s/AKfycbxmb4EsbScFw72p3lejQ3x_plMuAF5ALGjRIVnlkx1S8rIUgdC_wdkpo6dRx-laXtQl/exec';
+        const GAS_URL    = 'https://script.google.com/macros/s/AKfycbyQTrvw2WtHV0zpItsVA2hG_02R0gscUrOua2rnOqw750PvT3PODSaO6LaM3HWUTXJi/exec';
         const TIMEOUT_MS = 12000;
 
         async function gasRaw(params) {
@@ -822,11 +825,14 @@
                     const filled     = events.filter(e => e.customer);
                     const count      = filled.length;
                     const hasData    = count > 0;
-                    const allTent    = hasData && filled.every(e => (e.status||'').toUpperCase()==='TENTATIVE');
-                    const allDone    = hasData && filled.every(e => (e.status||'').toUpperCase()==='DONE');
-                    const hasDouble  = count >= 2;
-                    const label      = hasData ? esc(filled[0].customer) : '';
-                    const timeStr    = hasData && filled[0].time ? `<span class="slot-time">${esc(filled[0].time)}</span>` : '';
+                    const allTent     = hasData && filled.every(e => (e.status||'').toUpperCase()==='TENTATIVE');
+                    const allDone     = hasData && filled.every(e => (e.status||'').toUpperCase()==='DONE');
+                    const allConf     = hasData && filled.every(e => (e.status||'').toUpperCase()==='CONFIRM' || (e.status||'').toUpperCase()==='DONE');
+                    // [FIX-NS] No Status = ada customer tapi status kosong/null
+                    const hasNoStatus = hasData && filled.some(e => !(e.status||'').trim());
+                    const hasDouble   = count >= 2;
+                    const label       = hasData ? esc(filled[0].customer) : '';
+                    const timeStr     = hasData && filled[0].time ? `<span class="slot-time">${esc(filled[0].time)}</span>` : '';
 
                     if (!hasData) {
                         cntEmpty++;
@@ -842,6 +848,9 @@
                     } else if (allDone) {
                         cntDone++;
                         html += `<td style="cursor:pointer" onclick="ixOpenScanner('${iso}')"><div class="slot-done">✔ DONE<span class="slot-name">${label}</span>${timeStr}</div></td>`;
+                    } else if (hasNoStatus || !allConf) {
+                        // [FIX-NS] Status kosong = No Status — tampil abu-abu, bukan CONF
+                        html += `<td style="cursor:pointer" onclick="ixOpenScanner('${iso}')"><div class="slot-nostatus">— N/S<span class="slot-name">${label}</span>${timeStr}</div></td>`;
                     } else {
                         cntConf++;
                         html += `<td style="cursor:pointer" onclick="ixOpenScanner('${iso}')"><div class="slot-confirm">✔ CONF<span class="slot-name">${label}</span>${timeStr}</div></td>`;
@@ -873,7 +882,14 @@
         function openBeo(idx) {
             const d = _beoCache[idx];
             if (!d) return;
-            window.location.href = 'beo.html?data=' + encodeURIComponent(JSON.stringify(d));
+            // [FIX-CROSSTAB] Pakai localStorage + beoKey agar data tidak terpotong
+            const beoKey = 'beoData_' + Date.now();
+            try {
+                localStorage.setItem(beoKey, JSON.stringify(d));
+                window.open('beo.html?beoKey=' + beoKey, '_blank');
+            } catch(_) {
+                window.location.href = 'beo.html?data=' + encodeURIComponent(JSON.stringify(d));
+            }
         }
 
         // ── BEO dari main list — fetch data lengkap dulu via CHECK ──────────
@@ -946,14 +962,54 @@
                     beoData._needEnrich = '0';
                 } catch(_) { /* timeout or error — pakai basic data saja */ }
 
+                // [AUTO-LOAD] Fetch template terakhir customer dari GAS (sama seperti entry_live_secure)
+                if (beoData.customer) {
+                    try {
+                        const tplRes = await Promise.race([
+                            gasRaw({ action: 'GET_MENU_HISTORY', customer: beoData.customer }),
+                            new Promise((_,rej) => setTimeout(() => rej(new Error('tpl-timeout')), 3000))
+                        ]);
+                        if (tplRes && tplRes.ok && tplRes.templates && tplRes.templates.length > 0) {
+                            const valid = tplRes.templates.filter(t =>
+                                !(t.templateName || '').includes('__DELETED__')
+                            );
+                            if (valid.length > 0) {
+                                const tpl = valid[valid.length - 1];
+                                let menuItems = [];
+                                if (Array.isArray(tpl.menuItems)) {
+                                    menuItems = tpl.menuItems;
+                                } else if (typeof tpl.menuItems === 'string' && tpl.menuItems !== '[]') {
+                                    try { menuItems = JSON.parse(tpl.menuItems); } catch(_) {}
+                                }
+                                beoData.menuItems           = menuItems;
+                                beoData.banquetInstruction  = tpl.banquetInstruction || '';
+                                beoData.backdropLettering   = tpl.backdropLettering  || '';
+                                beoData.hrdManning          = tpl.hrdManning         || '';
+                                beoData.templateName        = tpl.templateName       || '';
+                            }
+                        }
+                    } catch(_) { /* template fetch gagal — tidak apa-apa */ }
+                }
+
                 _beoLoadingEl = null;
-                // sessionStorage lebih reliable dari URL param (tidak ada masalah encoding)
-                try { sessionStorage.setItem('beoData', JSON.stringify(beoData)); } catch(_) {}
-                window.location.href = 'beo.html';
+                // [FIX-CROSSTAB] localStorage + beoKey — cross-tab, tidak terpotong URL limit
+                const beoKey = 'beoData_' + Date.now();
+                try {
+                    localStorage.setItem(beoKey, JSON.stringify(beoData));
+                    window.open('beo.html?beoKey=' + beoKey, '_blank');
+                } catch(_) {
+                    window.location.href = 'beo.html?data=' + encodeURIComponent(JSON.stringify(beoData));
+                }
             } catch(e) {
                 _beoLoadingEl = null;
-                try { sessionStorage.setItem('beoData', JSON.stringify({ ...basic, date: isoDate, venue })); } catch(_) {}
-                window.location.href = 'beo.html';
+                const beoKey = 'beoData_' + Date.now();
+                const fallback = { ...basic, date: isoDate, venue };
+                try {
+                    localStorage.setItem(beoKey, JSON.stringify(fallback));
+                    window.open('beo.html?beoKey=' + beoKey, '_blank');
+                } catch(_) {
+                    window.location.href = 'beo.html?data=' + encodeURIComponent(JSON.stringify(fallback));
+                }
             }
         }
 
