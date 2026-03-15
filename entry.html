@@ -1407,30 +1407,26 @@ firebase.initializeApp(FIREBASE_CONFIG);
 const _auth     = firebase.auth();
 const _provider = new firebase.auth.GoogleAuthProvider();
 
-// [FIX] Race condition guard — cegah onAuthStateChanged fire ke-2/ke-3
-// membatalkan sesi yang sudah berhasil diverifikasi
+// ── Auth State — identik dengan index.html (simple & reliable) ──────────────
+const GAS_URL_AUTH = 'https://script.google.com/macros/s/AKfycbyQTrvw2WtHV0zpItsVA2hG_02R0gscUrOua2rnOqw750PvT3PODSaO6LaM3HWUTXJi/exec';
+
 let _authVerified = false;
 let _authInFlight = false;
 
-// [BUG-FIX #2] applyConfig() HARUS jalan dulu sebelum onAuthStateChanged
-// agar window._GAS sudah terisi ketika _gasRaw() dipanggil untuk CHECK_ACCESS.
-// Sebelumnya applyConfig() baru dipanggil di window.load — terlambat.
-(function initConfig() {
-  const c = (function() {
-    try { return JSON.parse(localStorage.getItem('banquet_elite_config')) || null; } catch(_) { return null; }
-  })();
-  const DEFAULT_GAS = "https://script.google.com/macros/s/AKfycbyQTrvw2WtHV0zpItsVA2hG_02R0gscUrOua2rnOqw750PvT3PODSaO6LaM3HWUTXJi/exec";
-  window._GAS = (c && c.gasUrl) ? c.gasUrl : DEFAULT_GAS;
+// Set window._GAS dari config atau default
+(function() {
+  try {
+    const c = JSON.parse(localStorage.getItem('banquet_elite_config') || '{}');
+    window._GAS = c.gasUrl || GAS_URL_AUTH;
+  } catch(_) { window._GAS = GAS_URL_AUTH; }
 })();
 
-// [SEC-02] Auth state: verifikasi akses dilakukan ke backend, bukan cek lokal
 _auth.onAuthStateChanged(async user => {
   const gate      = document.getElementById('login-gate');
   const logoutBtn = document.getElementById('btn-logout');
   const errEl     = document.getElementById('login-error');
+  const retryBtn  = document.getElementById('login-retry-btn');
 
-  // [FIX] Firebase bisa fire listener 2-3x dalam satu sesi login.
-  // Jika sudah verified — skip semua fire berikutnya.
   if (!user) {
     if (!_authVerified) {
       gate.style.display = 'flex';
@@ -1440,19 +1436,23 @@ _auth.onAuthStateChanged(async user => {
     return;
   }
 
-  if (_authVerified) return;   // sudah masuk — jangan proses ulang
-  if (_authInFlight) return;   // ada CHECK_ACCESS yang sedang berjalan
+  if (_authVerified) return;
+  if (_authInFlight) return;
   _authInFlight = true;
 
   try {
-    const idToken = await user.getIdToken(/* forceRefresh */ true);
+    const idToken = await user.getIdToken(true);
 
     let res;
     try {
-      res = await _gasRaw({ action: 'CHECK_ACCESS', idToken });
+      // Pakai fetch langsung — sama seperti index.html, tidak pakai _gasRaw dulu
+      const ctrl  = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 12000);
+      const resp  = await fetch(window._GAS + '?' + new URLSearchParams({ action:'CHECK_ACCESS', idToken }), { redirect:'follow', signal:ctrl.signal });
+      clearTimeout(timer);
+      res = await resp.json();
     } catch(netErr) {
-      // Koneksi gagal (timeout / offline) — jangan logout, tampilkan retry
-      errEl.textContent = '⚠ Tidak dapat terhubung ke server. Periksa internet lalu refresh halaman.';
+      errEl.textContent = '⚠ Tidak dapat terhubung ke server. Periksa internet lalu refresh.';
       errEl.classList.add('show');
       gate.style.display = 'flex';
       gate.classList.remove('hide');
@@ -1462,8 +1462,8 @@ _auth.onAuthStateChanged(async user => {
     }
 
     if (res.ok && res.allowed) {
-      // ✅ Akses diizinkan
-      _authVerified          = true;
+      // ✅ Login berhasil
+      _authVerified      = true;
       window._cachedToken    = idToken;
       window._tokenFetchedAt = Date.now();
       window._userRole   = res.role || 'STAFF';
@@ -1476,86 +1476,69 @@ _auth.onAuthStateChanged(async user => {
         canPurge:  res.canPurge  || false,
       };
       gate.classList.add('hide');
-      setTimeout(() => { gate.style.display = 'none'; }, 800);
+      setTimeout(() => { gate.style.display = 'none'; }, 600);
       logoutBtn.style.display = 'flex';
       errEl.classList.remove('show');
+      if (retryBtn) retryBtn.style.display = 'none';
 
+      // Tampilkan UI per role
       const role = res.role || 'STAFF';
       const isSA = role === 'SUPER_ADMIN';
-
-      // Customer History — semua kecuali STAFF
       if (role !== 'STAFF') {
-        const btnCust = document.getElementById('btn-cust-history');
-        if (btnCust) btnCust.style.display = 'flex';
+        const el = document.getElementById('btn-cust-history');
+        if (el) el.style.display = 'flex';
       }
-      // Reset BEO — SUPER_ADMIN saja
       if (isSA) {
-        const btnReset = document.getElementById('btn-reset-seq');
-        if (btnReset) btnReset.style.display = 'flex';
+        ['btn-reset-seq','btn-logs','btn-purge-cache'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = 'flex';
+        });
       }
-      // Logs — SUPER_ADMIN saja
-      const btnLogs = document.getElementById('btn-logs');
-      if (btnLogs) btnLogs.style.display = isSA ? 'flex' : 'none';
-      // Purge cache — SUPER_ADMIN saja
-      const btnPurge = document.getElementById('btn-purge-cache');
-      if (btnPurge) btnPurge.style.display = isSA ? 'flex' : 'none';
-
-      // Badge role di header
+      // Role badge
       const roleBadge = document.getElementById('role-badge');
       if (roleBadge) {
-        const badgeMap = {
-          SUPER_ADMIN:{ label:'⚡ SUPER', color:'rgba(155,89,182,.2)', border:'rgba(155,89,182,.5)', text:'#c39bd3' },
-          ADMIN:      { label:'🔧 ADMIN', color:'rgba(231,76,60,.1)',  border:'rgba(231,76,60,.35)',  text:'#e74c3c' },
-          MANAGER:    { label:'👔 MGR',   color:'rgba(52,152,219,.1)', border:'rgba(52,152,219,.35)', text:'#5dade2' },
-          STAFF:      { label:'👤 STAFF', color:'rgba(100,100,100,.1)',border:'rgba(100,100,100,.3)', text:'#888'    },
+        const BADGE = {
+          SUPER_ADMIN: { label:'⚡ SUPER', bg:'rgba(155,89,182,.2)', bd:'rgba(155,89,182,.5)', cl:'#c39bd3' },
+          ADMIN:       { label:'🔧 ADMIN', bg:'rgba(231,76,60,.1)',  bd:'rgba(231,76,60,.35)', cl:'#e74c3c' },
+          MANAGER:     { label:'👔 MGR',   bg:'rgba(52,152,219,.1)', bd:'rgba(52,152,219,.35)',cl:'#5dade2' },
+          STAFF:       { label:'👤 STAFF', bg:'rgba(100,100,100,.1)',bd:'rgba(100,100,100,.3)',cl:'#888'   },
         };
-        const b = badgeMap[role] || badgeMap.STAFF;
-        roleBadge.textContent = b.label;
-        roleBadge.style.cssText = `display:inline-flex;align-items:center;padding:3px 8px;border-radius:8px;font-size:8px;font-weight:800;letter-spacing:.06em;background:${b.color};border:1px solid ${b.border};color:${b.text};`;
+        const b = BADGE[role] || BADGE.STAFF;
+        roleBadge.textContent  = b.label;
+        roleBadge.style.cssText = `display:inline-flex;align-items:center;padding:3px 8px;border-radius:8px;font-size:8px;font-weight:800;letter-spacing:.06em;background:${b.bg};border:1px solid ${b.bd};color:${b.cl};`;
       }
-      // [FIX] Trigger load data setelah auth berhasil
-      // window.load sudah jalan sebelumnya tapi gagal karena belum auth
       initAppData();
-    } else if (!res.allowed && res.msg && (
-        res.msg.includes('tidak terdaftar') ||
-        res.msg.includes('tidak diizinkan') ||
-        res.msg.includes('Email tidak')
-      )) {
-      // ❌ Email tidak terdaftar di whitelist — logout sah
-      _authVerified = false;
+
+    } else if (res.msg && res.msg.includes('tidak terdaftar')) {
+      // ❌ Email tidak ada di whitelist
       _auth.signOut();
       errEl.textContent = '⚠ Akun tidak diizinkan akses sistem ini.';
       errEl.classList.add('show');
-      gate.style.display = 'flex';
-      gate.classList.remove('hide');
+      gate.style.display = 'flex'; gate.classList.remove('hide');
       logoutBtn.style.display = 'none';
-    } else if (!res.allowed) {
-      // ❌ Akses ditolak dengan alasan lain — JANGAN auto-logout
-      // Tampilkan pesan tapi biarkan user coba lagi
+
+    } else {
+      // ❌ Response lain — JANGAN signOut, tampilkan pesan + tombol retry
       _authVerified = false;
-      _authInFlight = false;
-      const errMsg = res.msg || 'Verifikasi gagal.';
-      errEl.textContent = '⚠ ' + errMsg + ' — Coba refresh halaman.';
+      errEl.textContent = '⚠ ' + (res.msg || 'Verifikasi gagal') + ' — Coba lagi.';
       errEl.classList.add('show');
-      gate.style.display = 'flex';
-      gate.classList.remove('hide');
+      gate.style.display = 'flex'; gate.classList.remove('hide');
       logoutBtn.style.display = 'none';
-      // Tambah tombol retry
-      const retryBtn = document.getElementById('login-retry-btn');
       if (retryBtn) retryBtn.style.display = 'inline-block';
     }
-  } catch(_e) {
-    // [FIX] Error tak terduga — jangan langsung logout
-    // Kalau user masih ada di Firebase, biarkan sesi aktif
+
+  } catch(err) {
     if (_auth.currentUser) {
-      _authVerified          = true;
-      window._cachedToken    = null; // akan di-refresh saat fetch berikutnya
+      // Ada user Firebase — biarkan masuk meski GAS error
+      _authVerified      = true;
+      window._cachedToken    = null;
       window._tokenFetchedAt = 0;
       gate.classList.add('hide');
-      setTimeout(() => { gate.style.display = 'none'; }, 800);
+      setTimeout(() => { gate.style.display = 'none'; }, 600);
       logoutBtn.style.display = 'flex';
+      initAppData();
     } else {
-      errEl.textContent = '⚠ Gagal verifikasi sesi. Coba lagi.';
+      errEl.textContent = '⚠ Gagal verifikasi. Coba refresh halaman.';
       errEl.classList.add('show');
     }
   } finally {
