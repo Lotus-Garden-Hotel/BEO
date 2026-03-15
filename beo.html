@@ -1630,39 +1630,88 @@ async function sendApprovalLinks() {
 
   let approvals = [];
   try {
-    const idToken = sessionStorage.getItem('beo_idToken') || '';
+    // Kumpulkan data booking dari BEO untuk disisipkan ke pesan WA
+    const bookingData = {
+      customer:   (document.getElementById('i-customer')   ||{}).textContent || '',
+      eventTitle: (document.getElementById('i-event-title')||{}).textContent || '',
+      date:       (document.getElementById('i-date')       ||{}).textContent || '',
+      venue:      (document.getElementById('i-venue')      ||{}).textContent || '',
+      time:       (document.getElementById('i-time')       ||{}).textContent || '',
+      pax:        (document.getElementById('i-pax')        ||{}).textContent || '',
+      status:     'CONFIRM',
+      beoId:      beoId
+    };
+    // [FIX] Tidak pakai idToken — GENERATE_APPROVAL adalah publik action di GAS
     const url = gasUrl + '?' + new URLSearchParams({
-      action:'GENERATE_APPROVAL', beoId, baseUrl, idToken,
-      depts: JSON.stringify(selectedDepts)
+      action:      'GENERATE_APPROVAL',
+      beoId:       beoId,
+      baseUrl:     baseUrl,
+      depts:       JSON.stringify(selectedDepts),
+      bookingData: JSON.stringify(bookingData)
     });
     const d = await (await fetch(url)).json();
     if (!d.ok) { progress.textContent = '✗ ' + (d.msg||'Gagal generate token.'); return; }
     approvals = d.approvals;
-  } catch(e) { progress.textContent = '✗ Gagal terhubung ke server.'; return; }
+  } catch(e) { progress.textContent = '✗ Gagal terhubung ke server: ' + e.message; return; }
 
   let sent = 0, failed = 0;
+  const results = [];
+
   for (const apr of approvals) {
     const link = apr.link + '&dept=' + encodeURIComponent(apr.label) + '&beo=' + encodeURIComponent(beoId);
     const msg  = [
-      '📋 *BANQUET EVENT ORDER — APPROVAL REQUEST*','',
-      'Kepada Yth. *' + apr.label + '*','Lotus Garden by WH','',
-      'BEO No: *' + beoId + '*','',
-      'Mohon berikan persetujuan Anda:',link,'',
-      '_Tekan SETUJU & APPROVE untuk mengkonfirmasi._'
+      '📋 *BANQUET EVENT ORDER — APPROVAL REQUEST*', '',
+      'Kepada Yth. *' + apr.label + '*',
+      'Lotus Garden by WH — Kediri', '',
+      'BEO No: *' + beoId + '*', '',
+      'Mohon berikan persetujuan Anda melalui link berikut:',
+      link, '',
+      '_Tekan tombol *SETUJU & APPROVE* untuk mengkonfirmasi._'
     ].join('\n');
-    progress.textContent = '⏳ Mengirim ke ' + apr.label + '...';
+
+    progress.textContent = '⏳ Mengirim ke ' + apr.label + ' (' + apr.phone + ')...';
+
     try {
-      await fetch('https://api.fonnte.com/send', {
-        method:'POST',
-        headers:{'Authorization':waToken,'Content-Type':'application/json'},
-        body: JSON.stringify({ target:apr.phone, message:msg, delay:2 })
+      // [FIX] Fonnte API: gunakan FormData, bukan JSON
+      // Authorization header = token langsung (tanpa "Bearer")
+      const formData = new FormData();
+      formData.append('target',      apr.phone);
+      formData.append('message',     msg);
+      formData.append('delay',       '2');
+      formData.append('countryCode', '62');
+
+      const res  = await fetch('https://api.fonnte.com/send', {
+        method:  'POST',
+        headers: { 'Authorization': waToken },  // token langsung, tanpa "Bearer"
+        body:    formData
       });
-      sent++;
-    } catch(_) { failed++; }
+      const data = await res.json();
+
+      // Fonnte response: { status: true/false, detail: "...", id: [...] }
+      if (data.status === true || res.ok) {
+        sent++;
+        results.push({ label: apr.label, ok: true });
+      } else {
+        failed++;
+        results.push({ label: apr.label, ok: false, msg: data.reason || data.detail || 'Gagal' });
+        console.warn('[FONNTE]', apr.label, data);
+      }
+    } catch(e) {
+      failed++;
+      results.push({ label: apr.label, ok: false, msg: e.message });
+      console.error('[FONNTE] Error kirim ke', apr.label, e);
+    }
   }
-  progress.textContent = '✅ Terkirim: ' + sent + (failed ? ' | ✗ Gagal: '+failed : '');
+
+  // Tampilkan hasil detail per dept
+  const detail = results.map(r =>
+    (r.ok ? '✅ ' : '✗ ') + r.label + (r.ok ? '' : ': ' + r.msg)
+  ).join(' | ');
+  progress.textContent = sent + '/' + approvals.length + ' terkirim — ' + detail;
+  progress.style.color = failed === 0 ? '#2ecc71' : (sent > 0 ? '#f39c12' : '#e74c3c');
+
   _startApprovalPolling(gasUrl, beoId);
-  setTimeout(closeApprovalModal, 2500);
+  if (failed === 0) setTimeout(closeApprovalModal, 3000);
 }
 
 let _pollTimer = null;
