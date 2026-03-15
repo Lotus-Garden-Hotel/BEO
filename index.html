@@ -510,10 +510,14 @@
                         const isoFull = `${yP || todayRaw.getFullYear()}-${String(mP).padStart(2,'0')}-${String(dP).padStart(2,'0')}`;
                         const venueRaw = r[15] || '';
                         const beoKey = _beoDataIdx++;
+                        // [FIX] r[14]=total revenue, r[11]=pax → hitung price/pax untuk BEO billing
+                        const _bPax   = cleanVal(r[11]) || 1;
+                        const _bTotal = cleanVal(r[14]);
+                        const _bPpax  = _bTotal > 0 && _bPax > 0 ? Math.round(_bTotal / _bPax) : 0;
                         _beoDataMap[beoKey] = {
                             date: isoFull, venue: venueRaw,
                             customer: r[10]||'', status: (r[13]||'').toUpperCase(),
-                            pax: r[11]||'', price: r[14]||'', time: r[16]||'', setup: r[17]||'',
+                            pax: r[11]||'', price: _bPpax > 0 ? String(_bPpax) : '', time: r[16]||'', setup: r[17]||'',
                             eventTitle:'', contact:'', phone:'', notes:'', sales:'', package:''
                         };
                         evList.push({ evDate, gVal, html: `<div class="bg-white/[0.03] border border-white/5 rounded-xl p-2 relative ${cardBorder}" style="cursor:pointer;" onclick="openBeoFull(${beoKey},event)">
