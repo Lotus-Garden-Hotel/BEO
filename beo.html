@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no,viewport-fit=cover">
 <title>BEO — Lotus Garden by WH</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,7 +19,8 @@
     --muted:#6a5a3a;
     --green:#2d7a3a; --orange:#c8600a;
   }
-  html,body{ background:#1a1610; display:flex; flex-direction:column; align-items:center; padding:16px 0 40px; min-height:100vh; font-family:'Montserrat',sans-serif; }
+  html,body{ background:#1a1610; display:flex; flex-direction:column; align-items:center; padding:12px 0 40px; min-height:100vh; font-family:'Montserrat',sans-serif; box-sizing:border-box; padding-left:env(safe-area-inset-left); padding-right:env(safe-area-inset-right); padding-bottom:max(40px,env(safe-area-inset-bottom)); }
+  *{ box-sizing:border-box; }
 
   /* ── TOOLBAR ─────────────────────────────── */
   .toolbar{ width:100%; max-width:794px; display:flex; gap:8px; padding:0 16px 10px; flex-wrap:wrap; align-items:center; }
@@ -51,7 +52,7 @@
   /* KOP */
   .kop-wrapper{ background:#fff; padding:10px 20px 0; }
   .kop-inner{ display:flex; justify-content:space-between; align-items:flex-start; padding-bottom:10px; }
-  .kop-logo img{ height:80px; width:auto; display:block; }
+  .kop-logo img{ height:80px; width:auto; display:block; max-width:120px; }
   .kop-info{ text-align:right; font-family:'Montserrat',sans-serif; padding-top:2px; }
   .kop-addr{ font-size:9.5px; color:#2a2a2a; line-height:1.7; font-weight:500; }
   .kop-addr .kop-t{ font-weight:700; }
@@ -67,7 +68,7 @@
   .info-table td{ border:1px solid var(--border); padding:4px 8px; font-size:8.5px; color:var(--ink); vertical-align:middle; }
   .info-table .lbl{ font-weight:700; white-space:nowrap; width:110px; }
   .info-table .colon{ width:8px; font-weight:700; }
-  .info-table .val{ font-weight:600; outline:none; min-width:60px; }
+  .info-table .val{ font-weight:600; outline:none; min-width:60px; word-break:break-word; max-width:200px; }
   .info-table .val:focus{ background:rgba(184,150,46,.08); }
   .info-table .val[contenteditable]{ border-bottom:1px dashed var(--border); cursor:text; }
 
@@ -147,13 +148,16 @@
   .billing-add-btn{ font-size:7px; color:var(--gold-dk); cursor:pointer; padding:3px 10px; background:rgba(184,150,46,.08); border:none; width:100%; text-align:left; font-weight:700; letter-spacing:.08em; border:1px solid var(--border); border-top:none; }
   .billing-add-btn:hover{ background:rgba(184,150,46,.15); }
 
-  /* SIGNATURE TOP */
-  /* SIGNATURE — unified single row */
+  /* SIGNATURE — wrapper scrollable di mobile */
+  .sig-scroll-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .sig-scroll-inner{ min-width:580px; } /* pastikan tidak terpotong di HP sempit */
+
+  /* SIGNATURE — header + row */
   .sig-header-row{ display:grid; grid-template-columns:repeat(11,1fr); border:1.5px solid var(--ink); border-top:none; background:var(--paper-dk); }
   .sig-hdr-cell{ padding:3px 4px; font-size:6px; font-weight:800; letter-spacing:.08em; color:var(--gold-dk); text-transform:uppercase; text-align:center; border-right:1px solid var(--ink); white-space:nowrap; overflow:hidden; }
   .sig-hdr-cell:last-child{ border-right:none; }
   .sig-row-single{ display:grid; grid-template-columns:repeat(11,1fr); border:1.5px solid var(--ink); border-top:none; }
-  .sig-cell-s{ padding:5px 3px 4px; display:flex; flex-direction:column; align-items:center; text-align:center; }
+  .sig-cell-s{ padding:5px 3px 4px; display:flex; flex-direction:column; align-items:center; text-align:center; min-width:0; }
   .sig-cell-s+.sig-cell-s{ border-left:1px solid var(--ink); }
   .sig-ln-s{ width:100%; height:32px; border-bottom:1px solid var(--ink); margin-bottom:4px; }
   .sig-nm-s{ font-size:7.5px; font-weight:700; color:var(--ink); outline:none; width:100%; border-bottom:1px dashed var(--border); cursor:text; margin-bottom:2px; }
@@ -161,9 +165,38 @@
   .sig-ttl-s{ font-size:6.5px; font-weight:800; color:var(--ink); text-transform:uppercase; letter-spacing:.04em; outline:none; cursor:text; }
   .sig-ttl-s:focus{ color:var(--gold-dk); }
   .sig-badge{ display:none; }
-  .sig-bot-badge{ display:none; font-size:5.5px; font-weight:800; padding:1px 4px; border-radius:8px; margin-top:2px; }
-  .sig-bot-badge.approved{ display:block; background:#1a3d1e; color:#6ddc85; border:1px solid #2d7a3a; }
-  .sig-bot-badge.pending{ display:block; background:#1a1a1a; color:#6a6a6a; border:1px solid #3a3a3a; }
+
+  /* Badge approval — ringkas agar muat di kolom sempit */
+  .sig-bot-badge{
+    display:none; font-size:5px; font-weight:800;
+    padding:1px 3px; border-radius:4px; margin-top:2px;
+    text-align:center; white-space:nowrap; width:100%;
+    overflow:hidden; text-overflow:ellipsis;
+  }
+  .sig-bot-badge.approved{
+    display:block;
+    background:#d4edda; color:#155724; border:1px solid #28a745;
+    animation: badgePop .4s ease;
+  }
+  .sig-bot-badge.pending{
+    display:block;
+    background:#fff3cd; color:#856404; border:1px solid #ffc107;
+  }
+  @keyframes badgePop {
+    0%   { transform:scale(0.5); opacity:0; }
+    70%  { transform:scale(1.15); }
+    100% { transform:scale(1); opacity:1; }
+  }
+
+  /* Hint scroll di mobile */
+  .sig-scroll-hint{
+    display:none; font-size:7px; color:#8a7a64; text-align:center;
+    padding:3px; letter-spacing:.05em; background:var(--paper-dk);
+    border:1.5px solid var(--ink); border-top:none;
+  }
+  @media (max-width:600px){
+    .sig-scroll-hint{ display:block; }
+  }
 
     /* BOTTOM STRIPE */
   .bottom-stripe{ height:6px; background:linear-gradient(90deg,var(--gold-dk),var(--gold),var(--gold-dk)); }
@@ -207,6 +240,101 @@
 
   /* ── PRINT ─────────────────────────────── */
   @page{ size:A4 portrait; margin:0mm; }
+
+  /* ═══════════════════════════════════════════════════════
+     RESPONSIVE MOBILE — tidak ada yang terpotong di HP
+     Tested: iPhone SE 320px, iPhone 14 390px, Android 360px
+  ═══════════════════════════════════════════════════════ */
+  @media (max-width:600px) {
+
+    /* ─ Body & sheet ─ */
+    html,body{ padding:0 !important; }
+    .toolbar{ padding:8px 10px !important; gap:5px !important; }
+    #beo-sheet{
+      width:100vw !important;
+      max-width:100vw !important;
+      border-radius:0 !important;
+      box-shadow:none !important;
+      overflow-x:hidden;
+    }
+
+    /* ─ Kop / header ─ */
+    .kop-wrapper{ padding:8px 10px 0 !important; }
+    .kop-inner{ flex-direction:column !important; align-items:center !important; gap:6px !important; }
+    .kop-logo img{ height:56px !important; }
+    .kop-info{ text-align:center !important; }
+    .kop-addr{ font-size:8px !important; line-height:1.5 !important; }
+
+    /* ─ Title bar ─ */
+    .beo-titlebar{ font-size:9px !important; letter-spacing:.15em !important; padding:4px !important; }
+
+    /* ─ Info table ─ */
+    .info-table td{ font-size:7.5px !important; padding:3px 5px !important; }
+    .info-table .lbl{ width:80px !important; font-size:7px !important; }
+    .info-table .val{ min-width:40px !important; }
+
+    /* ─ Lobby posting — 3 col → 1 col ─ */
+    .lbp-row{
+      grid-template-columns:1fr !important;
+    }
+    .lbp-row > *{ border-right:none !important; border-bottom:1px solid var(--ink) !important; }
+    .lbp-row > *:last-child{ border-bottom:none !important; }
+
+    /* ─ Main grid set+menu — 2 col → 1 col ─ */
+    .main-grid{
+      grid-template-columns:1fr !important;
+    }
+    .main-grid > *{ border-right:none !important; border-bottom:1px solid var(--ink) !important; }
+    .main-grid > *:last-child{ border-bottom:none !important; }
+
+    /* ─ Dept grid 2 (HRD + Front Office) — 2 col → 1 col ─ */
+    .dept-grid-2{
+      grid-template-columns:1fr !important;
+    }
+    .dept-grid-2 > *{ border-right:none !important; border-bottom:1px solid var(--ink) !important; }
+    .dept-grid-2 > *:last-child{ border-bottom:none !important; }
+
+    /* ─ Section headers ─ */
+    .section-header{ font-size:7px !important; padding:3px 6px !important; }
+
+    /* ─ Set/menu rows ─ */
+    .set-row, .menu-row{ font-size:7.5px !important; padding:3px 6px !important; }
+    .set-add-btn, .menu-add-btn{ font-size:7px !important; }
+
+    /* ─ HRD ─ */
+    .hrd-row{ font-size:7.5px !important; }
+    .hrd-lbl{ min-width:70px !important; font-size:7px !important; }
+
+    /* ─ Billing table — scrollable horizontal ─ */
+    .billing-wrap{ overflow-x:auto !important; -webkit-overflow-scrolling:touch !important; }
+    .billing-table{ min-width:380px !important; }
+    .billing-table th, .billing-table td{ font-size:7px !important; padding:3px 4px !important; }
+
+    /* ─ Signature — sudah wrapped, perkecil teks ─ */
+    .sig-hdr-cell{ font-size:5px !important; padding:2px 2px !important; }
+    .sig-nm-s{ font-size:6.5px !important; }
+    .sig-ttl-s{ font-size:5.5px !important; }
+    .sig-ln-s{ height:24px !important; }
+
+    /* ─ Dept panels ─ */
+    .dept-panel{ width:calc(100vw - 20px) !important; margin:0 0 10px !important; padding:8px 10px !important; }
+    .dept-chips{ gap:4px !important; }
+
+    /* ─ Toolbar buttons ─ */
+    .btn-toolbar{ font-size:9px !important; padding:6px 10px !important; }
+    .toolbar .edit-indicator{ font-size:7px !important; }
+  }
+
+  @media (max-width:360px) {
+    /* Extra kecil — iPhone SE, Android budget */
+    .beo-titlebar{ font-size:8px !important; letter-spacing:.1em !important; }
+    .info-table .lbl{ width:68px !important; font-size:6.5px !important; }
+    .kop-logo img{ height:48px !important; }
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     PRINT
+  ═══════════════════════════════════════════════════════ */
   @media print{
     *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; box-sizing:border-box !important; }
     html,body{ width:210mm !important; background:#fff !important; padding:0 !important; margin:0 !important; overflow:visible !important; }
@@ -437,7 +565,7 @@ Notes : Kebutuhan manning diluar standard harus atas persetujuan HRD &amp; GM</d
   </div>
 
   <!-- BILLING TABLE -->
-  <table class="billing-table">
+  <div class="billing-wrap"><table class="billing-table">
     <thead>
       <tr>
         <th style="width:35%">Description</th>
@@ -478,9 +606,12 @@ Notes : Kebutuhan manning diluar standard harus atas persetujuan HRD &amp; GM</d
       </tr>
     </tfoot>
   </table>
+  </div><!-- /billing-wrap -->
   <button class="billing-add-btn" onclick="addBillingRow()">+ Tambah baris</button>
 
-  <!-- SIGNATURE — 1 baris, isi baris bawah, format baris atas -->
+  <!-- SIGNATURE — scrollable di mobile agar tidak terpotong -->
+  <div class="sig-scroll-wrap">
+  <div class="sig-scroll-inner">
   <div class="sig-header-row">
     <div class="sig-hdr-cell" style="grid-column:span 2;">Prepared By</div>
     <div class="sig-hdr-cell" style="grid-column:span 1;">Check By</div>
@@ -556,6 +687,9 @@ Notes : Kebutuhan manning diluar standard harus atas persetujuan HRD &amp; GM</d
       <div class="sig-bot-badge" id="badge-gm"></div>
     </div>
   </div>
+  </div><!-- /sig-scroll-inner -->
+  </div><!-- /sig-scroll-wrap -->
+  <div class="sig-scroll-hint">← Geser untuk lihat semua tanda tangan →</div>
 
     <div class="bottom-stripe"></div>
 </div><!-- /beo-sheet -->
@@ -917,11 +1051,24 @@ function addBillingRow() {
     const raw = params.get('data');
     if (raw) { try { d = JSON.parse(raw); } catch(e) {} }
   }
-  // Link share dari WA: ?customer=xxx&venue=xxx&beoId=xxx
-  // Data minimal — cloud draft akan load penuh di STEP 3
+  // Link share dari WA: ?shareData=JSON — data lengkap
+  if (!d.customer && params.get('shareData')) {
+    try {
+      const sd = JSON.parse(decodeURIComponent(params.get('shareData')));
+      d.customer   = sd.customer   || '';
+      d.eventTitle = sd.eventTitle || '';
+      d.venue      = sd.venue      || '';
+      d.time       = sd.time       || '';
+      d.pax        = sd.pax        || '';
+      d.sales      = sd.sales      || '';
+      d._beoNo     = sd.beoNo      || ''; // No. BEO dari pengirim
+      d._fromShare = true;
+    } catch(e) {}
+  }
+  // Legacy: ?customer=xxx&venue=xxx
   if (!d.customer && params.get('customer')) {
-    d.customer   = decodeURIComponent(params.get('customer') || '');
-    d.venue      = decodeURIComponent(params.get('venue')    || '');
+    d.customer = decodeURIComponent(params.get('customer') || '');
+    d.venue    = decodeURIComponent(params.get('venue')    || '');
     d._fromShare = true;
   }
   console.log('[BEO] booking data loaded:', d.customer, d.date, d.venue);
@@ -968,21 +1115,17 @@ function addBillingRow() {
   // A1. Isi info booking — SELALU dari d, dipanggil setiap render
   function _fillBookingInfo() {
     const today = new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
-    // [FIX] Nomor BEO sequential dari GAS — set sementara dulu
-    set('i-beo-no', '···/BEO-···/···/···');
-    // Fetch nomor sequential dari GAS di background (non-blocking)
-    if (_gasUrl && d.venue && d.date) {
+    // Nomor BEO: dari share link → dari cloud draft → dari GAS sequential
+    if (d._beoNo) {
+      // Share link sudah bawa No. BEO dari pengirim — langsung pakai
+      set('i-beo-no', d._beoNo);
+    } else if (_gasUrl && d.venue && d.date) {
+      set('i-beo-no', '···/BEO-···/···/···');
       fetch(_gasUrl + '?action=GET_BEO_NUMBER&venue=' +
         encodeURIComponent(d.venue) + '&date=' + encodeURIComponent(d.date))
         .then(r => r.json())
-        .then(res => {
-          if (res.ok && res.beoNumber) {
-            set('i-beo-no', res.beoNumber);
-          } else {
-            set('i-beo-no', genBeoNo(d.venue, d.date)); // fallback random
-          }
-        })
-        .catch(() => { set('i-beo-no', genBeoNo(d.venue, d.date)); });
+        .then(res => { set('i-beo-no', res.ok && res.beoNumber ? res.beoNumber : genBeoNo(d.venue, d.date)); })
+        .catch(()  => { set('i-beo-no', genBeoNo(d.venue, d.date)); });
     } else {
       set('i-beo-no', genBeoNo(d.venue, d.date));
     }
@@ -1470,13 +1613,13 @@ function _markCloudSaved() {
 // ══ APPROVAL SYSTEM ══════════════════════════════════════════════════════
 const APR_DEPTS = [
   { key:'sm',       label:'Sales Manager'   },
-  { key:'fb',       label:'F&B Ast.'     },
+  { key:'fb',       label:'F&B Manager'     },
   { key:'chef',     label:'Sous Chef'       },
-  { key:'eng',      label:'Engineering Spv' },
-  { key:'hk',       label:'EHK'      },
-  { key:'security', label:'Leader Security'  },
+  { key:'eng',      label:'Engineering Mgr' },
+  { key:'hk',       label:'HK Manager'      },
+  { key:'security', label:'Chief Security'  },
   { key:'hr',       label:'HRD Manager'     },
-  { key:'ca',       label:'Chief Accounting' },
+  { key:'ca',       label:'Cost Accounting' },
   { key:'gm',       label:'General Manager' },
 ];
 
@@ -1676,14 +1819,25 @@ async function sendApprovalLinks() {
     const venueText  = (document.getElementById('i-venue')      ||{}).textContent?.replace(/^—$/,'').trim() || '';
     const paxText    = (document.getElementById('i-pax')        ||{}).textContent?.replace(/^—$/,'').trim() || '';
 
-    // Link BEO: pakai customer sebagai draft key — cloud draft sudah tersimpan
-    // Siapapun yang buka link ini akan load draft BEO dari cloud (GET_BEO_DRAFT)
-    const _beoOrigin   = location.origin;
-    const _beoPathDir  = location.pathname.replace(/\/[^\/]*$/, '/');
-    const beoLink = _beoOrigin + _beoPathDir + 'beo.html'
-                  + '?customer=' + encodeURIComponent(custName)
-                  + '&venue='    + encodeURIComponent(venueText)
-                  + '&beoId='    + encodeURIComponent(beoId);
+    // Link BEO lengkap — ambil semua field dari BEO yang sedang terbuka
+    const _beoOrigin  = location.origin;
+    const _beoPathDir = location.pathname.replace(/\/[^\/]*$/, '/');
+    const _beoDate    = (document.getElementById('i-date')||{}).textContent?.replace(/^—$/,'').trim()||'';
+    const _beoPax     = paxText.replace(' Pax','').trim();
+    const _beoTime    = (document.getElementById('i-time')||{}).textContent?.replace(/^—$/,'').trim()||'';
+    const _beoSales   = (document.getElementById('i-sales')||{}).textContent?.replace(/^—$/,'').trim()||'';
+    // Encode semua data penting ke URL agar penerima bisa lihat BEO lengkap
+    const _shareData  = encodeURIComponent(JSON.stringify({
+      customer:   custName,
+      eventTitle: eventTitle,
+      venue:      venueText,
+      date:       _beoDate,
+      time:       _beoTime,
+      pax:        _beoPax,
+      sales:      _beoSales,
+      beoNo:      beoId,
+    }));
+    const beoLink = _beoOrigin + _beoPathDir + 'beo.html?shareData=' + _shareData;
 
     const msg = [
       '📋 *BANQUET EVENT ORDER — APPROVAL REQUEST*', '',
@@ -1807,8 +1961,12 @@ function _renderApprovalBadges(approvals) {
       if (!b) return;
       const isApproved = (a.status||'').toUpperCase() === 'APPROVED'
                       || (a.status||'').toUpperCase() === 'DONE';
-      b.className  = 'sig-bot-badge ' + (isApproved ? 'approved' : 'pending');
-      b.textContent = isApproved ? '✓ Approved' : '⏳ Pending';
+      b.className   = 'sig-bot-badge ' + (isApproved ? 'approved' : 'pending');
+      // Text ringkas agar muat di kolom sempit, detail di title tooltip
+      b.textContent = isApproved ? '✓ OK' : '⏳';
+      b.title = isApproved
+        ? '✓ Approved' + (a.approvedAt ? ' · ' + a.approvedAt : '')
+        : 'Belum Approve';
     });
   });
 }
@@ -1816,10 +1974,25 @@ function _renderApprovalBadges(approvals) {
 (function() {
   const gasUrl = _getGasUrl();
   if (!gasUrl) return;
-  setTimeout(() => {
+  // Coba ambil beoId dari i-beo-no, retry sampai 10 detik (menunggu fetch dari GAS)
+  let _pollRetry = 0;
+  function _tryStartPolling() {
     const beoId = (document.getElementById('i-beo-no')||{}).textContent||'';
-    if (beoId && beoId !== '—') _fetchApprovalStatus(gasUrl, beoId);
-  }, 2000);
+    const validId = beoId && beoId !== '—' && !beoId.includes('···');
+    if (validId) {
+      _fetchApprovalStatus(gasUrl, beoId);
+      // Poll setiap 30 detik untuk update badge realtime
+      if (!_pollTimer) {
+        _pollTimer = setInterval(() => {
+          const id = (document.getElementById('i-beo-no')||{}).textContent||'';
+          if (id && id !== '—' && !id.includes('···')) _fetchApprovalStatus(gasUrl, id);
+        }, 30000);
+      }
+    } else if (_pollRetry++ < 20) {
+      setTimeout(_tryStartPolling, 500); // retry tiap 500ms max 10 detik
+    }
+  }
+  setTimeout(_tryStartPolling, 1000);
 })();
 
 </script>
