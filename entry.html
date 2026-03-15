@@ -1112,6 +1112,12 @@
       <span>Masuk dengan Google</span>
     </button>
     <div id="login-error" class="login-error">⚠ Akun tidak diizinkan akses sistem ini.</div>
+    <button id="login-retry-btn" onclick="loginRetry()"
+      style="display:none;margin-top:12px;width:100%;padding:12px;border-radius:10px;
+             background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.3);
+             color:var(--gold);font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.05em;">
+      🔄 Coba Login Ulang
+    </button>
   </div>
 </div>
 
@@ -1131,11 +1137,16 @@
         <span id="notif-badge" class="notif-badge hidden">0</span>
       </div>
       <div class="btn-icon btn-icon-red"  onclick="resetForm(true)" title="Reset Form">✕</div>
-      <div class="btn-icon btn-icon-blue" onclick="openLogsPopup()" title="Activity Logs">📋</div>
+      <!-- Logs — SUPER_ADMIN only -->
+      <div class="btn-icon btn-icon-blue" id="btn-logs" onclick="openLogsPopup()" title="Activity Logs" style="display:none">📋</div>
+      <!-- Reset BEO — SUPER_ADMIN only -->
       <div class="btn-icon" id="btn-reset-seq" onclick="openResetSeqModal()" title="Reset Nomor BEO"
-        style="display:none;background:rgba(231,76,60,.08);border-color:rgba(231,76,60,.25);color:#e74c3c;font-size:10px;font-weight:800;">
-        #⟳
-      </div>
+        style="display:none;background:rgba(231,76,60,.08);border-color:rgba(231,76,60,.25);color:#e74c3c;font-size:10px;font-weight:800;">#⟳</div>
+      <!-- Purge Cache — SUPER_ADMIN only -->
+      <div class="btn-icon" id="btn-purge-cache" onclick="doPurgeCache()" title="Purge Server Cache"
+        style="display:none;background:rgba(155,89,182,.08);border-color:rgba(155,89,182,.25);color:#c39bd3;font-size:10px;font-weight:800;">⚡</div>
+      <!-- Role badge -->
+      <span id="role-badge" style="display:none"></span>
       <div class="btn-icon" id="btn-menu-tpl" onclick="openMenuTemplate()" title="Template Menu"
         style="background:rgba(243,156,18,.08);border-color:rgba(243,156,18,.25);color:#f39c12;">🍽</div>
       <!-- 👤 Customer History — kanan -->
@@ -1455,23 +1466,62 @@ _auth.onAuthStateChanged(async user => {
       _authVerified          = true;
       window._cachedToken    = idToken;
       window._tokenFetchedAt = Date.now();
-      window._userRole       = res.role || 'STAFF'; // [CUST] simpan role
+      window._userRole   = res.role || 'STAFF';
+      window._userPerms  = {
+        canWrite:  res.canWrite  || false,
+        canDelete: res.canDelete || false,
+        canLogs:   res.canLogs   || false,
+        canReset:  res.canReset  || false,
+        canManage: res.canManage || false,
+        canPurge:  res.canPurge  || false,
+      };
       gate.classList.add('hide');
       setTimeout(() => { gate.style.display = 'none'; }, 800);
       logoutBtn.style.display = 'flex';
       errEl.classList.remove('show');
-      // [CUST] Tampilkan tombol Customer History hanya untuk Manager/Admin
-      if (res.role === 'MANAGER' || res.role === 'ADMIN') {
+
+      const role = res.role || 'STAFF';
+      const isSA = role === 'SUPER_ADMIN';
+
+      // Customer History — semua kecuali STAFF
+      if (role !== 'STAFF') {
         const btnCust = document.getElementById('btn-cust-history');
         if (btnCust) btnCust.style.display = 'flex';
+      }
+      // Reset BEO — SUPER_ADMIN saja
+      if (isSA) {
         const btnReset = document.getElementById('btn-reset-seq');
         if (btnReset) btnReset.style.display = 'flex';
+      }
+      // Logs — SUPER_ADMIN saja
+      const btnLogs = document.getElementById('btn-logs');
+      if (btnLogs) btnLogs.style.display = isSA ? 'flex' : 'none';
+      // Purge cache — SUPER_ADMIN saja
+      const btnPurge = document.getElementById('btn-purge-cache');
+      if (btnPurge) btnPurge.style.display = isSA ? 'flex' : 'none';
+
+      // Badge role di header
+      const roleBadge = document.getElementById('role-badge');
+      if (roleBadge) {
+        const badgeMap = {
+          SUPER_ADMIN:{ label:'⚡ SUPER', color:'rgba(155,89,182,.2)', border:'rgba(155,89,182,.5)', text:'#c39bd3' },
+          ADMIN:      { label:'🔧 ADMIN', color:'rgba(231,76,60,.1)',  border:'rgba(231,76,60,.35)',  text:'#e74c3c' },
+          MANAGER:    { label:'👔 MGR',   color:'rgba(52,152,219,.1)', border:'rgba(52,152,219,.35)', text:'#5dade2' },
+          STAFF:      { label:'👤 STAFF', color:'rgba(100,100,100,.1)',border:'rgba(100,100,100,.3)', text:'#888'    },
+        };
+        const b = badgeMap[role] || badgeMap.STAFF;
+        roleBadge.textContent = b.label;
+        roleBadge.style.cssText = `display:inline-flex;align-items:center;padding:3px 8px;border-radius:8px;font-size:8px;font-weight:800;letter-spacing:.06em;background:${b.color};border:1px solid ${b.border};color:${b.text};`;
       }
       // [FIX] Trigger load data setelah auth berhasil
       // window.load sudah jalan sebelumnya tapi gagal karena belum auth
       initAppData();
-    } else if (res.msg && res.msg.includes('tidak terdaftar')) {
-      // ❌ Email tidak terdaftar — logout sah
+    } else if (!res.allowed && res.msg && (
+        res.msg.includes('tidak terdaftar') ||
+        res.msg.includes('tidak diizinkan') ||
+        res.msg.includes('Email tidak')
+      )) {
+      // ❌ Email tidak terdaftar di whitelist — logout sah
       _authVerified = false;
       _auth.signOut();
       errEl.textContent = '⚠ Akun tidak diizinkan akses sistem ini.';
@@ -1479,15 +1529,20 @@ _auth.onAuthStateChanged(async user => {
       gate.style.display = 'flex';
       gate.classList.remove('hide');
       logoutBtn.style.display = 'none';
-    } else {
-      // ❌ Respons tidak dikenal
+    } else if (!res.allowed) {
+      // ❌ Akses ditolak dengan alasan lain — JANGAN auto-logout
+      // Tampilkan pesan tapi biarkan user coba lagi
       _authVerified = false;
-      _auth.signOut();
-      errEl.textContent = '⚠ Verifikasi gagal. Pastikan GAS backend sudah diupdate ke v6.0.';
+      _authInFlight = false;
+      const errMsg = res.msg || 'Verifikasi gagal.';
+      errEl.textContent = '⚠ ' + errMsg + ' — Coba refresh halaman.';
       errEl.classList.add('show');
       gate.style.display = 'flex';
       gate.classList.remove('hide');
       logoutBtn.style.display = 'none';
+      // Tambah tombol retry
+      const retryBtn = document.getElementById('login-retry-btn');
+      if (retryBtn) retryBtn.style.display = 'inline-block';
     }
   } catch(_e) {
     // [FIX] Error tak terduga — jangan langsung logout
@@ -1512,11 +1567,61 @@ async function loginWithGoogle() {
   try {
     await _auth.signInWithPopup(_provider);
   } catch(e) {
-    // [SEC-05] Jangan tampilkan pesan teknis Firebase ke user
     const errEl = document.getElementById('login-error');
-    errEl.textContent = '⚠ Gagal login. Periksa koneksi internet dan coba lagi.';
+    if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') {
+      errEl.textContent = '⚠ Login dibatalkan. Klik tombol untuk mencoba lagi.';
+    } else if (e.code === 'auth/popup-blocked') {
+      errEl.textContent = '⚠ Popup diblokir browser. Izinkan popup untuk halaman ini.';
+    } else if (e.code === 'auth/network-request-failed') {
+      errEl.textContent = '⚠ Gagal koneksi. Periksa internet lalu coba lagi.';
+    } else {
+      errEl.textContent = '⚠ Gagal login. Periksa koneksi dan coba lagi.';
+    }
     errEl.classList.add('show');
+    console.error('[Auth] login error:', e.code, e.message);
   }
+}
+
+function loginRetry() {
+  // Reset semua state auth dan coba login ulang
+  _authVerified = false;
+  _authInFlight = false;
+  window._cachedToken    = null;
+  window._tokenFetchedAt = 0;
+  const errEl   = document.getElementById('login-error');
+  const retryBtn = document.getElementById('login-retry-btn');
+  if (errEl)   { errEl.textContent = ''; errEl.classList.remove('show'); }
+  if (retryBtn) retryBtn.style.display = 'none';
+  loginWithGoogle();
+}
+
+// ── Purge Server Cache (SUPER_ADMIN) ─────────────────────────────────────
+async function doPurgeCache() {
+  if (!confirm('Bersihkan semua server cache?
+Data akan di-reload dari Sheet saat next request.')) return;
+  const btn = document.getElementById('btn-purge-cache');
+  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+  try {
+    const res = await gas({ action: 'PURGE_CACHE' });
+    if (res.ok) {
+      toast('✓ ' + res.msg, 'success', 3000);
+    } else {
+      toast('✗ ' + (res.msg||'Gagal purge'), 'error', 3000);
+    }
+  } catch(e) {
+    toast('✗ Error: ' + e.message, 'error', 3000);
+  } finally {
+    if (btn) { btn.textContent = '⚡'; btn.disabled = false; }
+  }
+}
+
+// ── Guard DELETE untuk role ───────────────────────────────────────────────
+function _canDelete() {
+  const role = window._userRole || '';
+  return role === 'SUPER_ADMIN' || role === 'ADMIN';
+}
+function _canReset() {
+  return window._userRole === 'SUPER_ADMIN';
 }
 
 function logoutUser() {
@@ -1531,6 +1636,7 @@ function logoutUser() {
 
 // ── Reset BEO Sequence Number ─────────────────────────────────────────────
 function openResetSeqModal() {
+  if (!_canReset()) { toast('⚠ Akses ditolak. Hanya Super Admin.','error',2000); return; }
   // Set default bulan = bulan ini
   const now = new Date();
   const mm  = String(now.getMonth()+1).padStart(2,'0');
@@ -2143,6 +2249,7 @@ async function submitData() {
 
 // ─── DELETE ────────────────────────────────────────────────────────────────
 async function deleteData() {
+  if (!_canDelete()) { toast('⚠ Akses ditolak. Hanya Admin/Super Admin.','error',3000); return; }
   const d = val('f-date'), v = val('f-venue');
   if (!d || !v) return toast('Pilih tanggal & venue dahulu', 'error');
   const name = val('f-customer') || 'data ini';
@@ -3350,7 +3457,7 @@ let _custSearchTO = null;   // debounce timer
 
 function openCustHistory() {
   const role = window._userRole || '';
-  if (role !== 'MANAGER' && role !== 'ADMIN') return;
+  if (role !== 'SUPER_ADMIN') { toast('⚠ Akses ditolak. Hanya Super Admin.','error',2000); return; }
   document.getElementById('cust-popup').classList.add('open');
   document.getElementById('cust-search-input').value = '';
   document.getElementById('cust-body').innerHTML =
