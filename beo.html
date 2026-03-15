@@ -1036,7 +1036,7 @@ function addBillingRow() {
 //       → jika ada draft: render dari draft
 //       → jika tidak ada: render default + template
 // ══════════════════════════════════════════════════════════════════════════
-(function init() {
+(async function init() {
   const params = new URLSearchParams(window.location.search);
   let d = {};
 
@@ -1054,33 +1054,34 @@ function addBillingRow() {
     const raw = params.get('data');
     if (raw) { try { d = JSON.parse(raw); } catch(e) {} }
   }
-  // Short link: ?r=CODE — resolve dari GAS dulu
+
+  // Short link: ?r=CODE — await resolve dulu sebelum lanjut init
   if (!d.customer && params.get('r')) {
     const _r = params.get('r').trim().toUpperCase();
     const _gasUrl2 = (function() {
       const DEFAULT = 'https://script.google.com/macros/s/AKfycbyQTrvw2WtHV0zpItsVA2hG_02R0gscUrOua2rnOqw750PvT3PODSaO6LaM3HWUTXJi/exec';
       try { const c2=JSON.parse(localStorage.getItem('banquet_elite_config')||'{}'); return c2.gasUrl||DEFAULT; } catch(_) { return DEFAULT; }
     })();
-    // Fetch shortcode data dari GAS (async, tapi block init dulu)
-    // Pakai sync-like trick: simpan promise, resolve sebelum render
-    window._shortCodePromise = fetch(_gasUrl2 + '?action=GET_SHORT_LINK&r=' + encodeURIComponent(_r))
-      .then(res => res.json())
-      .then(data => {
-        if (data.ok && data.data) {
-          try {
-            const sd = JSON.parse(data.data);
-            d.customer   = sd.customer   || '';
-            d.eventTitle = sd.eventTitle || '';
-            d.venue      = sd.venue      || '';
-            d.time       = sd.time       || '';
-            d.pax        = sd.pax        || '';
-            d.sales      = sd.sales      || '';
-            d.price      = sd.price      || '';
-            d._beoNo     = sd.beoNo      || '';
-            d._fromShare = true;
-          } catch(e) {}
-        }
-      }).catch(() => {});
+    // [FIX] AWAIT — tunggu data dari GAS sebelum lanjut ke _custKey, _fillBilling, dll
+    try {
+      const res  = await fetch(_gasUrl2 + '?action=GET_SHORT_LINK&r=' + encodeURIComponent(_r));
+      const data = await res.json();
+      if (data.ok && data.data) {
+        const sd     = JSON.parse(data.data);
+        d.customer   = sd.customer   || '';
+        d.eventTitle = sd.eventTitle || '';
+        d.venue      = sd.venue      || '';
+        d.time       = sd.time       || '';
+        d.pax        = sd.pax        || '';
+        d.sales      = sd.sales      || '';
+        d.price      = sd.price      || '';
+        d._beoNo     = sd.beoNo      || '';
+        d._fromShare = true;
+        console.log('[BEO] shortcode resolved:', d.customer, d.beoNo);
+      }
+    } catch(e) {
+      console.warn('[BEO] shortcode resolve failed:', e.message);
+    }
   }
 
   // Link share dari WA: ?shareData=JSON — data lengkap (legacy/fallback)
@@ -1448,22 +1449,6 @@ function addBillingRow() {
   // Jika ada shortcode (?r=) → tunggu resolve selesai dulu
   // ════════════════════════════════════════════════════════════════════════
   function _loadAndRender() {
-    // Jika ada shortcode yang sedang di-resolve, tunggu dulu lalu re-run
-    if (window._shortCodePromise) {
-      const _pr = window._shortCodePromise;
-      window._shortCodePromise = null;
-      _pr.then(() => {
-        // Setelah resolve, re-isi booking info dengan data dari shortcode
-        _fillBookingInfo();
-        _fillBilling();
-        _fillDeptDefaults();
-        _doLoadAndRender();
-      });
-      return;
-    }
-    _doLoadAndRender();
-  }
-  function _doLoadAndRender() {
     // ── INSTANT: cek localStorage dulu (0ms, tidak perlu network) ────────
     let localDraft = null;
     if (_draftKey) {
@@ -1534,8 +1519,6 @@ function addBillingRow() {
         });
     }
   }
-
-  } // end _doLoadAndRender
 
   _loadAndRender();
 
