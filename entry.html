@@ -63,21 +63,31 @@
       animation:shimmer 4s linear infinite; line-height:1;
     }
     .brand-sub { font-size:7px; font-weight:500; letter-spacing:.35em; color:var(--dim); text-transform:uppercase; }
-    .header-actions { display:flex; gap:5px; align-items:center; flex-wrap:nowrap; flex-shrink:0; }
+    /* Header actions — 2 baris untuk Super Admin */
+    .header-right { display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
+    .header-actions {
+      display:flex; gap:5px; align-items:center; flex-wrap:nowrap; flex-shrink:0;
+      justify-content:flex-end;
+    }
+    .header-actions-sa {
+      display:none; /* tampil hanya untuk SA setelah login */
+      gap:4px; align-items:center; flex-wrap:nowrap; justify-content:flex-end;
+    }
+    .header-actions-sa.visible { display:flex; }
     .btn-icon {
-      width:36px; height:36px; border-radius:10px; background:var(--card); border:1px solid var(--border);
+      width:34px; height:34px; border-radius:10px; background:var(--card); border:1px solid var(--border);
       display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative;
-      transition:border-color .2s; font-size:15px; flex-shrink:0;
+      transition:border-color .2s; font-size:14px; flex-shrink:0;
     }
     .btn-icon:active { transform:scale(.93); }
     .btn-icon:hover  { border-color:var(--gold); }
     @media (max-width:420px) {
       .btn-icon { width:30px; height:30px; font-size:13px; border-radius:8px; }
-      .header-actions { gap:4px; }
+      .header-actions, .header-actions-sa { gap:4px; }
     }
     @media (max-width:360px) {
       .btn-icon { width:28px; height:28px; font-size:12px; border-radius:7px; }
-      .header-actions { gap:3px; }
+      .header-actions, .header-actions-sa { gap:3px; }
     }
     .notif-badge {
       position:absolute; top:-4px; right:-4px; min-width:16px; height:16px; padding:0 4px;
@@ -1135,30 +1145,33 @@
       <div class="brand-name" id="ui-brand">BANQUET ELITE</div>
       <div class="brand-sub"  id="ui-version">V.6.3 · Cloud Edition</div>
     </div>
-    <div class="header-actions">
-      <!-- 🔍 Search BEO — kiri (gabungan Scanner + Ketersediaan) -->
-      <div class="btn-icon" onclick="openUnifiedPopup('search')" title="Search BEO &amp; Ketersediaan"
-        style="background:rgba(201,168,76,.08);border-color:rgba(201,168,76,.25);color:var(--gold);">
-        🔍
-        <span id="notif-badge" class="notif-badge hidden">0</span>
+    <div class="header-right">
+
+      <!-- ── Baris 1: Icon umum (semua user) ── -->
+      <div class="header-actions">
+        <div class="btn-icon" onclick="openUnifiedPopup('search')" title="Search BEO &amp; Ketersediaan"
+          style="background:rgba(201,168,76,.08);border-color:rgba(201,168,76,.25);color:var(--gold);">
+          🔍<span id="notif-badge" class="notif-badge hidden">0</span>
+        </div>
+        <div class="btn-icon btn-icon-red" onclick="resetForm(true)" title="Reset Form">✕</div>
+        <div class="btn-icon" id="btn-menu-tpl" onclick="openMenuTemplate()" title="Template Menu"
+          style="background:rgba(243,156,18,.08);border-color:rgba(243,156,18,.25);color:#f39c12;">🍽</div>
+        <div class="btn-icon" id="btn-cust-history" onclick="openCustHistory()" title="Customer History"
+          style="display:none;background:rgba(46,204,113,.08);border-color:rgba(46,204,113,.25);color:#2ecc71;">👤</div>
+        <span id="role-badge" style="display:none"></span>
+        <div class="btn-icon btn-icon-logout" id="btn-logout" onclick="logoutUser()" title="Keluar" style="display:none">⎋</div>
       </div>
-      <div class="btn-icon btn-icon-red"  onclick="resetForm(true)" title="Reset Form">✕</div>
-      <!-- Logs — SUPER_ADMIN only -->
-      <div class="btn-icon btn-icon-blue" id="btn-logs" onclick="openLogsPopup()" title="Activity Logs" style="display:none">📋</div>
-      <!-- Reset BEO — SUPER_ADMIN only -->
-      <div class="btn-icon" id="btn-reset-seq" onclick="openResetSeqModal()" title="Reset Nomor BEO"
-        style="display:none;background:rgba(231,76,60,.08);border-color:rgba(231,76,60,.25);color:#e74c3c;font-size:10px;font-weight:800;">#⟳</div>
-      <!-- Purge Cache — SUPER_ADMIN only -->
-      <div class="btn-icon" id="btn-purge-cache" onclick="doPurgeCache()" title="Purge Server Cache"
-        style="display:none;background:rgba(155,89,182,.08);border-color:rgba(155,89,182,.25);color:#c39bd3;font-size:10px;font-weight:800;">⚡</div>
-      <!-- Role badge -->
-      <span id="role-badge" style="display:none"></span>
-      <div class="btn-icon" id="btn-menu-tpl" onclick="openMenuTemplate()" title="Template Menu"
-        style="background:rgba(243,156,18,.08);border-color:rgba(243,156,18,.25);color:#f39c12;">🍽</div>
-      <!-- 👤 Customer History — kanan -->
-      <div class="btn-icon" id="btn-cust-history" onclick="openCustHistory()" title="Customer History"
-        style="display:none;background:rgba(46,204,113,.08);border-color:rgba(46,204,113,.25);color:#2ecc71;">👤</div>
-      <div class="btn-icon btn-icon-logout" id="btn-logout" onclick="logoutUser()" title="Keluar" style="display:none">⎋</div>
+
+      <!-- ── Baris 2: Icon Super Admin only (hidden sampai login) ── -->
+      <div class="header-actions-sa" id="header-sa-row">
+        <div style="font-size:7px;color:var(--muted);letter-spacing:.06em;white-space:nowrap;align-self:center;">SA TOOLS:</div>
+        <div class="btn-icon btn-icon-blue" id="btn-logs" onclick="openLogsPopup()" title="Activity Logs">📋</div>
+        <div class="btn-icon" id="btn-reset-seq" onclick="openResetSeqModal()" title="Reset Nomor BEO"
+          style="background:rgba(231,76,60,.08);border-color:rgba(231,76,60,.25);color:#e74c3c;font-size:10px;font-weight:800;">#⟳</div>
+        <div class="btn-icon" id="btn-purge-cache" onclick="doPurgeCache()" title="Purge Server Cache"
+          style="background:rgba(155,89,182,.08);border-color:rgba(155,89,182,.25);color:#c39bd3;font-size:10px;font-weight:800;">⚡</div>
+      </div>
+
     </div>
   </div>
 
@@ -1518,10 +1531,9 @@ _auth.onAuthStateChanged(async user => {
         if (el) el.style.display = 'flex';
       }
       if (isSA) {
-        ['btn-reset-seq','btn-logs','btn-purge-cache'].forEach(id => {
-          const el = document.getElementById(id);
-          if (el) el.style.display = 'flex';
-        });
+        // Tampilkan baris 2 (SA tools row)
+        const saRow = document.getElementById('header-sa-row');
+        if (saRow) saRow.classList.add('visible');
       }
       // Role badge
       const roleBadge = document.getElementById('role-badge');
