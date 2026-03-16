@@ -151,10 +151,10 @@ tfoot td{padding:8px 10px;border-top:2px solid var(--border2);background:#1a1410
       </div>
       <!-- Toggle Gross / Nett -->
       <div class="rev-toggle">
-        <button id="tog-gross" class="on"  onclick="setRevMode('gross')">GROSS</button>
-        <button id="tog-nett"  class="off" onclick="setRevMode('nett')">NETT</button>
+        <button id="tog-nett"  class="on"  onclick="setRevMode('nett')">NETT</button>
+        <button id="tog-gross" class="off" onclick="setRevMode('gross')">GROSS</button>
       </div>
-      <span class="rev-note" id="rev-note">termasuk pajak &amp; service</span>
+      <span class="rev-note" id="rev-note">nilai dari sheet (nett)</span>
       <button class="bact" id="btn-rl" onclick="reloadData()">🔄 Reload</button>
       <button class="bout" onclick="doLogout()">⎋ Keluar</button>
     </div>
@@ -181,22 +181,24 @@ mfEl.innerHTML='<option value="ALL">Semua Bulan</option>';
 MOS.forEach((m,i)=>{const o=document.createElement('option');o.value=i;o.text=m;mfEl.appendChild(o);});
 
 let _rows=[],_bud={},_yr=new Date().getFullYear(),_tab='b',_tok='',_demo=false;
-let _mode='gross'; // 'gross' = include pajak+service | 'nett' = /1.21
-const TAX_DIV = 1.21; // pajak 10% + service 11% = 21%
+let _mode='nett'; // 'nett' = nilai asli sheet | 'gross' = nett × 1.21
+const TAX_MUL = 1.21; // pajak 10% + service 11% = 21%
 
 function setRevMode(m){
   _mode=m;
-  document.getElementById('tog-gross').className = m==='gross'?'on':'off';
   document.getElementById('tog-nett').className  = m==='nett' ?'on':'off';
-  document.getElementById('rev-note').textContent = m==='gross'
-    ? 'termasuk pajak & service'
-    : 'sudah di-nett (÷1.21)';
+  document.getElementById('tog-gross').className = m==='gross'?'on':'off';
+  document.getElementById('rev-note').textContent = m==='nett'
+    ? 'nilai dari sheet (nett)'
+    : 'termasuk pajak & service (×1.21)';
   render();
 }
 
-// Revenue sesuai mode
-function revVal(grossVal){
-  return _mode==='nett' ? Math.round(grossVal / TAX_DIV) : grossVal;
+// Revenue sesuai mode:
+// NETT  = nilai asli dari sheet (yang diinput user = harga nett)
+// GROSS = nett × 1.21 (ditambah pajak 10% + service 11%)
+function revVal(nettVal){
+  return _mode==='gross' ? Math.round(nettVal * TAX_MUL) : nettVal;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -375,8 +377,9 @@ function compMon(){
     const rv=dn.reduce((s,r)=>s+r.revenue,0);
     const px=dn.reduce((s,r)=>s+r.pax,0);
     const bd=_bud[m]||0;
-    const rvN=revVal(rv); // revenue sesuai mode gross/nett
-    return{m,sh:MOS[mi],mi,events:dn.length,pax:px,revenue:rvN,revenueGross:rv,budget:bd,ach:pct(rvN,bd),tent:mr.filter(r=>r.status==='TENTATIVE').length};
+    const rvDisplay=revVal(rv); // revenue sesuai mode
+    const rvGross=Math.round(rv*TAX_MUL); // gross = nett×1.21
+    return{m,sh:MOS[mi],mi,events:dn.length,pax:px,revenue:rvDisplay,revenueNett:rv,revenueGross:rvGross,budget:bd,ach:pct(rv,bd),tent:mr.filter(r=>r.status==='TENTATIVE').length};
   });
 }
 function fRows(){
@@ -398,9 +401,9 @@ function rBulanan(){
   const tA=pct(tR,tB),tT=mn.reduce((s,m)=>s+m.tent,0);
   const mx=Math.max(...mn.map(m=>Math.max(m.revenue,m.budget)),1);
 
-  const modeTag = _mode==='nett' ? ' (Nett)' : ' (Gross)';
+  const modeTag = _mode==='nett' ? ' (Nett)' : ' (Gross ×1.21)';
   const kH=[
-    {l:'Total Revenue'+modeTag,v:fR(tR),s:`dari ${fR(tB)} budget`,c:'var(--gold)'},
+    {l:'Total Revenue'+modeTag,v:fR(tR),s:`vs budget ${fR(tB)} | ach ${pct(mn.reduce((s,m)=>s+m.revenueNett,0),tB)}%`,c:'var(--gold)'},
     {l:'Achievement',v:tA+'%',s:tR>=tB?'✓ On Track':fR(tB-tR)+' kurang',c:aC(tA)},
     {l:'Total Events',v:tE,s:tP.toLocaleString()+' pax total',c:'var(--blue)'},
     {l:'Rata-rata/Event',v:fR(tE?Math.round(tR/tE):0),s:'revenue per event',c:'var(--purple)'},
@@ -511,10 +514,11 @@ function exBulanan(){
   const tR=mn.reduce((s,m)=>s+m.revenue,0),tB=mn.reduce((s,m)=>s+m.budget,0);
   const tE=mn.reduce((s,m)=>s+m.events,0),tP=mn.reduce((s,m)=>s+m.pax,0);
   // header sudah diset di new_ex_rows
-  // Export: 3 kolom revenue — Gross, Nett, Budget
-  const exHdr=['Bulan','Event','Pax','Revenue Gross (Rp)','Revenue Nett (Rp)','Budget (Rp)','Ach% (Nett)','Gap Nett (Rp)','Tentative'];
-  const rows=mn.map(m=>[m.sh,m.events,m.pax,m.revenueGross,Math.round(m.revenueGross/TAX_DIV),m.budget,pct(Math.round(m.revenueGross/TAX_DIV),m.budget)+'%',Math.round(m.revenueGross/TAX_DIV)-m.budget,m.tent]);
-  const tot2=['TOTAL',tE,tP,mn.reduce((s,m)=>s+m.revenueGross,0),Math.round(mn.reduce((s,m)=>s+m.revenueGross,0)/TAX_DIV),tB,pct(Math.round(mn.reduce((s,m)=>s+m.revenueGross,0)/TAX_DIV),tB)+'%',Math.round(mn.reduce((s,m)=>s+m.revenueGross,0)/TAX_DIV)-tB,''];
+  // Export: Nett (dari sheet) + Gross (nett×1.21) + Budget (nett)
+  const exHdr=['Bulan','Event','Pax','Revenue Nett (Rp)','Revenue Gross (Rp)','Budget Nett (Rp)','Ach% (Nett)','Gap Nett (Rp)','Tentative'];
+  const rows=mn.map(m=>[m.sh,m.events,m.pax,m.revenueNett,m.revenueGross,m.budget,pct(m.revenueNett,m.budget)+'%',m.revenueNett-m.budget,m.tent]);
+  const tNett=mn.reduce((s,m)=>s+m.revenueNett,0),tGross=mn.reduce((s,m)=>s+m.revenueGross,0);
+  const tot2=['TOTAL',tE,tP,tNett,tGross,tB,pct(tNett,tB)+'%',tNett-tB,''];
   const tot=['TOTAL',tE,tP,tR,tB,pct(tR,tB)+'%',tR-tB,''];
   const vH=['Venue','Events','Pax','Revenue (Rp)'];
   const vR=VN.map(v=>{const vr=_rows.filter(r=>r.venue===v&&r._yr===_yr&&(r.status==='DONE'||r.status==='CONFIRM'));return[v,vr.length,vr.reduce((s,r)=>s+r.pax,0),vr.reduce((s,r)=>s+r.revenue,0)];});
@@ -533,14 +537,14 @@ function exOnhand(){
   const oR=oh.reduce((s,r)=>s+r.revenue,0),oP=oh.reduce((s,r)=>s+r.pax,0);
   const sb=fm==='ALL'?MO.reduce((s,m)=>s+(_bud[m]||0),0):(_bud[MO[parseInt(fm)]]||0);
   const pr=fm==='ALL'?_yr:MOS[parseInt(fm)]+'_'+_yr;
-  const hdr=['Tanggal','Customer','Venue','Package','Sales','Pax','Revenue Gross (Rp)','Revenue Nett (Rp)','Status'];
-  const rows=oh.map(r=>[fmtDate(r.date),r.name,r.venue,r.package,r.sales,r.pax,r.revenue,Math.round(r.revenue/TAX_DIV),r.status]);
+  const hdr=['Tanggal','Customer','Venue','Package','Sales','Pax','Revenue Nett (Rp)','Revenue Gross (Rp)','Status'];
+  const rows=oh.map(r=>[fmtDate(r.date),r.name,r.venue,r.package,r.sales,r.pax,r.revenue,Math.round(r.revenue*TAX_MUL),r.status]);
   const wb=window.XLSX.utils.book_new();
   const ws=window.XLSX.utils.aoa_to_sheet([hdr,...rows,[],
-    ['','TOTAL ONHAND (Gross)','','','',oP,oh.reduce((s,r)=>s+r.revenue,0),'',''],
-    ['','TOTAL ONHAND (Nett)','','','','',Math.round(oh.reduce((s,r)=>s+r.revenue,0)/TAX_DIV),'',''],
-    ['','BUDGET (Nett)','','','','','',sb,''],
-    ['','GAP (Nett - Budget)','','','','','',Math.round(oh.reduce((s,r)=>s+r.revenue,0)/TAX_DIV)-sb,''],
+    ['','TOTAL ONHAND (Nett)','','','',oP,oh.reduce((s,r)=>s+r.revenue,0),'',''],
+    ['','TOTAL ONHAND (Gross)','','','','',Math.round(oh.reduce((s,r)=>s+r.revenue,0)*TAX_MUL),'',''],
+    ['','BUDGET (Nett)','','','','',sb,'',''],
+    ['','GAP (Nett - Budget)','','','','',oh.reduce((s,r)=>s+r.revenue,0)-sb,'',''],
   ]);
   ws['!cols']=[14,26,18,14,10,8,18,18,12].map(w=>({wch:w}));
   window.XLSX.utils.book_append_sheet(wb,ws,`Onhand ${pr}`);
