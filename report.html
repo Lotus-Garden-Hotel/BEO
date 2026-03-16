@@ -396,16 +396,14 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "716626784276",
   appId:             "1:716626784276:web:4f7d4d51dace341d21b701"
 };
-// GAS URL untuk report — dari Code_Report.gs (deploy terpisah)
-// Setelah deploy Code_Report.gs, update gasUrl_report di Master Config
-// atau ganti DEFAULT_REPORT_GAS di bawah dengan URL deployment baru
-const DEFAULT_REPORT_GAS = 'https://script.google.com/macros/s/AKfycbzj5FUKzhGo2j1RXobsCyHZ7dcfLD-eF4Z-rf_poLFTvevSAaxdVb_OBaJtThjiLT8N/exec';
+// GAS URL — pakai URL yang sama dengan Code.gs V6.3
+// Tidak perlu deploy terpisah
+const DEFAULT_REPORT_GAS = 'https://script.google.com/macros/s/AKfycbyQTrvw2WtHV0zpItsVA2hG_02R0gscUrOua2rnOqw750PvT3PODSaO6LaM3HWUTXJi/exec';
 const GAS_URL = (function() {
   try {
     const cfg = JSON.parse(localStorage.getItem('banquet_master_cfg_v4') ||
                            localStorage.getItem('banquet_elite_config') || '{}');
-    // Prioritas: gasUrl_report (khusus report) → gasUrl_entry → fallback
-    return cfg.gasUrl_report || cfg.gasUrl_entry || cfg.gasUrl || DEFAULT_REPORT_GAS;
+    return cfg.gasUrl_entry || cfg.gasUrl || DEFAULT_REPORT_GAS;
   } catch(_) { return DEFAULT_REPORT_GAS; }
 })();
 
