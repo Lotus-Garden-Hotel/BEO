@@ -103,6 +103,14 @@ tfoot td{padding:8px 10px;border-top:2px solid var(--border2);background:#1a1410
 .vbf{height:100%;border-radius:4px;}
 @media(max-width:600px){.panel{padding:12px;}.hdr{padding:10px 12px;}.tabs{padding:0 12px;}.kgrid{grid-template-columns:1fr 1fr;}.kv{font-size:14px;}}
 @media print{.hdr,.tabs{position:static;}.bact,.bout,.tabsr,#load-ov{display:none!important;}}
+
+/* Toggle Gross / Nett */
+.rev-toggle{display:flex;background:var(--surface);border:1px solid var(--border2);border-radius:8px;overflow:hidden;gap:0;}
+.rev-toggle button{padding:5px 12px;border:none;cursor:pointer;font-size:9px;font-weight:700;letter-spacing:.06em;transition:.15s;}
+.rev-toggle .on{background:var(--gold3);color:#0a0806;}
+.rev-toggle .off{background:transparent;color:var(--dim);}
+.rev-toggle .off:hover{color:var(--muted);}
+.rev-note{font-size:8px;color:var(--dim);margin-left:6px;align-self:center;}
 </style>
 </head>
 <body>
@@ -141,6 +149,12 @@ tfoot td{padding:8px 10px;border-top:2px solid var(--border2);background:#1a1410
         <div class="yv" id="ydsp">2025</div>
         <button onclick="chgY(1)">▶</button>
       </div>
+      <!-- Toggle Gross / Nett -->
+      <div class="rev-toggle">
+        <button id="tog-gross" class="on"  onclick="setRevMode('gross')">GROSS</button>
+        <button id="tog-nett"  class="off" onclick="setRevMode('nett')">NETT</button>
+      </div>
+      <span class="rev-note" id="rev-note">termasuk pajak &amp; service</span>
       <button class="bact" id="btn-rl" onclick="reloadData()">🔄 Reload</button>
       <button class="bout" onclick="doLogout()">⎋ Keluar</button>
     </div>
@@ -167,6 +181,23 @@ mfEl.innerHTML='<option value="ALL">Semua Bulan</option>';
 MOS.forEach((m,i)=>{const o=document.createElement('option');o.value=i;o.text=m;mfEl.appendChild(o);});
 
 let _rows=[],_bud={},_yr=new Date().getFullYear(),_tab='b',_tok='',_demo=false;
+let _mode='gross'; // 'gross' = include pajak+service | 'nett' = /1.21
+const TAX_DIV = 1.21; // pajak 10% + service 11% = 21%
+
+function setRevMode(m){
+  _mode=m;
+  document.getElementById('tog-gross').className = m==='gross'?'on':'off';
+  document.getElementById('tog-nett').className  = m==='nett' ?'on':'off';
+  document.getElementById('rev-note').textContent = m==='gross'
+    ? 'termasuk pajak & service'
+    : 'sudah di-nett (÷1.21)';
+  render();
+}
+
+// Revenue sesuai mode
+function revVal(grossVal){
+  return _mode==='nett' ? Math.round(grossVal / TAX_DIV) : grossVal;
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────
 const cn=s=>parseFloat((s||'').toString().replace(/[^\d.-]/g,''))||0;
@@ -344,7 +375,8 @@ function compMon(){
     const rv=dn.reduce((s,r)=>s+r.revenue,0);
     const px=dn.reduce((s,r)=>s+r.pax,0);
     const bd=_bud[m]||0;
-    return{m,sh:MOS[mi],mi,events:dn.length,pax:px,revenue:rv,budget:bd,ach:pct(rv,bd),tent:mr.filter(r=>r.status==='TENTATIVE').length};
+    const rvN=revVal(rv); // revenue sesuai mode gross/nett
+    return{m,sh:MOS[mi],mi,events:dn.length,pax:px,revenue:rvN,revenueGross:rv,budget:bd,ach:pct(rvN,bd),tent:mr.filter(r=>r.status==='TENTATIVE').length};
   });
 }
 function fRows(){
@@ -366,8 +398,9 @@ function rBulanan(){
   const tA=pct(tR,tB),tT=mn.reduce((s,m)=>s+m.tent,0);
   const mx=Math.max(...mn.map(m=>Math.max(m.revenue,m.budget)),1);
 
+  const modeTag = _mode==='nett' ? ' (Nett)' : ' (Gross)';
   const kH=[
-    {l:'Total Revenue',v:fR(tR),s:`dari ${fR(tB)} budget`,c:'var(--gold)'},
+    {l:'Total Revenue'+modeTag,v:fR(tR),s:`dari ${fR(tB)} budget`,c:'var(--gold)'},
     {l:'Achievement',v:tA+'%',s:tR>=tB?'✓ On Track':fR(tB-tR)+' kurang',c:aC(tA)},
     {l:'Total Events',v:tE,s:tP.toLocaleString()+' pax total',c:'var(--blue)'},
     {l:'Rata-rata/Event',v:fR(tE?Math.round(tR/tE):0),s:'revenue per event',c:'var(--purple)'},
@@ -392,7 +425,7 @@ function rBulanan(){
 
   const vc=VN.map(v=>{
     const vr=_rows.filter(r=>r.venue===v&&r._yr===_yr&&(r.status==='DONE'||r.status==='CONFIRM'));
-    const rv=vr.reduce((s,r)=>s+r.revenue,0);const cl=VC[v]||'var(--gold)';
+    const rv=revVal(vr.reduce((s,r)=>s+r.revenue,0));const cl=VC[v]||'var(--gold)';
     return`<div class="vc" style="border:1px solid ${cl}33"><div class="vb" style="background:${cl}"></div><div class="vn" style="color:${cl}">${esc(v)}</div><div class="vr">${fR(rv)}</div><div class="vs">${vr.length} event · ${vr.reduce((s,r)=>s+r.pax,0).toLocaleString()} pax</div></div>`;
   }).join('');
 
@@ -423,8 +456,8 @@ function rOnhand(){
   const fr=fRows();
   const oh=fr.filter(r=>r.status==='CONFIRM'||r.status==='TENTATIVE');
   const dn=fr.filter(r=>r.status==='DONE');
-  const oR=oh.reduce((s,r)=>s+r.revenue,0),oP=oh.reduce((s,r)=>s+r.pax,0);
-  const dR=dn.reduce((s,r)=>s+r.revenue,0);
+  const oR=oh.reduce((s,r)=>s+revVal(r.revenue),0),oP=oh.reduce((s,r)=>s+r.pax,0);
+  const dR=dn.reduce((s,r)=>s+revVal(r.revenue),0);
   const sb=fm==='ALL'?MO.reduce((s,m)=>s+(_bud[m]||0),0):(_bud[MO[parseInt(fm)]]||0);
   const ap=pct(oR,sb),gp=oR-sb;
   const pl=fm==='ALL'?'target tahunan':MOS[parseInt(fm)];
@@ -437,7 +470,7 @@ function rOnhand(){
   ].map(k=>`<div class="kc"><div class="kl">${esc(k.l)}</div><div class="kv" style="color:${k.c}">${esc(''+k.v)}</div><div class="ks">${esc(k.s)}</div></div>`).join('');
 
   const vb=VN.map(v=>{
-    const vr=oh.filter(r=>r.venue===v),rv=vr.reduce((s,r)=>s+r.revenue,0);
+    const vr=oh.filter(r=>r.venue===v),rv=vr.reduce((s,r)=>s+revVal(r.revenue),0);
     const p=oR>0?pct(rv,oR):0,cl=VC[v]||'var(--gold)';
     return`<div class="vbi"><div class="vbr"><span style="color:${cl};font-weight:700">${esc(v)}</span><span>${fR(rv)} · ${vr.length} event</span></div><div class="vbt"><div class="vbf" style="width:${p}%;background:${cl}"></div></div></div>`;
   }).join('');
@@ -450,7 +483,7 @@ function rOnhand(){
         <td class="l" style="font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.name)}</td>
         <td class="l"><span style="color:${vc};font-weight:600;font-size:9px">${esc(r.venue)}</span></td>
         <td class="r" style="color:#7a8a9a">${r.pax.toLocaleString()}</td>
-        <td class="r" style="color:var(--gold);font-weight:700">${fR(r.revenue)}</td>
+        <td class="r" style="color:var(--gold);font-weight:700">${fR(revVal(r.revenue))}</td>
         <td class="r"><span class="badge ${bc}">${r.status}</span></td>
       </tr>`;
     }).join('');
@@ -477,13 +510,16 @@ function exBulanan(){
   const mn=compMon();
   const tR=mn.reduce((s,m)=>s+m.revenue,0),tB=mn.reduce((s,m)=>s+m.budget,0);
   const tE=mn.reduce((s,m)=>s+m.events,0),tP=mn.reduce((s,m)=>s+m.pax,0);
-  const hdr=['Bulan','Total Event','Pax','Revenue (Rp)','Budget (Rp)','Achievement %','Gap (Rp)','Tentative'];
-  const rows=mn.map(m=>[m.sh,m.events,m.pax,m.revenue,m.budget,m.ach+'%',m.revenue-m.budget,m.tent]);
+  // header sudah diset di new_ex_rows
+  // Export: 3 kolom revenue — Gross, Nett, Budget
+  const exHdr=['Bulan','Event','Pax','Revenue Gross (Rp)','Revenue Nett (Rp)','Budget (Rp)','Ach% (Nett)','Gap Nett (Rp)','Tentative'];
+  const rows=mn.map(m=>[m.sh,m.events,m.pax,m.revenueGross,Math.round(m.revenueGross/TAX_DIV),m.budget,pct(Math.round(m.revenueGross/TAX_DIV),m.budget)+'%',Math.round(m.revenueGross/TAX_DIV)-m.budget,m.tent]);
+  const tot2=['TOTAL',tE,tP,mn.reduce((s,m)=>s+m.revenueGross,0),Math.round(mn.reduce((s,m)=>s+m.revenueGross,0)/TAX_DIV),tB,pct(Math.round(mn.reduce((s,m)=>s+m.revenueGross,0)/TAX_DIV),tB)+'%',Math.round(mn.reduce((s,m)=>s+m.revenueGross,0)/TAX_DIV)-tB,''];
   const tot=['TOTAL',tE,tP,tR,tB,pct(tR,tB)+'%',tR-tB,''];
   const vH=['Venue','Events','Pax','Revenue (Rp)'];
   const vR=VN.map(v=>{const vr=_rows.filter(r=>r.venue===v&&r._yr===_yr&&(r.status==='DONE'||r.status==='CONFIRM'));return[v,vr.length,vr.reduce((s,r)=>s+r.pax,0),vr.reduce((s,r)=>s+r.revenue,0)];});
   const wb=window.XLSX.utils.book_new();
-  const w1=window.XLSX.utils.aoa_to_sheet([hdr,...rows,[],tot]);w1['!cols']=[10,12,10,18,18,14,18,10].map(w=>({wch:w}));
+  const w1=window.XLSX.utils.aoa_to_sheet([exHdr,...rows,[],tot2]);w1['!cols']=[10,12,10,18,18,14,18,10].map(w=>({wch:w}));
   window.XLSX.utils.book_append_sheet(wb,w1,`Bulanan ${_yr}`);
   const w2=window.XLSX.utils.aoa_to_sheet([vH,...vR]);w2['!cols']=[22,10,10,18].map(w=>({wch:w}));
   window.XLSX.utils.book_append_sheet(wb,w2,`Per Venue ${_yr}`);
@@ -497,15 +533,16 @@ function exOnhand(){
   const oR=oh.reduce((s,r)=>s+r.revenue,0),oP=oh.reduce((s,r)=>s+r.pax,0);
   const sb=fm==='ALL'?MO.reduce((s,m)=>s+(_bud[m]||0),0):(_bud[MO[parseInt(fm)]]||0);
   const pr=fm==='ALL'?_yr:MOS[parseInt(fm)]+'_'+_yr;
-  const hdr=['Tanggal','Customer','Venue','Package','Sales','Pax','Revenue (Rp)','Status'];
-  const rows=oh.map(r=>[fmtDate(r.date),r.name,r.venue,r.package,r.sales,r.pax,r.revenue,r.status]);
+  const hdr=['Tanggal','Customer','Venue','Package','Sales','Pax','Revenue Gross (Rp)','Revenue Nett (Rp)','Status'];
+  const rows=oh.map(r=>[fmtDate(r.date),r.name,r.venue,r.package,r.sales,r.pax,r.revenue,Math.round(r.revenue/TAX_DIV),r.status]);
   const wb=window.XLSX.utils.book_new();
   const ws=window.XLSX.utils.aoa_to_sheet([hdr,...rows,[],
-    ['','TOTAL ONHAND','','','',oP,oR,''],
-    ['','BUDGET','','','','',sb,''],
-    ['','GAP (Onhand - Budget)','','','','',oR-sb,''],
+    ['','TOTAL ONHAND (Gross)','','','',oP,oh.reduce((s,r)=>s+r.revenue,0),'',''],
+    ['','TOTAL ONHAND (Nett)','','','','',Math.round(oh.reduce((s,r)=>s+r.revenue,0)/TAX_DIV),'',''],
+    ['','BUDGET (Nett)','','','','','',sb,''],
+    ['','GAP (Nett - Budget)','','','','','',Math.round(oh.reduce((s,r)=>s+r.revenue,0)/TAX_DIV)-sb,''],
   ]);
-  ws['!cols']=[14,26,18,14,10,8,18,12].map(w=>({wch:w}));
+  ws['!cols']=[14,26,18,14,10,8,18,18,12].map(w=>({wch:w}));
   window.XLSX.utils.book_append_sheet(wb,ws,`Onhand ${pr}`);
   window.XLSX.writeFile(wb,`Laporan_Onhand_${pr}.xlsx`);
 }
