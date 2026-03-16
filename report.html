@@ -430,7 +430,9 @@ canvas { width:100% !important; }
         <option value="DESEMBER">Desember</option>
       </select>
       <button class="ctrl-btn" onclick="loadAll()">↺ Refresh</button>
-      <button class="ctrl-btn primary" onclick="window.print()">🖨 Print</button>
+      <button class="ctrl-btn" onclick="window.print()">🖨 Print</button>
+      <button class="ctrl-btn primary" onclick="exportExcel()">📊 Export Excel</button>
+      <button class="btn-theme" id="btn-theme" onclick="toggleTheme()" title="Mode Terang/Gelap">🌙</button>
       <button class="ctrl-btn" onclick="logoutUser()">⎋ Keluar</button>
     </div>
     <div class="topbar-user" id="topbar-user"></div>
