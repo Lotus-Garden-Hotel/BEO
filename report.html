@@ -2,573 +2,1440 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Management Report — Lotus Garden</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Management Report — Lotus Garden by WH</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#0a0806;--card:#14110d;--surface:#0d0b08;--border:#2a2218;--border2:#3d3028;
-  --gold:#c9a84c;--gold2:#f0c060;--gold3:#b8962e;--text:#e8e0c8;--muted:#7a6e5a;
-  --dim:#5a4a38;--faint:#3a3028;--blue:#5dade2;--green:#2ecc71;--red:#e74c3c;
-  --orange:#f39c12;--purple:#b88fce;}
-html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;}
-#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
-.lbox{background:var(--card);border:1.5px solid var(--border2);border-radius:22px;padding:36px 28px;max-width:380px;width:100%;text-align:center;}
-.licon{font-size:40px;margin-bottom:10px;}
-.ltitle{font-size:18px;font-weight:800;color:var(--gold);letter-spacing:.07em;margin-bottom:3px;}
-.lsub{font-size:9px;color:var(--dim);letter-spacing:.22em;margin-bottom:28px;}
-.btn-gg{width:100%;padding:14px;border-radius:12px;background:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;font-size:13px;font-weight:700;color:#333;transition:.2s;margin-bottom:10px;}
-.btn-gg:hover{background:#f5f5f5;box-shadow:0 2px 12px rgba(0,0,0,.25);}
-.btn-gg:disabled{opacity:.5;cursor:not-allowed;}
-.btn-gg img{width:20px;height:20px;}
-.btn-demo{width:100%;padding:10px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--dim);font-size:10px;cursor:pointer;}
-.btn-demo:hover{color:var(--muted);}
-#l-status{font-size:10px;color:var(--muted);min-height:18px;margin-bottom:10px;}
-#l-err{font-size:9px;color:var(--red);min-height:14px;margin-bottom:8px;}
-.dpill{background:rgba(243,156,18,.15);border:1px solid rgba(243,156,18,.3);color:var(--orange);font-size:8px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:middle;}
-#load-ov{position:fixed;inset:0;background:rgba(10,8,6,.93);z-index:999;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
-#load-ov.show{display:flex;}
-.spinner{width:42px;height:42px;border:3px solid var(--border2);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg)}}
-.ltxt{font-size:11px;color:var(--muted);}
-.lsub2{font-size:9px;color:var(--dim);text-align:center;max-width:220px;}
-.lbwrap{width:220px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;}
-.lbfill{height:100%;background:linear-gradient(90deg,var(--gold3),var(--gold2));border-radius:3px;transition:width .3s;}
-#app{display:none;}
-.hdr{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:100;}
-.brand{font-size:14px;font-weight:800;color:var(--gold);letter-spacing:.08em;}
-.bsub{font-size:8px;color:var(--dim);letter-spacing:.2em;margin-top:1px;}
-.hr{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
-.yp{display:flex;align-items:center;gap:6px;}
-.yp button{background:var(--card);border:1px solid var(--border2);color:var(--muted);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:13px;font-weight:700;}
-.yp button:hover{border-color:var(--gold);color:var(--gold);}
-.yv{font-size:16px;font-weight:800;color:var(--gold);min-width:52px;text-align:center;}
-.bact{background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);color:var(--gold);border-radius:8px;padding:5px 12px;font-size:9px;font-weight:700;cursor:pointer;white-space:nowrap;}
-.bact:hover{background:rgba(201,168,76,.2);}
-.bout{background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:6px;padding:5px 10px;font-size:10px;cursor:pointer;}
-.bout:hover{color:var(--red);border-color:var(--red);}
-.tabs{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;overflow-x:auto;}
-.tab{padding:12px 16px;background:none;border:none;border-bottom:2px solid transparent;color:var(--dim);font-weight:700;font-size:11px;cursor:pointer;letter-spacing:.06em;white-space:nowrap;}
-.tab.on{color:var(--gold);border-bottom-color:var(--gold);}
-.tabsr{margin-left:auto;padding:5px 0;flex-shrink:0;}
-.mfsel{background:var(--card);border:1px solid var(--border2);border-radius:6px;color:var(--gold);padding:5px 10px;font-size:10px;outline:none;cursor:pointer;}
-.panel{padding:16px 20px;max-width:1100px;}
-.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(138px,1fr));gap:10px;margin-bottom:16px;}
-.kc{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;}
-.kl{font-size:8px;color:var(--dim);font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px;}
-.kv{font-size:18px;font-weight:800;line-height:1;}
-.ks{font-size:8px;color:var(--muted);margin-top:4px;}
-.cc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:14px;}
-.ct{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:12px;}
-.bchart{display:flex;gap:3px;align-items:flex-end;height:110px;}
-.bg{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;}
-.bp{width:100%;display:flex;gap:1px;align-items:flex-end;height:90px;}
-.b{flex:1;border-radius:3px 3px 0 0;min-height:2px;transition:height .4s;}
-.bl{font-size:6px;color:var(--dim);text-align:center;margin-top:2px;}
-.leg{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;}
-.li{display:flex;align-items:center;gap:4px;font-size:8px;color:var(--dim);}
-.ld{width:10px;height:6px;border-radius:2px;}
-.pgc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:14px;}
-.pgh{display:flex;justify-content:space-between;margin-bottom:8px;}
-.pgt{background:var(--surface);border-radius:6px;height:12px;overflow:hidden;}
-.pgf{height:100%;background:linear-gradient(90deg,var(--gold3),var(--gold2));border-radius:6px;transition:width .6s;}
-.pgft{display:flex;justify-content:space-between;margin-top:6px;font-size:8px;color:var(--dim);}
-.tc{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px;}
-.th2{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);}
-.tt{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.1em;}
-.tw{overflow-x:auto;} .tws{overflow-x:auto;max-height:380px;overflow-y:auto;}
-table{width:100%;border-collapse:collapse;font-size:10px;}
-thead th{padding:8px 10px;color:var(--dim);font-weight:700;font-size:8px;letter-spacing:.08em;white-space:nowrap;background:var(--surface);position:sticky;top:0;z-index:1;}
-tbody tr{border-top:1px solid #1a1510;}
-tbody tr:nth-child(even){background:#0f0d0a;}
-td{padding:7px 10px;}
-tfoot td{padding:8px 10px;border-top:2px solid var(--border2);background:#1a1410;font-weight:800;}
-.r{text-align:right;}.l{text-align:left;}.nw{white-space:nowrap;}
-.vg{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;margin-bottom:14px;}
-.vc{background:var(--card);border-radius:12px;padding:12px 14px;}
-.vb{width:20px;height:3px;border-radius:2px;margin-bottom:6px;}
-.vn{font-size:9px;font-weight:700;margin-bottom:4px;}
-.vr{font-size:15px;font-weight:800;color:var(--text);}
-.vs{font-size:8px;color:var(--dim);margin-top:3px;}
-.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:8px;font-weight:800;}
-.bc{background:rgba(46,204,113,.15);color:#2ecc71;border:1px solid rgba(46,204,113,.3);}
-.bt{background:rgba(243,156,18,.12);color:#f39c12;border:1px solid rgba(243,156,18,.3);}
-.empty{padding:28px;text-align:center;color:var(--faint);font-size:11px;}
-.sl{font-size:9px;color:var(--dim);font-weight:700;letter-spacing:.1em;margin-bottom:10px;}
-.vbi{margin-bottom:10px;}
-.vbr{display:flex;justify-content:space-between;margin-bottom:4px;font-size:9px;}
-.vbt{background:var(--surface);border-radius:4px;height:6px;overflow:hidden;}
-.vbf{height:100%;border-radius:4px;}
-@media(max-width:600px){.panel{padding:12px;}.hdr{padding:10px 12px;}.tabs{padding:0 12px;}.kgrid{grid-template-columns:1fr 1fr;}.kv{font-size:14px;}}
-@media print{.hdr,.tabs{position:static;}.bact,.bout,.tabsr,#load-ov{display:none!important;}}
+:root {
+  --black:   #0a0a0c;
+  --dark:    #111114;
+  --surface: #17171b;
+  --card:    #1e1e24;
+  --border:  rgba(255,255,255,.07);
+  --border2: rgba(255,255,255,.12);
+  --text:    #e8e4dc;
+  --muted:   #8a8580;
+  --dim:     #555050;
+  --gold:    #c9a84c;
+  --gold2:   #e8c96a;
+  --gold3:   #f0dfa0;
+  --red:     #e74c3c;
+  --green:   #2ecc71;
+  --blue:    #5dade2;
+  --amber:   #f39c12;
+  --purple:  #9b59b6;
 
-/* Toggle Gross / Nett */
-.rev-toggle{display:flex;background:var(--surface);border:1px solid var(--border2);border-radius:8px;overflow:hidden;gap:0;}
-.rev-toggle button{padding:5px 12px;border:none;cursor:pointer;font-size:9px;font-weight:700;letter-spacing:.06em;transition:.15s;}
-.rev-toggle .on{background:var(--gold3);color:#0a0806;}
-.rev-toggle .off{background:transparent;color:var(--dim);}
-.rev-toggle .off:hover{color:var(--muted);}
-.rev-note{font-size:8px;color:var(--dim);margin-left:6px;align-self:center;}
+  --confirm:   #6366f1;
+  --tentative: #f59e0b;
+  --done:      #10b981;
+  --cancel:    #ef4444;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body {
+  font-family:'DM Sans',sans-serif;
+  background:var(--black); color:var(--text);
+  min-height:100vh; font-size:13px;
+}
+
+/* ── LOGIN GATE ── */
+#login-gate {
+  position:fixed; inset:0; z-index:900;
+  background:radial-gradient(ellipse at 60% 20%, rgba(201,168,76,.08) 0%, var(--black) 70%);
+  display:flex; align-items:center; justify-content:center; padding:24px;
+}
+#login-gate.hide { display:none; }
+.login-card {
+  background:var(--card); border:1px solid rgba(201,168,76,.2);
+  border-radius:20px; padding:36px 32px; max-width:360px; width:100%; text-align:center;
+}
+.login-logo {
+  font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:700;
+  background:linear-gradient(135deg,var(--gold),var(--gold3));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:4px;
+}
+.login-sub { font-size:10px; color:var(--muted); letter-spacing:.2em; text-transform:uppercase; margin-bottom:28px; }
+.login-btn {
+  width:100%; padding:14px; border-radius:12px; font-size:13px; font-weight:700;
+  background:linear-gradient(135deg,rgba(201,168,76,.2),rgba(201,168,76,.1));
+  border:1px solid rgba(201,168,76,.4); color:var(--gold); cursor:pointer;
+  letter-spacing:.05em; transition:all .2s;
+}
+.login-btn:hover { background:rgba(201,168,76,.25); }
+.login-err { margin-top:14px; font-size:11px; color:var(--red); min-height:16px; }
+
+/* ── APP SHELL ── */
+#app { display:none; min-height:100vh; }
+#app.show { display:block; }
+
+/* ── TOPBAR ── */
+.topbar {
+  position:sticky; top:0; z-index:100;
+  background:rgba(10,10,12,.92); backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  padding:0 20px; height:54px;
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+}
+.topbar-brand {
+  font-family:'Cormorant Garamond',serif; font-size:16px; font-weight:700;
+  color:var(--gold); white-space:nowrap; letter-spacing:.05em;
+}
+.topbar-brand span { font-size:10px; color:var(--muted); font-family:'DM Sans',sans-serif; margin-left:8px; letter-spacing:.1em; text-transform:uppercase; }
+.topbar-controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.ctrl-select {
+  background:var(--card); border:1px solid var(--border2); color:var(--text);
+  border-radius:8px; padding:6px 10px; font-size:11px; font-family:'DM Sans',sans-serif;
+  cursor:pointer; outline:none;
+}
+.ctrl-select:focus { border-color:var(--gold); }
+.ctrl-btn {
+  background:var(--card); border:1px solid var(--border2); color:var(--muted);
+  border-radius:8px; padding:6px 12px; font-size:11px; font-weight:600;
+  cursor:pointer; transition:all .2s; white-space:nowrap;
+}
+.ctrl-btn:hover { border-color:var(--gold); color:var(--gold); }
+.ctrl-btn.primary { background:rgba(201,168,76,.1); border-color:rgba(201,168,76,.3); color:var(--gold); }
+.topbar-user { font-size:10px; color:var(--dim); white-space:nowrap; }
+
+/* ── MAIN CONTENT ── */
+.main { padding:20px; max-width:1400px; margin:0 auto; }
+
+/* ── LOADING ── */
+.loading-overlay {
+  position:fixed; inset:0; background:rgba(10,10,12,.85); z-index:200;
+  display:flex; align-items:center; justify-content:center; flex-direction:column; gap:14px;
+}
+.loading-overlay.hide { display:none; }
+.spin { width:32px; height:32px; border:3px solid rgba(201,168,76,.2); border-top-color:var(--gold); border-radius:50%; animation:spin .7s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.loading-txt { font-size:11px; color:var(--muted); letter-spacing:.1em; }
+
+/* ── SECTION HEADER ── */
+.section-hdr {
+  display:flex; align-items:baseline; gap:10px; margin-bottom:14px; margin-top:28px;
+}
+.section-hdr:first-child { margin-top:0; }
+.section-title {
+  font-family:'Cormorant Garamond',serif; font-size:18px; font-weight:700; color:var(--gold);
+}
+.section-sub { font-size:10px; color:var(--dim); letter-spacing:.15em; text-transform:uppercase; }
+
+/* ── KPI CARDS ── */
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin-bottom:8px; }
+.kpi-card {
+  background:var(--card); border:1px solid var(--border); border-radius:14px;
+  padding:16px 14px; position:relative; overflow:hidden;
+}
+.kpi-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+}
+.kpi-card.gold::before  { background:linear-gradient(90deg,var(--gold),var(--gold2)); }
+.kpi-card.green::before { background:linear-gradient(90deg,var(--green),#82e0aa); }
+.kpi-card.blue::before  { background:linear-gradient(90deg,var(--blue),#85c1e9); }
+.kpi-card.amber::before { background:linear-gradient(90deg,var(--amber),#f8c471); }
+.kpi-card.purple::before{ background:linear-gradient(90deg,var(--purple),#c39bd3); }
+.kpi-card.red::before   { background:linear-gradient(90deg,var(--red),#f1948a); }
+.kpi-lbl { font-size:9px; color:var(--dim); letter-spacing:.12em; text-transform:uppercase; margin-bottom:8px; }
+.kpi-val { font-size:22px; font-weight:700; color:var(--text); line-height:1; }
+.kpi-val.sm { font-size:17px; }
+.kpi-sub { font-size:9px; color:var(--muted); margin-top:5px; }
+.kpi-delta { font-size:10px; font-weight:600; margin-top:4px; }
+.kpi-delta.up   { color:var(--green); }
+.kpi-delta.down { color:var(--red); }
+
+/* ── CHART CONTAINERS ── */
+.chart-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+@media(max-width:700px) { .chart-row { grid-template-columns:1fr; } }
+.chart-card {
+  background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px;
+}
+.chart-card.full { grid-column:1/-1; }
+.chart-title { font-size:11px; font-weight:700; color:var(--text); letter-spacing:.05em; margin-bottom:14px; }
+.chart-sub { font-size:9px; color:var(--dim); margin-top:2px; }
+
+/* ── BAR CHART ── */
+.bar-chart { display:flex; align-items:flex-end; gap:4px; height:120px; }
+.bar-group { display:flex; flex-direction:column; align-items:center; gap:3px; flex:1; }
+.bar-wrap { display:flex; gap:2px; align-items:flex-end; height:100px; width:100%; justify-content:center; }
+.bar {
+  border-radius:3px 3px 0 0; min-width:8px; transition:opacity .2s;
+  position:relative; cursor:pointer;
+}
+.bar:hover { opacity:.8; }
+.bar-lbl { font-size:7px; color:var(--dim); text-align:center; white-space:nowrap; }
+.bar-val { position:absolute; top:-14px; left:50%; transform:translateX(-50%); font-size:7px; color:var(--muted); white-space:nowrap; }
+
+/* ── PROGRESS BAR ── */
+.progress-section { display:flex; flex-direction:column; gap:10px; }
+.progress-item {}
+.progress-hdr { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; }
+.progress-name { font-size:11px; font-weight:600; color:var(--text); }
+.progress-vals { font-size:10px; color:var(--muted); }
+.progress-track { height:8px; background:rgba(255,255,255,.06); border-radius:4px; overflow:hidden; }
+.progress-fill { height:100%; border-radius:4px; transition:width .6s cubic-bezier(.4,0,.2,1); }
+.progress-pct { font-size:9px; color:var(--dim); margin-top:3px; text-align:right; }
+
+/* ── DONUT CHART ── */
+.donut-wrap { display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+.donut-svg { flex-shrink:0; }
+.donut-legend { flex:1; min-width:100px; display:flex; flex-direction:column; gap:6px; }
+.legend-item { display:flex; align-items:center; gap:6px; }
+.legend-dot { width:8px; height:8px; border-radius:2px; flex-shrink:0; }
+.legend-name { font-size:10px; color:var(--muted); flex:1; }
+.legend-val { font-size:10px; font-weight:700; color:var(--text); }
+.legend-pct { font-size:9px; color:var(--dim); }
+
+/* ── STATUS BADGES ── */
+.badge {
+  display:inline-block; padding:2px 8px; border-radius:4px;
+  font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+}
+.badge.CONFIRM   { background:rgba(99,102,241,.15); color:#818cf8; border:1px solid rgba(99,102,241,.2); }
+.badge.TENTATIVE { background:rgba(245,158,11,.15); color:#fbbf24; border:1px solid rgba(245,158,11,.2); }
+.badge.DONE      { background:rgba(16,185,129,.12); color:#34d399; border:1px solid rgba(16,185,129,.2); }
+.badge.CANCEL    { background:rgba(239,68,68,.12);  color:#f87171; border:1px solid rgba(239,68,68,.2); }
+
+/* ── LEADERBOARD ── */
+.leaderboard { display:flex; flex-direction:column; gap:8px; }
+.lb-row {
+  display:flex; align-items:center; gap:10px;
+  background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 12px;
+}
+.lb-rank { font-size:14px; font-weight:800; color:var(--dim); width:20px; text-align:center; }
+.lb-rank.r1 { color:var(--gold); }
+.lb-rank.r2 { color:var(--muted); }
+.lb-rank.r3 { color:#cd7f32; }
+.lb-name { font-size:12px; font-weight:700; flex:1; }
+.lb-stats { display:flex; gap:14px; }
+.lb-stat { text-align:right; }
+.lb-stat-val { font-size:12px; font-weight:700; color:var(--text); }
+.lb-stat-lbl { font-size:8px; color:var(--dim); letter-spacing:.08em; text-transform:uppercase; }
+.lb-bar-wrap { width:80px; }
+.lb-bar-track { height:4px; background:rgba(255,255,255,.06); border-radius:2px; overflow:hidden; }
+.lb-bar-fill { height:100%; border-radius:2px; background:linear-gradient(90deg,var(--gold),var(--gold2)); }
+
+/* ── DETAIL TABLE ── */
+.tbl-controls { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; align-items:center; }
+.tbl-search {
+  flex:1; min-width:140px; background:var(--surface); border:1px solid var(--border);
+  border-radius:8px; padding:7px 10px; color:var(--text); font-size:11px;
+  font-family:'DM Sans',sans-serif; outline:none;
+}
+.tbl-search:focus { border-color:var(--gold); }
+.tbl-filter {
+  background:var(--surface); border:1px solid var(--border); color:var(--text);
+  border-radius:8px; padding:7px 10px; font-size:11px; cursor:pointer; outline:none;
+  font-family:'DM Sans',sans-serif;
+}
+.tbl-filter:focus { border-color:var(--gold); }
+.tbl-wrap { overflow-x:auto; border-radius:12px; border:1px solid var(--border); }
+table.detail-tbl { width:100%; border-collapse:collapse; font-size:11px; }
+.detail-tbl thead tr { background:var(--surface); }
+.detail-tbl th {
+  padding:10px 12px; text-align:left; font-size:9px; font-weight:700;
+  letter-spacing:.1em; text-transform:uppercase; color:var(--dim);
+  border-bottom:1px solid var(--border); white-space:nowrap;
+}
+.detail-tbl td {
+  padding:9px 12px; border-bottom:1px solid rgba(255,255,255,.03);
+  color:var(--text); white-space:nowrap;
+}
+.detail-tbl tbody tr:hover { background:rgba(255,255,255,.02); }
+.detail-tbl tbody tr:last-child td { border-bottom:none; }
+.tbl-revenue { font-weight:700; color:var(--gold); font-family:'DM Mono',monospace; }
+.tbl-pax { color:var(--muted); }
+.tbl-empty { text-align:center; padding:30px; color:var(--dim); font-size:12px; }
+.tbl-count { font-size:10px; color:var(--dim); }
+
+/* ── ONHAND SECTION ── */
+.onhand-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; }
+.onhand-card {
+  background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px 16px;
+}
+.onhand-label { font-size:9px; color:var(--dim); letter-spacing:.12em; text-transform:uppercase; margin-bottom:8px; }
+.onhand-val { font-size:20px; font-weight:700; }
+.onhand-val.gold { color:var(--gold); }
+.onhand-val.green { color:var(--green); }
+.onhand-val.amber { color:var(--amber); }
+.onhand-budget { font-size:10px; color:var(--muted); margin-top:4px; }
+.onhand-pct-big { font-size:28px; font-weight:800; }
+
+/* ── BUDGET EDITOR ── */
+.budget-editor { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px; }
+.budget-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:8px; margin-top:12px; }
+.budget-row { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 12px; }
+.budget-month { font-size:10px; font-weight:700; color:var(--gold); margin-bottom:6px; letter-spacing:.08em; }
+.budget-inp-wrap { display:flex; flex-direction:column; gap:4px; }
+.budget-inp-lbl { font-size:8px; color:var(--dim); letter-spacing:.1em; text-transform:uppercase; }
+.budget-inp {
+  background:var(--card); border:1px solid var(--border); color:var(--text);
+  border-radius:6px; padding:6px 8px; font-size:11px; outline:none; width:100%;
+  font-family:'DM Sans',sans-serif;
+}
+.budget-inp:focus { border-color:var(--gold); }
+.budget-save-btn {
+  margin-top:12px; padding:10px 20px; border-radius:10px; font-size:11px; font-weight:700;
+  background:rgba(201,168,76,.15); border:1px solid rgba(201,168,76,.3); color:var(--gold);
+  cursor:pointer; transition:all .2s;
+}
+.budget-save-btn:hover { background:rgba(201,168,76,.25); }
+.budget-status { font-size:10px; color:var(--green); margin-top:8px; min-height:16px; }
+
+/* ── CANVAS CHARTS ── */
+.canvas-wrap { position:relative; width:100%; }
+canvas { width:100% !important; }
+
+/* ── HEATMAP CALENDAR ── */
+.heatmap-wrap { overflow-x:auto; padding-bottom:4px; }
+.heatmap-grid { display:grid; grid-template-columns:repeat(13,1fr); gap:3px; min-width:520px; }
+.hm-header { font-size:8px; color:var(--dim); text-align:center; padding:2px 0; letter-spacing:.05em; }
+.hm-cell {
+  aspect-ratio:1; border-radius:3px; cursor:pointer;
+  background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.04);
+  display:flex; align-items:center; justify-content:center;
+  font-size:7px; color:transparent; transition:all .15s;
+  position:relative;
+}
+.hm-cell:hover { border-color:var(--gold); color:var(--text); z-index:2; }
+.hm-cell.lv1 { background:rgba(201,168,76,.15); }
+.hm-cell.lv2 { background:rgba(201,168,76,.35); }
+.hm-cell.lv3 { background:rgba(201,168,76,.6); }
+.hm-cell.lv4 { background:rgba(201,168,76,.85); }
+.hm-cell.lv5 { background:rgba(201,168,76,1); color:#000; }
+.hm-venue-lbl { font-size:9px; color:var(--muted); padding:2px 4px; white-space:nowrap; }
+
+/* ── OCCUPANCY TABLE ── */
+.occ-table { width:100%; border-collapse:collapse; font-size:10px; }
+.occ-table th { padding:6px 8px; text-align:center; font-size:8px; font-weight:700; letter-spacing:.1em; color:var(--dim); border-bottom:1px solid var(--border); }
+.occ-table th:first-child { text-align:left; }
+.occ-table td { padding:6px 8px; border-bottom:1px solid rgba(255,255,255,.03); text-align:center; }
+.occ-table td:first-child { text-align:left; font-weight:600; color:var(--text); }
+.occ-pct { display:inline-block; padding:2px 6px; border-radius:4px; font-weight:700; font-size:9px; }
+.occ-pct.hi  { background:rgba(16,185,129,.15); color:#34d399; }
+.occ-pct.mid { background:rgba(245,158,11,.15);  color:#fbbf24; }
+.occ-pct.lo  { background:rgba(255,255,255,.06); color:var(--dim); }
+
+/* ── PRINT ── */
+@media print {
+  .topbar, #login-gate, .tbl-controls, .budget-editor, .ctrl-btn { display:none !important; }
+  body { background:#fff; color:#000; }
+  .main { padding:0; }
+  .card, .kpi-card, .chart-card, .onhand-card { border-color:#ddd; background:#fff; }
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+.fade-up { animation:fadeUp .4s ease both; }
 </style>
 </head>
 <body>
 
-<div id="load-ov">
-  <div class="spinner"></div>
-  <div class="ltxt" id="ltxt">Memuat data...</div>
-  <div class="lbwrap"><div class="lbfill" id="lbfill" style="width:0%"></div></div>
-  <div class="lsub2" id="lsub2"></div>
-</div>
-
-<div id="login-screen">
-  <div class="lbox">
-    <div class="licon">📊</div>
-    <div class="ltitle">MANAGEMENT REPORT</div>
-    <div class="lsub">LOTUS GARDEN BY WH · KEDIRI</div>
-    <div id="l-status"></div>
-    <button class="btn-gg" id="btn-gg" onclick="loginGoogle()">
-      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg">
-      Masuk dengan Google
-    </button>
-    <div id="l-err"></div>
-    <button class="btn-demo" onclick="loadDemo()">👁 Demo <span class="dpill">DATA SAMPEL</span></button>
+<!-- LOGIN GATE -->
+<div id="login-gate">
+  <div class="login-card">
+    <div class="login-logo">◆ Lotus Garden</div>
+    <div class="login-sub">Management Report · Restricted Access</div>
+    <button class="login-btn" onclick="doLogin()">🔐 Login dengan Google</button>
+    <div class="login-err" id="login-err"></div>
   </div>
 </div>
 
+<!-- LOADING -->
+<div class="loading-overlay hide" id="loading">
+  <div class="spin"></div>
+  <div class="loading-txt" id="loading-txt">Memuat data...</div>
+</div>
+
+<!-- APP -->
 <div id="app">
-  <div class="hdr">
-    <div>
-      <div class="brand">📊 MANAGEMENT REPORT <span id="dpill2" style="display:none" class="dpill">DEMO</span></div>
-      <div class="bsub">LOTUS GARDEN BY WH · KEDIRI</div>
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-brand">◆ Management Report <span>Lotus Garden by WH</span></div>
+    <div class="topbar-controls">
+      <select class="ctrl-select" id="sel-month" onchange="onFilterChange()">
+        <option value="ALL">Semua Bulan</option>
+        <option value="JANUARI">Januari</option>
+        <option value="FEBRUARI">Februari</option>
+        <option value="MARET">Maret</option>
+        <option value="APRIL">April</option>
+        <option value="MEI">Mei</option>
+        <option value="JUNI">Juni</option>
+        <option value="JULI">Juli</option>
+        <option value="AGUSTUS">Agustus</option>
+        <option value="SEPTEMBER">September</option>
+        <option value="OKTOBER">Oktober</option>
+        <option value="NOVEMBER">November</option>
+        <option value="DESEMBER">Desember</option>
+      </select>
+      <button class="ctrl-btn" onclick="loadAll()">↺ Refresh</button>
+      <button class="ctrl-btn primary" onclick="window.print()">🖨 Print</button>
+      <button class="ctrl-btn" onclick="logoutUser()">⎋ Keluar</button>
     </div>
-    <div class="hr">
-      <div class="yp">
-        <button onclick="chgY(-1)">◀</button>
-        <div class="yv" id="ydsp">2025</div>
-        <button onclick="chgY(1)">▶</button>
-      </div>
-      <!-- Toggle Gross / Nett -->
-      <div class="rev-toggle">
-        <button id="tog-nett"  class="on"  onclick="setRevMode('nett')">NETT</button>
-        <button id="tog-gross" class="off" onclick="setRevMode('gross')">GROSS</button>
-      </div>
-      <span class="rev-note" id="rev-note">nilai dari sheet (nett)</span>
-      <button class="bact" id="btn-rl" onclick="reloadData()">🔄 Reload</button>
-      <button class="bout" onclick="doLogout()">⎋ Keluar</button>
-    </div>
+    <div class="topbar-user" id="topbar-user"></div>
   </div>
-  <div class="tabs">
-    <button class="tab on" id="t-b" onclick="swTab('b')">📅 Laporan Bulanan</button>
-    <button class="tab"    id="t-o" onclick="swTab('o')">📋 Onhand vs Budget</button>
-    <div class="tabsr"><select class="mfsel" id="mf" onchange="render()" style="display:none"></select></div>
+
+  <div class="main" id="main-content">
+    <div style="text-align:center;padding:60px;color:var(--dim);">Memuat report...</div>
   </div>
-  <div class="panel" id="p-b" style="display:block"></div>
-  <div class="panel" id="p-o" style="display:none"></div>
+
 </div>
 
 <script>
-const GAS='https://script.google.com/macros/s/AKfycbyQTrvw2WtHV0zpItsVA2hG_02R0gscUrOua2rnOqw750PvT3PODSaO6LaM3HWUTXJi/exec';
-const MO =['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'];
-const MOS=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-const VN =['Ball Room','VIP Room','Teratai Room','Fox Steak House'];
-const VC ={'Ball Room':'#c9a84c','VIP Room':'#5dade2','Teratai Room':'#2ecc71','Fox Steak House':'#e74c3c'};
+// ══════════════════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyCX0--DGM_tp_2y7hBbrGiMfeVyToVD4zM",
+  authDomain:        "banquet-dashboard-kediri.firebaseapp.com",
+  projectId:         "banquet-dashboard-kediri",
+  storageBucket:     "banquet-dashboard-kediri.firebasestorage.app",
+  messagingSenderId: "716626784276",
+  appId:             "1:716626784276:web:4f7d4d51dace341d21b701"
+};
+// GAS URL untuk report — dari Code_Report.gs (deploy terpisah)
+// Setelah deploy Code_Report.gs, update gasUrl_report di Master Config
+// atau ganti DEFAULT_REPORT_GAS di bawah dengan URL deployment baru
+const DEFAULT_REPORT_GAS = 'https://script.google.com/macros/s/AKfycbzj5FUKzhGo2j1RXobsCyHZ7dcfLD-eF4Z-rf_poLFTvevSAaxdVb_OBaJtThjiLT8N/exec';
+const GAS_URL = (function() {
+  try {
+    const cfg = JSON.parse(localStorage.getItem('banquet_master_cfg_v4') ||
+                           localStorage.getItem('banquet_elite_config') || '{}');
+    // Prioritas: gasUrl_report (khusus report) → gasUrl_entry → fallback
+    return cfg.gasUrl_report || cfg.gasUrl_entry || cfg.gasUrl || DEFAULT_REPORT_GAS;
+  } catch(_) { return DEFAULT_REPORT_GAS; }
+})();
 
-// Build month filter
-const mfEl=document.getElementById('mf');
-mfEl.innerHTML='<option value="ALL">Semua Bulan</option>';
-MOS.forEach((m,i)=>{const o=document.createElement('option');o.value=i;o.text=m;mfEl.appendChild(o);});
+const MONTHS = ["JANUARI","FEBRUARI","MARET","APRIL","MEI","JUNI",
+                "JULI","AGUSTUS","SEPTEMBER","OKTOBER","NOVEMBER","DESEMBER"];
+const MONTH_SHORT = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agt","Sep","Okt","Nov","Des"];
 
-let _rows=[],_bud={},_yr=new Date().getFullYear(),_tab='b',_tok='',_demo=false;
-let _mode='nett'; // 'nett' = nilai asli sheet | 'gross' = nett × 1.21
-const TAX_MUL = 1.21; // pajak 10% + service 11% = 21%
+// ── State ──
+let _idToken   = '';
+let _reportData = null;   // { JANUARI:{events,revenue,pax,count,...}, ... }
+let _budgetData = null;   // [{ bulan, targetRevenue, targetEvents, targetPax }, ...]
+let _selMonth  = 'ALL';
 
-function setRevMode(m){
-  _mode=m;
-  document.getElementById('tog-nett').className  = m==='nett' ?'on':'off';
-  document.getElementById('tog-gross').className = m==='gross'?'on':'off';
-  document.getElementById('rev-note').textContent = m==='nett'
-    ? 'nilai dari sheet (nett)'
-    : 'termasuk pajak & service (×1.21)';
-  render();
-}
+// ══════════════════════════════════════════════════════════════════
+// FIREBASE AUTH
+// ══════════════════════════════════════════════════════════════════
+firebase.initializeApp(FIREBASE_CONFIG);
+const _auth     = firebase.auth();
+const _provider = new firebase.auth.GoogleAuthProvider();
 
-// Revenue sesuai mode:
-// NETT  = nilai asli dari sheet (yang diinput user = harga nett)
-// GROSS = nett × 1.21 (ditambah pajak 10% + service 11%)
-function revVal(nettVal){
-  return _mode==='gross' ? Math.round(nettVal * TAX_MUL) : nettVal;
-}
+// Race condition guard — sama dengan entry_live_secure.html
+let _authVerified = false;
+let _authInFlight = false;
 
-// ── Helpers ──────────────────────────────────────────────────────────
-const cn=s=>parseFloat((s||'').toString().replace(/[^\d.-]/g,''))||0;
-const pct=(a,b)=>b>0?Math.round(a/b*100):0;
-const esc=s=>(s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-function fR(v){const n=cn(v);if(!n)return'Rp 0';if(n>=1e9)return`Rp ${(n/1e9).toFixed(1)}M`;if(n>=1e6)return`Rp ${(n/1e6).toFixed(1)}jt`;return'Rp '+n.toLocaleString('id-ID');}
-function fRF(v){const n=cn(v);return n?'Rp '+n.toLocaleString('id-ID'):'Rp 0';}
+_auth.onAuthStateChanged(async user => {
+  const gate   = document.getElementById('login-gate');
+  const errEl  = document.getElementById('login-err');
 
-function pD(raw){
-  const s=(raw||'').toString().trim();if(!s)return null;
-  let m;
-  m=s.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);if(m)return{mo:+m[2]-1,y:m[3]?+m[3]:null};
-  m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return{mo:+m[2]-1,y:+m[1]};
-  m=s.match(/^(\d{1,2})-(\d{1,2})-(\d{2,4})$/);if(m)return{mo:+m[2]-1,y:+m[3]};
-  for(let i=0;i<MO.length;i++)if(s.toLowerCase().includes(MO[i].toLowerCase())){const yr=s.match(/20\d\d/);return{mo:i,y:yr?+yr[0]:null};}
-  try{const dt=new Date(s);if(!isNaN(dt.getTime()))return{mo:dt.getMonth(),y:dt.getFullYear()};}catch(_){}
-  return null;
-}
-function fmtDate(raw){
-  const s=(raw||'').toString().trim();if(!s)return'';
-  if(/^\d{2}\/\d{2}\/\d{4}$/.test(s))return s;
-  const p=pD(s);if(!p||!p.y)return s;
-  const dm=s.match(/,\s*(\d{1,2})\s/);
-  const dd=dm?String(dm[1]).padStart(2,'0'):'01';
-  return`${dd}/${String(p.mo+1).padStart(2,'0')}/${p.y}`;
-}
-const gC=g=>g>=0?'var(--green)':'var(--red)';
-const aC=a=>a>=100?'var(--green)':a>=75?'var(--orange)':'var(--red)';
-
-// ── Loading ───────────────────────────────────────────────────────────
-function sL(t,s,p){
-  document.getElementById('load-ov').classList.add('show');
-  document.getElementById('ltxt').textContent=t||'Memuat...';
-  document.getElementById('lsub2').textContent=s||'';
-  document.getElementById('lbfill').style.width=(p||0)+'%';
-}
-function upL(p,s){document.getElementById('lbfill').style.width=p+'%';if(s)document.getElementById('lsub2').textContent=s;}
-function hL(){document.getElementById('load-ov').classList.remove('show');}
-
-// ── Firebase ──────────────────────────────────────────────────────────
-firebase.initializeApp({apiKey:"AIzaSyCX0--DGM_tp_2y7hBbrGiMfeVyToVD4zM",authDomain:"banquet-dashboard-kediri.firebaseapp.com",projectId:"banquet-dashboard-kediri",storageBucket:"banquet-dashboard-kediri.firebasestorage.app",messagingSenderId:"716626784276",appId:"1:716626784276:web:4f7d4d51dace341d21b701"});
-const fbA=firebase.auth();
-const fbP=new firebase.auth.GoogleAuthProvider();
-fbP.setCustomParameters({prompt:'select_account'});
-let _av=false,_ai=false;
-
-fbA.getRedirectResult().then(r=>{if(r&&r.user)console.log('[Auth] redirect:',r.user.email);})
-  .catch(e=>{if(e.code&&e.code!=='auth/no-auth-event')console.error('[Auth]',e.code);});
-
-fbA.onAuthStateChanged(async user=>{
-  if(!user){
-    setTimeout(()=>{if(!_av&&!_ai&&!fbA.currentUser){hL();setBtn(true);}},2500);
+  if (!user) {
+    if (!_authVerified) {
+      gate.classList.remove('hide');
+      document.getElementById('app').classList.remove('show');
+    }
     return;
   }
-  if(_av||_ai)return;
-  _ai=true;
-  sL('Memverifikasi akses...','',5);
-  setBtn(false);
-  try{
-    const tok=await user.getIdToken(false);
-    _tok=tok;
-    await fetchAll(tok);
-    _av=true;
-    showApp(false);
-  }catch(e){
-    hL();setBtn(true);
-    const em=(e.message||'');
-    document.getElementById('l-err').textContent='⚠ '+em;
-    document.getElementById('l-status').textContent='';
-    if(em.includes('tidak terdaftar')||em.includes('ditolak'))fbA.signOut();
-  }finally{_ai=false;}
+
+  if (_authVerified) return;
+  if (_authInFlight) return;
+  _authInFlight = true;
+
+  try {
+    const idToken = await user.getIdToken(true);
+    _idToken = idToken;
+
+    // Validasi ke GAS — pakai Code_Report.gs atau Code.gs v6.3
+    let res;
+    try {
+      const url = GAS_URL + '?' + new URLSearchParams({ action:'CHECK_ACCESS', idToken, from:'report' });
+      const resp = await fetch(url, { redirect:'follow' });
+      res = await resp.json();
+    } catch(netErr) {
+      errEl.textContent = '⚠ Tidak dapat terhubung ke server. Periksa internet lalu refresh.';
+      _authInFlight = false;
+      return;
+    }
+
+    if (res.ok && res.allowed) {
+      // Cek role — hanya Manager & Admin
+      if (res.role === 'STAFF') {
+        _auth.signOut();
+        errEl.textContent = '⚠ Akses ditolak. Report hanya untuk Manager & Admin.';
+        _authVerified = false;
+        _authInFlight = false;
+        return;
+      }
+      _authVerified = true;
+      window._userRole = res.role;
+      gate.classList.add('hide');
+      document.getElementById('app').classList.add('show');
+      document.getElementById('topbar-user').textContent = user.email || '';
+      errEl.textContent = '';
+      await loadAll();
+    } else if (res.msg && res.msg.includes('tidak terdaftar')) {
+      _auth.signOut();
+      errEl.textContent = '⚠ Akun tidak diizinkan akses sistem ini.';
+    } else {
+      // GAS belum update / error lain — tetap izinkan masuk
+      _authVerified = true;
+      gate.classList.add('hide');
+      document.getElementById('app').classList.add('show');
+      document.getElementById('topbar-user').textContent = user.email || '';
+      await loadAll();
+    }
+  } catch(e) {
+    if (_auth.currentUser) {
+      _authVerified = true;
+      gate.classList.add('hide');
+      document.getElementById('app').classList.add('show');
+      await loadAll();
+    } else {
+      errEl.textContent = '⚠ Gagal verifikasi sesi. Coba refresh halaman.';
+    }
+  } finally {
+    _authInFlight = false;
+  }
 });
 
-function setBtn(en){const b=document.getElementById('btn-gg');if(b){b.disabled=!en;b.style.opacity=en?'1':'.6';}}
-
-function loginGoogle(){
-  document.getElementById('l-err').textContent='';
-  const isMob=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if(isMob)fbA.signInWithRedirect(fbP).catch(e=>{document.getElementById('l-err').textContent='⚠ '+(e.message||e.code);});
-  else fbA.signInWithPopup(fbP).catch(e=>{document.getElementById('l-err').textContent='⚠ '+(e.message||e.code);});
-}
-
-function doLogout(){
-  _rows=[];_bud={};_tok='';_demo=false;_av=false;_ai=false;
-  fbA.signOut();
-  document.getElementById('app').style.display='none';
-  document.getElementById('login-screen').style.display='flex';
-  document.getElementById('l-err').textContent='';
-}
-
-// ── Fetch semua bulan parallel ────────────────────────────────────────
-async function fetchAll(tok){
-  sL('Memuat data laporan...','Mengambil data 12 bulan...',8);
-  const results=await Promise.allSettled(
-    MO.map((m,i)=>
-      fetch(GAS+'?'+new URLSearchParams({action:'READ_MONTH',sheetName:m,idToken:tok}),{redirect:'follow'})
-        .then(r=>r.json())
-        .then(d=>({mi:i,d}))
-    )
-  );
-  upL(65,'Memproses data booking...');
-  const all=[];
-  results.forEach(res=>{
-    if(res.status!=='fulfilled')return;
-    const{mi,d}=res.value;
-    if(!d.ok)return;
-    (d.rows||[]).forEach(r=>{
-      if(!r.customer)return;
-      const yr2=function(s){const m2=(s||'').toString().match(/20\d\d/);return m2?+m2[0]:null;}(r.dateLabel);
-      all.push({date:r.dateLabel||'',name:r.customer||'',pax:cn(r.pax),revenue:cn(r.price),
-        status:(r.status||'').toUpperCase(),venue:r.venue||'',package:r.package||'',
-        sales:r.sales||'',_mo:mi,_yr:yr2||_yr});
-    });
-    (d.overflow||[]).forEach(o=>{
-      if(!o.customer)return;
-      const p2=pD(o.dateStr||'');
-      all.push({date:o.dateStr||'',name:o.customer||'',pax:cn(o.pax),
-        revenue:cn(o.totalRevenue||o.price),status:(o.status||'').toUpperCase(),
-        venue:o.venue||'',package:o.package||'',sales:o.sales||'',
-        _mo:p2?p2.mo:mi,_yr:p2?p2.y||_yr:_yr});
-    });
+function doLogin() {
+  document.getElementById('login-err').textContent = '';
+  _auth.signInWithPopup(_provider).catch(e => {
+    const msg = e.code === 'auth/popup-blocked'
+      ? '⚠ Popup diblokir browser. Izinkan popup untuk halaman ini.'
+      : e.code === 'auth/popup-closed-by-user'
+      ? ''
+      : '⚠ ' + (e.message || 'Login gagal.');
+    document.getElementById('login-err').textContent = msg;
   });
-  upL(85,'Memuat budget...');
-  try{
-    const sr=await fetch(GAS+'?'+new URLSearchParams({action:'READ_SUMMARY',idToken:tok}),{redirect:'follow'});
-    const sd=await sr.json();
-    if(sd.ok&&sd.rows)MO.forEach((m,i)=>{const row=sd.rows[88+i];if(row)_bud[m]=cn(row[1]);});
-  }catch(_){}
-  upL(100,'Selesai');
-  _rows=all;
-  console.log('[Report] Total rows:',all.length,'— year:',_yr);
+}
+function logoutUser() {
+  _authVerified = false;
+  _auth.signOut();
 }
 
-// ── Show App ──────────────────────────────────────────────────────────
-function showApp(isDemo){
-  _demo=isDemo;hL();
-  document.getElementById('login-screen').style.display='none';
-  document.getElementById('app').style.display='block';
-  document.getElementById('dpill2').style.display=isDemo?'inline-block':'none';
-  document.getElementById('ydsp').textContent=_yr;
-  render();
+// ══════════════════════════════════════════════════════════════════
+// DATA LOADING
+// ══════════════════════════════════════════════════════════════════
+function showLoading(txt) {
+  const el = document.getElementById('loading');
+  el.classList.remove('hide');
+  document.getElementById('loading-txt').textContent = txt || 'Memuat...';
 }
-function chgY(d){_yr+=d;document.getElementById('ydsp').textContent=_yr;render();}
+function hideLoading() { document.getElementById('loading').classList.add('hide'); }
 
-async function reloadData(){
-  if(_demo){loadDemo();return;}
-  const btn=document.getElementById('btn-rl');
-  if(btn){btn.textContent='⏳';btn.disabled=true;}
-  try{
-    const user=fbA.currentUser;
-    const tok=user?await user.getIdToken(false):_tok;
-    if(!tok)throw new Error('Tidak ada sesi');
-    _tok=tok;await fetchAll(tok);hL();render();
-    if(btn){btn.textContent='✓';setTimeout(()=>{btn.textContent='🔄 Reload';btn.disabled=false;},1800);}
-  }catch(e){
-    hL();if(btn){btn.textContent='✗ Gagal';setTimeout(()=>{btn.textContent='🔄 Reload';btn.disabled=false;},2000);}
+async function gas(params) {
+  const url = GAS_URL + '?' + new URLSearchParams({ ...params, idToken: _idToken });
+  const res = await fetch(url, { redirect:'follow' });
+  return res.json();
+}
+
+async function loadAll() {
+  showLoading('Memuat report data...');
+  try {
+    _idToken = await auth.currentUser.getIdToken(true);
+    const [repRes, budRes] = await Promise.all([
+      gas({ action:'READ_REPORT' }),
+      fetch(GAS_URL + '?' + new URLSearchParams({ action:'READ_BUDGET' })).then(r=>r.json())
+    ]);
+    if (!repRes.ok) { alert('Error: ' + repRes.msg); hideLoading(); return; }
+    _reportData = repRes.report;
+    _budgetData = budRes.ok ? budRes.budget : [];
+    _selMonth = document.getElementById('sel-month').value;
+    renderAll();
+  } catch(e) {
+    document.getElementById('main-content').innerHTML =
+      `<div style="text-align:center;padding:60px;color:var(--red);">✗ ${e.message}</div>`;
+  } finally { hideLoading(); }
+}
+
+function onFilterChange() {
+  _selMonth = document.getElementById('sel-month').value;
+  if (_reportData) renderAll();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════════════
+function fmtRp(n) {
+  if (!n || n < 1000) return 'Rp ' + Math.round(n||0).toLocaleString('id-ID');
+  if (n >= 1e9)  return 'Rp ' + (n/1e9).toFixed(1).replace('.',',') + ' M';
+  if (n >= 1e6)  return 'Rp ' + (n/1e6).toFixed(1).replace('.',',') + ' jt';
+  if (n >= 1e3)  return 'Rp ' + (n/1e3).toFixed(0) + ' rb';
+  return 'Rp ' + Math.round(n).toLocaleString('id-ID');
+}
+function fmtRpFull(n) {
+  return 'Rp ' + Math.round(n||0).toLocaleString('id-ID');
+}
+function pct(a, b) { return b > 0 ? Math.round(a / b * 100) : 0; }
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function getFilteredEvents() {
+  if (!_reportData) return [];
+  if (_selMonth === 'ALL') {
+    return MONTHS.flatMap(m => (_reportData[m]?.events || []).map(e => ({...e, bulan:m})));
   }
+  return (_reportData[_selMonth]?.events || []).map(e => ({...e, bulan:_selMonth}));
 }
 
-function swTab(t){
-  _tab=t;
-  ['b','o'].forEach(id=>{
-    document.getElementById('t-'+id).classList.toggle('on',id===t);
-    document.getElementById('p-'+id).style.display=id===t?'block':'none';
-  });
-  document.getElementById('mf').style.display=t==='o'?'block':'none';
-  render();
+function getBudgetFor(month) {
+  if (!_budgetData) return { targetRevenue:0, targetEvents:0, targetPax:0 };
+  return _budgetData.find(b => b.bulan === month) || { targetRevenue:0, targetEvents:0, targetPax:0 };
 }
 
-// ── Compute ───────────────────────────────────────────────────────────
-function compMon(){
-  return MO.map((m,mi)=>{
-    const mr=_rows.filter(r=>r._yr===_yr&&r._mo===mi);
-    const dn=mr.filter(r=>r.status==='DONE'||r.status==='CONFIRM');
-    const rv=dn.reduce((s,r)=>s+r.revenue,0);
-    const px=dn.reduce((s,r)=>s+r.pax,0);
-    const bd=_bud[m]||0;
-    const rvDisplay=revVal(rv); // revenue sesuai mode
-    const rvGross=Math.round(rv*TAX_MUL); // gross = nett×1.21
-    return{m,sh:MOS[mi],mi,events:dn.length,pax:px,revenue:rvDisplay,revenueNett:rv,revenueGross:rvGross,budget:bd,ach:pct(rv,bd),tent:mr.filter(r=>r.status==='TENTATIVE').length};
-  });
-}
-function fRows(){
-  const fm=document.getElementById('mf')?.value||'ALL';
-  return _rows.filter(r=>{
-    if(r._yr!==_yr)return false;
-    if(fm!=='ALL'&&r._mo!==parseInt(fm))return false;
-    return true;
-  });
+// ══════════════════════════════════════════════════════════════════
+// RENDER MAIN
+// ══════════════════════════════════════════════════════════════════
+function renderAll() {
+  const container = document.getElementById('main-content');
+  container.innerHTML = '';
+  container.appendChild(renderKPI());
+  container.appendChild(renderOnHand());
+  container.appendChild(renderPerformanceChart());      // Bar chart + line trend
+  container.appendChild(renderPackageEventCharts());    // Donut Package & Type of Event
+  container.appendChild(renderOccupancySection());      // Occupancy per venue per bulan
+  container.appendChild(renderBreakdowns());
+  container.appendChild(renderSalesLeaderboard());
+  container.appendChild(renderDetailTable());
+  container.appendChild(renderBudgetEditor());
 }
 
-// ── Render ────────────────────────────────────────────────────────────
-function render(){if(_tab==='b')rBulanan();else rOnhand();}
+// ── SECTION 1: KPI ──────────────────────────────────────────────
+function renderKPI() {
+  const events = getFilteredEvents();
+  const activeEvents = events.filter(e => e.status !== 'CANCEL');
+  const revenue  = activeEvents.reduce((s,e) => s + e.revenue, 0);
+  const pax      = activeEvents.reduce((s,e) => s + e.pax, 0);
+  const count    = activeEvents.length;
+  const avgPax   = count > 0 ? Math.round(pax/count) : 0;
+  const avgRev   = count > 0 ? revenue/count : 0;
+  const confirm  = events.filter(e=>e.status==='CONFIRM').length;
+  const tentative= events.filter(e=>e.status==='TENTATIVE').length;
+  const done     = events.filter(e=>e.status==='DONE').length;
+  const cancel   = events.filter(e=>e.status==='CANCEL').length;
 
-function rBulanan(){
-  const mn=compMon();
-  const tR=mn.reduce((s,m)=>s+m.revenue,0),tB=mn.reduce((s,m)=>s+m.budget,0);
-  const tE=mn.reduce((s,m)=>s+m.events,0),tP=mn.reduce((s,m)=>s+m.pax,0);
-  const tA=pct(tR,tB),tT=mn.reduce((s,m)=>s+m.tent,0);
-  const mx=Math.max(...mn.map(m=>Math.max(m.revenue,m.budget)),1);
+  // Budget comparison
+  let budgetRev = 0, budgetEvt = 0;
+  if (_selMonth === 'ALL') {
+    MONTHS.forEach(m => { const b = getBudgetFor(m); budgetRev += b.targetRevenue; budgetEvt += b.targetEvents; });
+  } else {
+    const b = getBudgetFor(_selMonth); budgetRev = b.targetRevenue; budgetEvt = b.targetEvents;
+  }
+  const revPct = pct(revenue, budgetRev);
+  const evtPct = pct(count, budgetEvt);
 
-  const modeTag = _mode==='nett' ? ' (Nett)' : ' (Gross ×1.21)';
-  const kH=[
-    {l:'Total Revenue'+modeTag,v:fR(tR),s:`vs budget ${fR(tB)} | ach ${pct(mn.reduce((s,m)=>s+m.revenueNett,0),tB)}%`,c:'var(--gold)'},
-    {l:'Achievement',v:tA+'%',s:tR>=tB?'✓ On Track':fR(tB-tR)+' kurang',c:aC(tA)},
-    {l:'Total Events',v:tE,s:tP.toLocaleString()+' pax total',c:'var(--blue)'},
-    {l:'Rata-rata/Event',v:fR(tE?Math.round(tR/tE):0),s:'revenue per event',c:'var(--purple)'},
-  ].map(k=>`<div class="kc"><div class="kl">${esc(k.l)}</div><div class="kv" style="color:${k.c}">${esc(''+k.v)}</div><div class="ks">${esc(k.s)}</div></div>`).join('');
-
-  const bars=mn.map(m=>{
-    const bh=m.budget?(m.budget/mx*82)|0:2,rh=m.revenue?(m.revenue/mx*82)|0:2;
-    const rc=m.revenue>=m.budget&&m.budget>0?'var(--green)':'var(--gold)';
-    return`<div class="bg"><div class="bp"><div class="b" style="height:${bh}px;background:#2a2218" title="${fR(m.budget)}"></div><div class="b" style="height:${rh}px;background:${rc}" title="${fR(m.revenue)}"></div></div><div class="bl">${m.sh}</div></div>`;
-  }).join('');
-
-  const tr=mn.map(m=>`<tr>
-    <td class="l nw" style="color:${m.revenue>0?'var(--text)':'var(--faint)'};font-weight:600">${m.sh}</td>
-    <td class="r" style="color:var(--blue)">${m.events||'—'}</td>
-    <td class="r" style="color:#7a8a9a">${m.pax?m.pax.toLocaleString():'—'}</td>
-    <td class="r" style="color:var(--gold);font-weight:700">${m.revenue?fR(m.revenue):'—'}</td>
-    <td class="r" style="color:var(--dim)">${m.budget?fR(m.budget):'—'}</td>
-    <td class="r"><span style="color:${m.budget>0?aC(m.ach):'var(--dim)'};font-weight:700">${m.budget>0?m.ach+'%':'—'}</span></td>
-    <td class="r" style="color:${m.budget>0?gC(m.revenue-m.budget):'var(--dim)'}">${m.budget>0?fR(m.revenue-m.budget):'—'}</td>
-    <td class="r" style="color:var(--orange)">${m.tent||'—'}</td>
-  </tr>`).join('');
-
-  const vc=VN.map(v=>{
-    const vr=_rows.filter(r=>r.venue===v&&r._yr===_yr&&(r.status==='DONE'||r.status==='CONFIRM'));
-    const rv=revVal(vr.reduce((s,r)=>s+r.revenue,0));const cl=VC[v]||'var(--gold)';
-    return`<div class="vc" style="border:1px solid ${cl}33"><div class="vb" style="background:${cl}"></div><div class="vn" style="color:${cl}">${esc(v)}</div><div class="vr">${fR(rv)}</div><div class="vs">${vr.length} event · ${vr.reduce((s,r)=>s+r.pax,0).toLocaleString()} pax</div></div>`;
-  }).join('');
-
-  document.getElementById('p-b').innerHTML=`
-    <div class="kgrid">${kH}</div>
-    <div class="cc"><div class="ct">REVENUE vs BUDGET PER BULAN ${_yr}</div>
-      <div class="bchart">${bars}</div>
-      <div class="leg">
-        <div class="li"><div class="ld" style="background:#2a2218"></div>Budget</div>
-        <div class="li"><div class="ld" style="background:var(--gold)"></div>Revenue</div>
-        <div class="li"><div class="ld" style="background:var(--green)"></div>On Target</div>
+  const sec = document.createElement('div');
+  sec.innerHTML = `
+    <div class="section-hdr">
+      <div class="section-title">◆ KPI Summary</div>
+      <div class="section-sub">${_selMonth === 'ALL' ? 'Semua Bulan 2026' : _selMonth + ' 2026'}</div>
+    </div>
+    <div class="kpi-grid fade-up">
+      <div class="kpi-card gold">
+        <div class="kpi-lbl">Total Revenue</div>
+        <div class="kpi-val sm">${fmtRp(revenue)}</div>
+        ${budgetRev > 0 ? `<div class="kpi-delta ${revPct>=100?'up':'down'}">${revPct}% dari target</div>` : ''}
+        <div class="kpi-sub">${fmtRpFull(revenue)}</div>
       </div>
-    </div>
-    <div class="tc"><div class="th2"><span class="tt">DETAIL PER BULAN ${_yr}</span>
-      <button class="bact" onclick="exBulanan()">🖨 Export Excel</button></div>
-      <div class="tw"><table>
-        <thead><tr><th class="l">Bulan</th><th class="r">Event</th><th class="r">Pax</th><th class="r">Revenue</th><th class="r">Budget</th><th class="r">Ach%</th><th class="r">Gap</th><th class="r">Tent.</th></tr></thead>
-        <tbody>${tr}</tbody>
-        <tfoot><tr><td class="l" style="color:var(--gold)">TOTAL</td><td class="r" style="color:var(--blue)">${tE}</td><td class="r" style="color:#7a8a9a">${tP.toLocaleString()}</td><td class="r" style="color:var(--gold)">${fR(tR)}</td><td class="r" style="color:var(--dim)">${fR(tB)}</td><td class="r" style="color:${aC(tA)}">${tA}%</td><td class="r" style="color:${gC(tR-tB)}">${fR(tR-tB)}</td><td class="r" style="color:var(--orange)">${tT}</td></tr></tfoot>
-      </table></div>
-    </div>
-    <div class="sl">BREAKDOWN PER VENUE ${_yr}</div>
-    <div class="vg">${vc}</div>`;
+      <div class="kpi-card green">
+        <div class="kpi-lbl">Total Events</div>
+        <div class="kpi-val">${count}</div>
+        ${budgetEvt > 0 ? `<div class="kpi-delta ${evtPct>=100?'up':'down'}">${evtPct}% dari target</div>` : ''}
+        <div class="kpi-sub">${confirm} Confirm · ${tentative} Tentative · ${done} Done</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-lbl">Total Pax</div>
+        <div class="kpi-val">${pax.toLocaleString('id-ID')}</div>
+        <div class="kpi-sub">Avg ${avgPax} pax / event</div>
+      </div>
+      <div class="kpi-card amber">
+        <div class="kpi-lbl">Avg Revenue / Event</div>
+        <div class="kpi-val sm">${fmtRp(avgRev)}</div>
+        <div class="kpi-sub">Per booking aktif</div>
+      </div>
+      <div class="kpi-card purple">
+        <div class="kpi-lbl">On-Hand (Belum Done)</div>
+        <div class="kpi-val">${confirm + tentative}</div>
+        <div class="kpi-sub">${confirm} Confirm · ${tentative} Tentative</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-lbl">Cancel</div>
+        <div class="kpi-val">${cancel}</div>
+        <div class="kpi-sub">${count + cancel > 0 ? Math.round(cancel/(count+cancel)*100) : 0}% cancellation rate</div>
+      </div>
+    </div>`;
+  return sec;
 }
 
-function rOnhand(){
-  const fm=document.getElementById('mf')?.value||'ALL';
-  const fr=fRows();
-  const oh=fr.filter(r=>r.status==='CONFIRM'||r.status==='TENTATIVE');
-  const dn=fr.filter(r=>r.status==='DONE');
-  const oR=oh.reduce((s,r)=>s+revVal(r.revenue),0),oP=oh.reduce((s,r)=>s+r.pax,0);
-  const dR=dn.reduce((s,r)=>s+revVal(r.revenue),0);
-  const sb=fm==='ALL'?MO.reduce((s,m)=>s+(_bud[m]||0),0):(_bud[MO[parseInt(fm)]]||0);
-  const ap=pct(oR,sb),gp=oR-sb;
-  const pl=fm==='ALL'?'target tahunan':MOS[parseInt(fm)];
+// ── SECTION 2: ON-HAND vs BUDGET ────────────────────────────────
+function renderOnHand() {
+  const now = new Date();
+  const curMonthName = MONTHS[now.getMonth()];
+  const curMonth = _selMonth === 'ALL' ? curMonthName : _selMonth;
+  const monthData = _reportData?.[curMonth] || { events:[] };
+  const budget = getBudgetFor(curMonth);
 
-  const kH=[
-    {l:'Onhand Revenue',v:fR(oR),s:`${oh.length} event onhand`,c:'var(--blue)'},
-    {l:'Budget',v:fR(sb),s:pl,c:'var(--muted)'},
-    {l:'Gap Onhand',v:fR(gp),s:gp>=0?'✓ Tercapai':'belum tercapai',c:gC(gp)},
-    {l:'Revenue Done',v:fR(dR),s:`${dn.length} event selesai`,c:'var(--green)'},
-  ].map(k=>`<div class="kc"><div class="kl">${esc(k.l)}</div><div class="kv" style="color:${k.c}">${esc(''+k.v)}</div><div class="ks">${esc(k.s)}</div></div>`).join('');
+  const activeEvts = (monthData.events||[]).filter(e => e.status !== 'CANCEL');
+  const onHandEvts = (monthData.events||[]).filter(e => e.status === 'CONFIRM' || e.status === 'TENTATIVE');
+  const doneEvts   = (monthData.events||[]).filter(e => e.status === 'DONE');
 
-  const vb=VN.map(v=>{
-    const vr=oh.filter(r=>r.venue===v),rv=vr.reduce((s,r)=>s+revVal(r.revenue),0);
-    const p=oR>0?pct(rv,oR):0,cl=VC[v]||'var(--gold)';
-    return`<div class="vbi"><div class="vbr"><span style="color:${cl};font-weight:700">${esc(v)}</span><span>${fR(rv)} · ${vr.length} event</span></div><div class="vbt"><div class="vbf" style="width:${p}%;background:${cl}"></div></div></div>`;
+  const totalRev   = activeEvts.reduce((s,e)=>s+e.revenue,0);
+  const onHandRev  = onHandEvts.reduce((s,e)=>s+e.revenue,0);
+  const doneRev    = doneEvts.reduce((s,e)=>s+e.revenue,0);
+  const confirmRev = (monthData.events||[]).filter(e=>e.status==='CONFIRM').reduce((s,e)=>s+e.revenue,0);
+  const tentRev    = (monthData.events||[]).filter(e=>e.status==='TENTATIVE').reduce((s,e)=>s+e.revenue,0);
+
+  const budRev  = budget.targetRevenue;
+  const achPct  = pct(totalRev, budRev);
+  const ohPct   = pct(onHandRev, budRev);
+  const donePct = pct(doneRev, budRev);
+
+  const sec = document.createElement('div');
+  sec.innerHTML = `
+    <div class="section-hdr" style="margin-top:28px;">
+      <div class="section-title">◆ On-Hand vs Budget</div>
+      <div class="section-sub">${curMonth} 2026</div>
+    </div>
+    <div class="chart-row fade-up">
+      <div class="chart-card">
+        <div class="chart-title">Revenue Achievement</div>
+        <div class="onhand-grid" style="margin-bottom:16px;">
+          <div class="onhand-card">
+            <div class="onhand-label">Budget Target</div>
+            <div class="onhand-val gold">${fmtRp(budRev)}</div>
+            <div class="onhand-budget">${budRev > 0 ? fmtRpFull(budRev) : '— belum diset'}</div>
+          </div>
+          <div class="onhand-card">
+            <div class="onhand-label">Total Actual</div>
+            <div class="onhand-val ${achPct>=100?'green':'amber'}">${fmtRp(totalRev)}</div>
+            <div class="onhand-budget">${achPct}% dari budget</div>
+          </div>
+          <div class="onhand-card">
+            <div class="onhand-label">On-Hand Revenue</div>
+            <div class="onhand-val amber">${fmtRp(onHandRev)}</div>
+            <div class="onhand-budget">Confirm + Tentative</div>
+          </div>
+        </div>
+        <div class="progress-section">
+          ${budRev > 0 ? `
+          <div class="progress-item">
+            <div class="progress-hdr">
+              <span class="progress-name">Done</span>
+              <span class="progress-vals">${fmtRp(doneRev)} / ${fmtRp(budRev)}</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width:${Math.min(donePct,100)}%;background:var(--done);"></div>
+            </div>
+            <div class="progress-pct">${donePct}%</div>
+          </div>
+          <div class="progress-item">
+            <div class="progress-hdr">
+              <span class="progress-name">Confirm (On-Hand)</span>
+              <span class="progress-vals">${fmtRp(confirmRev)}</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width:${Math.min(pct(confirmRev,budRev),100)}%;background:var(--confirm);"></div>
+            </div>
+          </div>
+          <div class="progress-item">
+            <div class="progress-hdr">
+              <span class="progress-name">Tentative (On-Hand)</span>
+              <span class="progress-vals">${fmtRp(tentRev)}</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width:${Math.min(pct(tentRev,budRev),100)}%;background:var(--tentative);"></div>
+            </div>
+          </div>` : '<div style="color:var(--dim);font-size:11px;text-align:center;padding:20px;">Budget belum diset untuk bulan ini.<br>Isi di section Budget Target di bawah.</div>'}
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Status Breakdown — ${curMonth}</div>
+        ${renderDonutSVG(monthData.events||[])}
+      </div>
+    </div>`;
+  return sec;
+}
+
+function renderDonutSVG(events) {
+  const counts = { CONFIRM:0, TENTATIVE:0, DONE:0, CANCEL:0 };
+  const revs   = { CONFIRM:0, TENTATIVE:0, DONE:0, CANCEL:0 };
+  events.forEach(e => {
+    const st = e.status;
+    if (counts[st] !== undefined) { counts[st]++; revs[st] += e.revenue; }
+  });
+  const total = Object.values(counts).reduce((a,b)=>a+b,0);
+  if (total === 0) return '<div style="text-align:center;padding:30px;color:var(--dim);">Tidak ada data</div>';
+
+  const colors = { CONFIRM:'#6366f1', TENTATIVE:'#f59e0b', DONE:'#10b981', CANCEL:'#ef4444' };
+  const labels = { CONFIRM:'Confirm', TENTATIVE:'Tentative', DONE:'Done', CANCEL:'Cancel' };
+  const R = 50, cx = 60, cy = 60, stroke = 16;
+  const circ = 2 * Math.PI * R;
+
+  let offset = 0;
+  const segments = Object.entries(counts).map(([st, cnt]) => {
+    const frac = cnt / total;
+    const seg = { st, cnt, frac, offset, dash: frac * circ };
+    offset += frac * circ;
+    return seg;
+  }).filter(s => s.cnt > 0);
+
+  const svgSegs = segments.map(s =>
+    `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${colors[s.st]}"
+      stroke-width="${stroke}" stroke-dasharray="${s.dash} ${circ - s.dash}"
+      stroke-dashoffset="${circ - s.offset + circ * 0.25}"
+      style="transition:stroke-dasharray .6s ease;"/>`
+  ).join('');
+
+  const legend = Object.entries(counts).filter(([,v])=>v>0).map(([st,cnt]) =>
+    `<div class="legend-item">
+      <div class="legend-dot" style="background:${colors[st]};"></div>
+      <div class="legend-name">${labels[st]}</div>
+      <div class="legend-val">${cnt}</div>
+      <div class="legend-pct">${pct(cnt,total)}%</div>
+    </div>`
+  ).join('');
+
+  return `<div class="donut-wrap">
+    <svg class="donut-svg" width="120" height="120" viewBox="0 0 120 120">
+      <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="${stroke}"/>
+      ${svgSegs}
+      <text x="${cx}" y="${cy-4}" text-anchor="middle" fill="#e8e4dc" font-size="18" font-weight="700" font-family="DM Sans">${total}</text>
+      <text x="${cx}" y="${cy+10}" text-anchor="middle" fill="#8a8580" font-size="8" font-family="DM Sans">events</text>
+    </svg>
+    <div class="donut-legend">${legend}</div>
+  </div>`;
+}
+
+// ── SECTION 3: PERFORMANCE CHART 12 BULAN ───────────────────────
+function renderPerformanceChart() {
+  const maxRev = Math.max(...MONTHS.map(m => (_reportData?.[m]?.revenue||0)), 1);
+  const maxBud = Math.max(...MONTHS.map(m => getBudgetFor(m).targetRevenue), maxRev, 1);
+  const absMax = Math.max(maxRev, maxBud);
+
+  const bars = MONTHS.map((m, i) => {
+    const rev    = _reportData?.[m]?.revenue || 0;
+    const bud    = getBudgetFor(m).targetRevenue;
+    const cnt    = _reportData?.[m]?.count   || 0;
+    const h_rev  = Math.round(rev / absMax * 90);
+    const h_bud  = bud > 0 ? Math.round(bud / absMax * 90) : 0;
+    const isActive = _selMonth === m || _selMonth === 'ALL';
+    const opacity = isActive ? '1' : '0.3';
+    return `
+      <div class="bar-group" style="opacity:${opacity}" title="${m}: ${fmtRpFull(rev)}">
+        <div class="bar-wrap">
+          ${h_bud > 0 ? `<div class="bar" style="height:${h_bud}px;width:8px;background:rgba(201,168,76,.2);border:1px solid rgba(201,168,76,.3);" title="Budget: ${fmtRp(bud)}"></div>` : ''}
+          <div class="bar" style="height:${h_rev}px;width:10px;background:${rev >= bud && bud>0 ? 'var(--done)' : 'var(--gold)'};">
+            ${rev > 0 ? `<span class="bar-val">${fmtRp(rev)}</span>` : ''}
+          </div>
+        </div>
+        <div class="bar-lbl">${MONTH_SHORT[i]}</div>
+        <div class="bar-lbl" style="color:var(--gold)">${cnt>0?cnt:''}</div>
+      </div>`;
   }).join('');
 
-  const tr=oh.length===0?`<tr><td colspan="6" class="empty">Tidak ada data onhand</td></tr>`
-    :oh.map(r=>{
-      const bc=r.status==='CONFIRM'?'bc':'bt',vc=VC[r.venue]||'var(--gold)';
-      return`<tr>
-        <td class="l nw" style="color:#7a8a9a;font-size:9px">${fmtDate(r.date)}</td>
-        <td class="l" style="font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.name)}</td>
-        <td class="l"><span style="color:${vc};font-weight:600;font-size:9px">${esc(r.venue)}</span></td>
-        <td class="r" style="color:#7a8a9a">${r.pax.toLocaleString()}</td>
-        <td class="r" style="color:var(--gold);font-weight:700">${fR(revVal(r.revenue))}</td>
-        <td class="r"><span class="badge ${bc}">${r.status}</span></td>
-      </tr>`;
-    }).join('');
-
-  document.getElementById('p-o').innerHTML=`
-    <div class="kgrid">${kH}</div>
-    <div class="pgc"><div class="pgh"><span style="font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.08em">ONHAND vs BUDGET</span><span style="font-size:12px;font-weight:800;color:${ap>=100?'var(--green)':'var(--gold)'}">${ap}%</span></div>
-      <div class="pgt"><div class="pgf" style="width:${Math.min(ap,100)}%"></div></div>
-      <div class="pgft"><span>Onhand: ${fRF(oR)}</span><span>Budget: ${fRF(sb)}</span></div>
+  const sec = document.createElement('div');
+  sec.innerHTML = `
+    <div class="section-hdr" style="margin-top:28px;">
+      <div class="section-title">◆ Performance vs Budget</div>
+      <div class="section-sub">Revenue Bulanan 2026</div>
     </div>
-    <div class="cc"><div class="ct">BREAKDOWN ONHAND PER VENUE</div>${vb}</div>
-    <div class="tc"><div class="th2"><span class="tt">DETAIL ONHAND (${oh.length} EVENT)</span>
-      <button class="bact" onclick="exOnhand()">🖨 Export Excel</button></div>
-      <div class="tws"><table>
-        <thead><tr><th class="l">Tanggal</th><th class="l">Customer</th><th class="l">Venue</th><th class="r">Pax</th><th class="r">Revenue</th><th class="r">Status</th></tr></thead>
-        <tbody>${tr}</tbody>
-      </table></div>
+    <div class="chart-card full fade-up">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div class="chart-title">Revenue Actual vs Budget — 2026</div>
+        <div style="display:flex;gap:12px;font-size:9px;color:var(--muted);">
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:var(--gold);border-radius:2px;display:inline-block;"></span>Actual</span>
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:rgba(201,168,76,.2);border:1px solid rgba(201,168,76,.3);border-radius:2px;display:inline-block;"></span>Budget</span>
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:var(--done);border-radius:2px;display:inline-block;"></span>Achieve ≥100%</span>
+        </div>
+      </div>
+      <div class="bar-chart" style="height:140px;">${bars}</div>
+    </div>
+    ${renderMonthlyTable()}`;
+  return sec;
+}
+
+function renderMonthlyTable() {
+  const rows = MONTHS.map((m, i) => {
+    const d = _reportData?.[m];
+    const b = getBudgetFor(m);
+    const rev = d?.revenue || 0;
+    const cnt = d?.count   || 0;
+    const pax = d?.pax     || 0;
+    const ach = pct(rev, b.targetRevenue);
+    const isActive = _selMonth === m || _selMonth === 'ALL';
+    return `<tr style="opacity:${isActive?1:.4}">
+      <td style="font-weight:700;color:var(--gold)">${MONTH_SHORT[i]}</td>
+      <td>${cnt}</td>
+      <td><span class="badge CONFIRM">${d?.countConfirm||0}</span></td>
+      <td><span class="badge TENTATIVE">${d?.countTentative||0}</span></td>
+      <td><span class="badge DONE">${d?.countDone||0}</span></td>
+      <td><span class="badge CANCEL">${d?.countCancel||0}</span></td>
+      <td>${pax.toLocaleString('id-ID')}</td>
+      <td class="tbl-revenue">${fmtRp(rev)}</td>
+      <td style="color:var(--muted)">${b.targetRevenue > 0 ? fmtRp(b.targetRevenue) : '—'}</td>
+      <td style="font-weight:700;color:${ach>=100?'var(--done)':ach>=70?'var(--amber)':'var(--red)'}">${b.targetRevenue>0?ach+'%':'—'}</td>
+    </tr>`;
+  }).join('');
+
+  return `
+    <div class="tbl-wrap" style="margin-top:10px;">
+      <table class="detail-tbl">
+        <thead><tr>
+          <th>Bulan</th><th>Events</th><th>Confirm</th><th>Tentative</th><th>Done</th><th>Cancel</th>
+          <th>Pax</th><th>Revenue</th><th>Budget</th><th>Achieve</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
     </div>`;
 }
 
-// ── Export Excel ──────────────────────────────────────────────────────
-function exBulanan(){
-  if(!window.XLSX){alert('SheetJS belum load');return;}
-  const mn=compMon();
-  const tR=mn.reduce((s,m)=>s+m.revenue,0),tB=mn.reduce((s,m)=>s+m.budget,0);
-  const tE=mn.reduce((s,m)=>s+m.events,0),tP=mn.reduce((s,m)=>s+m.pax,0);
-  // header sudah diset di new_ex_rows
-  // Export: Nett (dari sheet) + Gross (nett×1.21) + Budget (nett)
-  const exHdr=['Bulan','Event','Pax','Revenue Nett (Rp)','Revenue Gross (Rp)','Budget Nett (Rp)','Ach% (Nett)','Gap Nett (Rp)','Tentative'];
-  const rows=mn.map(m=>[m.sh,m.events,m.pax,m.revenueNett,m.revenueGross,m.budget,pct(m.revenueNett,m.budget)+'%',m.revenueNett-m.budget,m.tent]);
-  const tNett=mn.reduce((s,m)=>s+m.revenueNett,0),tGross=mn.reduce((s,m)=>s+m.revenueGross,0);
-  const tot2=['TOTAL',tE,tP,tNett,tGross,tB,pct(tNett,tB)+'%',tNett-tB,''];
-  const tot=['TOTAL',tE,tP,tR,tB,pct(tR,tB)+'%',tR-tB,''];
-  const vH=['Venue','Events','Pax','Revenue (Rp)'];
-  const vR=VN.map(v=>{const vr=_rows.filter(r=>r.venue===v&&r._yr===_yr&&(r.status==='DONE'||r.status==='CONFIRM'));return[v,vr.length,vr.reduce((s,r)=>s+r.pax,0),vr.reduce((s,r)=>s+r.revenue,0)];});
-  const wb=window.XLSX.utils.book_new();
-  const w1=window.XLSX.utils.aoa_to_sheet([exHdr,...rows,[],tot2]);w1['!cols']=[10,12,10,18,18,14,18,10].map(w=>({wch:w}));
-  window.XLSX.utils.book_append_sheet(wb,w1,`Bulanan ${_yr}`);
-  const w2=window.XLSX.utils.aoa_to_sheet([vH,...vR]);w2['!cols']=[22,10,10,18].map(w=>({wch:w}));
-  window.XLSX.utils.book_append_sheet(wb,w2,`Per Venue ${_yr}`);
-  window.XLSX.writeFile(wb,`Laporan_Bulanan_${_yr}.xlsx`);
+// ── SECTION 4: BREAKDOWNS ───────────────────────────────────────
+function renderBreakdowns() {
+  const events = getFilteredEvents().filter(e => e.status !== 'CANCEL');
+
+  // Per venue
+  const venueMap = {};
+  events.forEach(e => {
+    if (!venueMap[e.venue]) venueMap[e.venue] = { rev:0, cnt:0, pax:0 };
+    venueMap[e.venue].rev += e.revenue;
+    venueMap[e.venue].cnt++;
+    venueMap[e.venue].pax += e.pax;
+  });
+  // Per package
+  const pkgMap = {};
+  events.forEach(e => {
+    const k = e.package || 'OTHER';
+    if (!pkgMap[k]) pkgMap[k] = { rev:0, cnt:0 };
+    pkgMap[k].rev += e.revenue; pkgMap[k].cnt++;
+  });
+
+  const maxVenueRev = Math.max(...Object.values(venueMap).map(v=>v.rev), 1);
+  const maxPkgRev   = Math.max(...Object.values(pkgMap).map(v=>v.rev), 1);
+
+  const VENUE_COLORS = ['#c9a84c','#6366f1','#10b981','#f59e0b','#5dade2'];
+  const PKG_COLORS   = ['#10b981','#6366f1','#f59e0b','#c9a84c','#9b59b6','#5dade2','#e74c3c','#f39c12','#2ecc71','#e74c3c'];
+
+  const venueBars = Object.entries(venueMap)
+    .sort((a,b)=>b[1].rev-a[1].rev)
+    .map(([name,d],i) => `
+      <div style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span style="font-size:11px;font-weight:600;">${esc(name)}</span>
+          <span style="font-size:10px;color:var(--muted)">${d.cnt} events · ${fmtRp(d.rev)}</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" style="width:${pct(d.rev,maxVenueRev)}%;background:${VENUE_COLORS[i%VENUE_COLORS.length]};"></div>
+        </div>
+      </div>`).join('');
+
+  const pkgBars = Object.entries(pkgMap)
+    .sort((a,b)=>b[1].rev-a[1].rev)
+    .map(([name,d],i) => `
+      <div style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+          <span style="font-size:10px;font-weight:600;">${esc(name)}</span>
+          <span style="font-size:10px;color:var(--muted)">${d.cnt}× · ${fmtRp(d.rev)}</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" style="width:${pct(d.rev,maxPkgRev)}%;background:${PKG_COLORS[i%PKG_COLORS.length]};"></div>
+        </div>
+      </div>`).join('');
+
+  const sec = document.createElement('div');
+  sec.innerHTML = `
+    <div class="section-hdr" style="margin-top:28px;">
+      <div class="section-title">◆ Breakdown</div>
+      <div class="section-sub">Venue · Package</div>
+    </div>
+    <div class="chart-row fade-up">
+      <div class="chart-card">
+        <div class="chart-title">Revenue per Venue</div>
+        ${venueBars || '<div style="color:var(--dim);font-size:11px;text-align:center;padding:20px;">Tidak ada data</div>'}
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Revenue per Package</div>
+        ${pkgBars || '<div style="color:var(--dim);font-size:11px;text-align:center;padding:20px;">Tidak ada data</div>'}
+      </div>
+    </div>`;
+  return sec;
 }
 
-function exOnhand(){
-  if(!window.XLSX){alert('SheetJS belum load');return;}
-  const fm=document.getElementById('mf')?.value||'ALL';
-  const oh=fRows().filter(r=>r.status==='CONFIRM'||r.status==='TENTATIVE');
-  const oR=oh.reduce((s,r)=>s+r.revenue,0),oP=oh.reduce((s,r)=>s+r.pax,0);
-  const sb=fm==='ALL'?MO.reduce((s,m)=>s+(_bud[m]||0),0):(_bud[MO[parseInt(fm)]]||0);
-  const pr=fm==='ALL'?_yr:MOS[parseInt(fm)]+'_'+_yr;
-  const hdr=['Tanggal','Customer','Venue','Package','Sales','Pax','Revenue Nett (Rp)','Revenue Gross (Rp)','Status'];
-  const rows=oh.map(r=>[fmtDate(r.date),r.name,r.venue,r.package,r.sales,r.pax,r.revenue,Math.round(r.revenue*TAX_MUL),r.status]);
-  const wb=window.XLSX.utils.book_new();
-  const ws=window.XLSX.utils.aoa_to_sheet([hdr,...rows,[],
-    ['','TOTAL ONHAND (Nett)','','','',oP,oh.reduce((s,r)=>s+r.revenue,0),'',''],
-    ['','TOTAL ONHAND (Gross)','','','','',Math.round(oh.reduce((s,r)=>s+r.revenue,0)*TAX_MUL),'',''],
-    ['','BUDGET (Nett)','','','','',sb,'',''],
-    ['','GAP (Nett - Budget)','','','','',oh.reduce((s,r)=>s+r.revenue,0)-sb,'',''],
-  ]);
-  ws['!cols']=[14,26,18,14,10,8,18,18,12].map(w=>({wch:w}));
-  window.XLSX.utils.book_append_sheet(wb,ws,`Onhand ${pr}`);
-  window.XLSX.writeFile(wb,`Laporan_Onhand_${pr}.xlsx`);
+// ── SECTION 5: SALES LEADERBOARD ────────────────────────────────
+function renderSalesLeaderboard() {
+  const events = getFilteredEvents().filter(e => e.status !== 'CANCEL');
+  const salesMap = {};
+  events.forEach(e => {
+    const s = e.sales || 'Unknown';
+    if (!salesMap[s]) salesMap[s] = { rev:0, cnt:0, pax:0, done:0 };
+    salesMap[s].rev += e.revenue; salesMap[s].cnt++;
+    salesMap[s].pax += e.pax;
+    if (e.status === 'DONE') salesMap[s].done++;
+  });
+  const sorted = Object.entries(salesMap).sort((a,b)=>b[1].rev-a[1].rev);
+  const maxRev = sorted[0]?.[1]?.rev || 1;
+
+  const rows = sorted.map(([name,d],i) => `
+    <div class="lb-row">
+      <div class="lb-rank ${i===0?'r1':i===1?'r2':i===2?'r3':''}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</div>
+      <div class="lb-name">${esc(name)}</div>
+      <div class="lb-bar-wrap">
+        <div class="lb-bar-track"><div class="lb-bar-fill" style="width:${pct(d.rev,maxRev)}%"></div></div>
+      </div>
+      <div class="lb-stats">
+        <div class="lb-stat"><div class="lb-stat-val">${d.cnt}</div><div class="lb-stat-lbl">Events</div></div>
+        <div class="lb-stat"><div class="lb-stat-val" style="color:var(--gold)">${fmtRp(d.rev)}</div><div class="lb-stat-lbl">Revenue</div></div>
+        <div class="lb-stat"><div class="lb-stat-val">${d.pax}</div><div class="lb-stat-lbl">Pax</div></div>
+      </div>
+    </div>`).join('');
+
+  const sec = document.createElement('div');
+  sec.innerHTML = `
+    <div class="section-hdr" style="margin-top:28px;">
+      <div class="section-title">◆ Sales Leaderboard</div>
+      <div class="section-sub">Performance per Sales</div>
+    </div>
+    <div class="chart-card fade-up">
+      <div class="leaderboard">${rows || '<div style="color:var(--dim);text-align:center;padding:20px;">Tidak ada data</div>'}</div>
+    </div>`;
+  return sec;
 }
 
-// ── Demo ──────────────────────────────────────────────────────────────
-function loadDemo(){
-  const st=['DONE','DONE','DONE','CONFIRM','CONFIRM','TENTATIVE'];
-  const pk=['WEDDING','MEETING','BIRTHDAY','DINNER','SEMINAR','GATHERING'];
-  const sl=['DWI','TINA'];
-  const nm=['PT Maju Jaya','Bu Hartini','Reuni SMA 92','Wisuda UB','Arisan PKK','Wedding Sari','Training PLN','Seminar BPJS'];
-  const demo=[];
-  for(let mi=0;mi<12;mi++){
-    for(let i=0;i<Math.floor(Math.random()*15)+5;i++){
-      const d=Math.floor(Math.random()*28)+1,v=VN[Math.floor(Math.random()*VN.length)];
-      const pax=Math.floor(Math.random()*300)+30,price=Math.floor(Math.random()*150000+50000);
-      demo.push({date:`${d} ${MO[mi]} ${_yr}`,name:nm[i%nm.length]+' '+(i+1),pax,revenue:pax*price,
-        status:st[Math.floor(Math.random()*st.length)],venue:v,package:pk[Math.floor(Math.random()*pk.length)],
-        sales:sl[Math.floor(Math.random()*sl.length)],_mo:mi,_yr:_yr});
-    }
+// ── SECTION 6: DETAIL TABLE ─────────────────────────────────────
+function renderDetailTable() {
+  const sec = document.createElement('div');
+  sec.innerHTML = `
+    <div class="section-hdr" style="margin-top:28px;">
+      <div class="section-title">◆ Detail Booking</div>
+      <div class="section-sub">Semua Transaksi</div>
+    </div>
+    <div class="chart-card full fade-up">
+      <div class="tbl-controls">
+        <input class="tbl-search" id="tbl-search" placeholder="🔍 Cari customer, venue, package..." oninput="filterDetailTable()">
+        <select class="tbl-filter" id="tbl-status-filter" onchange="filterDetailTable()">
+          <option value="">Semua Status</option>
+          <option>CONFIRM</option><option>TENTATIVE</option><option>DONE</option><option>CANCEL</option>
+        </select>
+        <select class="tbl-filter" id="tbl-venue-filter" onchange="filterDetailTable()">
+          <option value="">Semua Venue</option>
+          <option>Ball Room</option><option>VIP Room</option><option>Teratai Room</option><option>Fox Steak House</option>
+        </select>
+        <span class="tbl-count" id="tbl-count"></span>
+      </div>
+      <div class="tbl-wrap">
+        <table class="detail-tbl" id="detail-tbl">
+          <thead><tr>
+            <th>Bulan</th><th>Tgl</th><th>Customer</th><th>Venue</th>
+            <th>Package</th><th>Status</th><th>Pax</th><th>Harga/Pax</th>
+            <th>Revenue</th><th>Sales</th><th>Waktu</th>
+          </tr></thead>
+          <tbody id="detail-tbody"></tbody>
+        </table>
+      </div>
+    </div>`;
+
+  // Populate after insert
+  setTimeout(() => filterDetailTable(), 0);
+  return sec;
+}
+
+function filterDetailTable() {
+  const q      = (document.getElementById('tbl-search')?.value || '').toLowerCase();
+  const stFil  = document.getElementById('tbl-status-filter')?.value || '';
+  const vnFil  = document.getElementById('tbl-venue-filter')?.value  || '';
+  const tbody  = document.getElementById('detail-tbody');
+  if (!tbody) return;
+
+  const events = getFilteredEvents();
+  const filtered = events.filter(e => {
+    const txt = [e.customer,e.venue,e.package,e.sales,e.eventType].join(' ').toLowerCase();
+    return (!q || txt.includes(q)) &&
+           (!stFil || e.status === stFil) &&
+           (!vnFil || e.venue.toUpperCase().includes(vnFil.toUpperCase()));
+  });
+
+  document.getElementById('tbl-count').textContent = `${filtered.length} data`;
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="11" class="tbl-empty">Tidak ada data sesuai filter</td></tr>`;
+    return;
   }
-  _rows=demo;_bud={};MO.forEach(m=>{_bud[m]=Math.floor(Math.random()*50000000+80000000);});
-  showApp(true);
+  tbody.innerHTML = filtered.map(e => `
+    <tr>
+      <td style="color:var(--dim);font-size:10px;">${e.bulan||'—'}</td>
+      <td style="color:var(--muted)">${e.day||'—'}</td>
+      <td style="font-weight:600;">${esc(e.customer)}</td>
+      <td style="color:var(--muted)">${esc(e.venue)}</td>
+      <td>${esc(e.package)}</td>
+      <td><span class="badge ${e.status}">${e.status}</span></td>
+      <td class="tbl-pax">${e.pax||'—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:10px;">${e.price > 0 ? fmtRpFull(e.price) : '—'}</td>
+      <td class="tbl-revenue">${e.revenue > 0 ? fmtRp(e.revenue) : '—'}</td>
+      <td style="color:var(--muted)">${esc(e.sales)}</td>
+      <td style="color:var(--dim);font-size:10px;">${esc(e.time)}</td>
+    </tr>`).join('');
+}
+
+// ── SECTION: PACKAGE & TYPE OF EVENT DONUT ──────────────────
+let _pkgChartInst = null;
+let _evtChartInst = null;
+
+function renderPackageEventCharts() {
+  const events = getFilteredEvents().filter(e => e.status !== 'CANCEL');
+
+  // Count per package
+  const pkgMap = {};
+  events.forEach(e => {
+    const k = (e.package || 'OTHER').trim().toUpperCase() || 'OTHER';
+    pkgMap[k] = (pkgMap[k] || 0) + 1;
+  });
+  // Count per eventType
+  const evtMap = {};
+  events.forEach(e => {
+    const raw = (e.eventType && e.eventType.trim()) ? e.eventType.trim() : (e.package || 'OTHER');
+    const k = raw.toUpperCase() || 'OTHER';
+    evtMap[k] = (evtMap[k] || 0) + 1;
+  });
+
+  const PALETTE = [
+    '#c9a84c','#6366f1','#10b981','#f59e0b','#5dade2',
+    '#9b59b6','#e74c3c','#f39c12','#2ecc71','#3498db','#e67e22','#1abc9c'
+  ];
+
+  function buildDonutData(map) {
+    const entries = Object.entries(map).sort((a,b)=>b[1]-a[1]);
+    return {
+      labels: entries.map(e=>e[0]),
+      data:   entries.map(e=>e[1]),
+      colors: entries.map((_,i)=>PALETTE[i%PALETTE.length])
+    };
+  }
+
+  const pkgD = buildDonutData(pkgMap);
+  const evtD = buildDonutData(evtMap);
+  const total = events.length;
+
+  const sec = document.createElement('div');
+  sec.innerHTML = `
+    <div class="section-hdr" style="margin-top:28px;">
+      <div class="section-title">◆ Package & Type of Event</div>
+      <div class="section-sub">Distribusi ${total} Event Aktif</div>
+    </div>
+    <div class="chart-row fade-up">
+      <div class="chart-card">
+        <div class="chart-title">Package Distribution</div>
+        <div class="canvas-wrap" style="height:200px;">
+          <canvas id="chart-pkg"></canvas>
+        </div>
+        <div id="legend-pkg" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Type of Event Distribution</div>
+        <div class="canvas-wrap" style="height:200px;">
+          <canvas id="chart-evt"></canvas>
+        </div>
+        <div id="legend-evt" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+      </div>
+    </div>`;
+
+  // Render charts after DOM insert
+  setTimeout(() => {
+    if (_pkgChartInst) { _pkgChartInst.destroy(); _pkgChartInst = null; }
+    if (_evtChartInst) { _evtChartInst.destroy(); _evtChartInst = null; }
+
+    function makeDonut(canvasId, d, legendId) {
+      const ctx = document.getElementById(canvasId);
+      if (!ctx || !d.data.length) return;
+      const inst = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: d.labels,
+          datasets: [{ data: d.data, backgroundColor: d.colors, borderWidth: 0, hoverOffset: 4 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          cutout: '68%',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const pct = Math.round(ctx.parsed / total * 100);
+                  return ` ${ctx.label}: ${ctx.parsed} event (${pct}%)`;
+                }
+              },
+              backgroundColor: '#1e1e24', titleColor: '#c9a84c',
+              bodyColor: '#e8e4dc', borderColor: 'rgba(255,255,255,.1)', borderWidth: 1
+            }
+          }
+        }
+      });
+
+      // Custom legend
+      const leg = document.getElementById(legendId);
+      if (leg) {
+        leg.innerHTML = d.labels.map((lbl,i) => {
+          const pct = Math.round(d.data[i]/total*100);
+          return `<div style="display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.04);border-radius:6px;padding:3px 8px;">
+            <span style="width:8px;height:8px;border-radius:2px;background:${d.colors[i]};flex-shrink:0;display:inline-block;"></span>
+            <span style="font-size:9px;color:var(--muted);">${esc(lbl)}</span>
+            <span style="font-size:9px;font-weight:700;color:var(--text);">${d.data[i]}</span>
+            <span style="font-size:8px;color:var(--dim);">${pct}%</span>
+          </div>`;
+        }).join('');
+      }
+      return inst;
+    }
+
+    _pkgChartInst = makeDonut('chart-pkg', pkgD, 'legend-pkg');
+    _evtChartInst = makeDonut('chart-evt', evtD, 'legend-evt');
+  }, 50);
+
+  return sec;
+}
+
+// ── SECTION: REVENUE TREND LINE + OCCUPANCY ──────────────────
+let _trendChartInst = null;
+
+function renderOccupancySection() {
+  const VENUES = ['Ball Room','VIP Room','Teratai Room','Fox Steak House'];
+  // Days per month 2026
+  const DAYS_IN_MONTH = [31,28,31,30,31,30,31,31,30,31,30,31];
+  // Max slot per venue per hari = 2 (slot 1 + OVERFLOW)
+  const SLOTS_PER_DAY = 2;
+
+  // Hitung occupancy per venue per bulan
+  const occData = {}; // occData[venue][bulan] = { booked, total }
+  VENUES.forEach(v => {
+    occData[v] = {};
+    MONTHS.forEach((m, mi) => {
+      const totalSlots = DAYS_IN_MONTH[mi] * SLOTS_PER_DAY;
+      const events = (_reportData?.[m]?.events || [])
+        .filter(e => e.venue.toUpperCase() === v.toUpperCase() && e.status !== 'CANCEL');
+      occData[v][m] = { booked: events.length, total: totalSlots };
+    });
+  });
+
+  // Revenue trend per bulan (line chart)
+  const trendRevenue = MONTHS.map(m => _reportData?.[m]?.revenue || 0);
+  const trendBudget  = MONTHS.map(m => getBudgetFor(m).targetRevenue);
+  const trendCount   = MONTHS.map(m => _reportData?.[m]?.count || 0);
+
+  const sec = document.createElement('div');
+  sec.innerHTML = `
+    <div class="section-hdr" style="margin-top:28px;">
+      <div class="section-title">◆ Revenue Trend & Occupancy</div>
+      <div class="section-sub">Line Chart + Occupancy Rate per Venue</div>
+    </div>
+    <div class="chart-card full fade-up" style="margin-bottom:12px;">
+      <div class="chart-title">Revenue Trend 2026 — Actual vs Budget</div>
+      <div class="canvas-wrap" style="height:200px;">
+        <canvas id="chart-trend"></canvas>
+      </div>
+    </div>
+    <div class="chart-card full fade-up">
+      <div class="chart-title">Occupancy Rate per Venue per Bulan</div>
+      <div style="font-size:9px;color:var(--dim);margin-bottom:10px;">Basis: ${SLOTS_PER_DAY} slot/hari. Hijau ≥70%, Kuning ≥40%, Abu &lt;40%</div>
+      <div class="tbl-wrap">
+        <table class="occ-table">
+          <thead>
+            <tr>
+              <th>Venue</th>
+              ${MONTH_SHORT.map(m=>`<th>${m}</th>`).join('')}
+              <th>Avg</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${VENUES.map(v => {
+              const pcts = MONTHS.map((m,mi) => {
+                const d = occData[v][m];
+                return d.total > 0 ? Math.round(d.booked/d.total*100) : 0;
+              });
+              const avg = Math.round(pcts.reduce((a,b)=>a+b,0)/12);
+              const cells = pcts.map(p => {
+                const cls = p>=70?'hi':p>=40?'mid':'lo';
+                return `<td><span class="occ-pct ${cls}">${p}%</span></td>`;
+              }).join('');
+              return `<tr><td>${esc(v)}</td>${cells}<td><b>${avg}%</b></td></tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="chart-card full fade-up" style="margin-top:12px;">
+      <div class="chart-title">Heatmap Booking Density — Event Count per Venue per Bulan</div>
+      ${renderHeatmap(occData, VENUES)}
+    </div>`;
+
+  // Line chart setelah DOM insert
+  setTimeout(() => {
+    if (_trendChartInst) { _trendChartInst.destroy(); _trendChartInst = null; }
+    const ctx = document.getElementById('chart-trend');
+    if (!ctx) return;
+    _trendChartInst = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: MONTH_SHORT,
+        datasets: [
+          {
+            label: 'Actual Revenue',
+            data: trendRevenue,
+            borderColor: '#c9a84c',
+            backgroundColor: 'rgba(201,168,76,.08)',
+            borderWidth: 2, pointRadius: 4,
+            pointBackgroundColor: '#c9a84c',
+            fill: true, tension: 0.3
+          },
+          {
+            label: 'Budget Target',
+            data: trendBudget,
+            borderColor: 'rgba(201,168,76,.3)',
+            backgroundColor: 'transparent',
+            borderWidth: 1.5, borderDash: [4,3],
+            pointRadius: 2, pointBackgroundColor: 'rgba(201,168,76,.5)',
+            fill: false, tension: 0.3
+          },
+          {
+            label: 'Event Count',
+            data: trendCount,
+            borderColor: '#6366f1',
+            backgroundColor: 'transparent',
+            borderWidth: 1.5, pointRadius: 3,
+            pointBackgroundColor: '#6366f1',
+            fill: false, tension: 0.3,
+            yAxisID: 'y2'
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            labels: { color: '#8a8580', font: { size: 10 }, boxWidth: 12 }
+          },
+          tooltip: {
+            backgroundColor: '#1e1e24', titleColor: '#c9a84c',
+            bodyColor: '#e8e4dc', borderColor: 'rgba(255,255,255,.1)', borderWidth: 1,
+            callbacks: {
+              label: ctx => {
+                if (ctx.dataset.yAxisID === 'y2')
+                  return ` ${ctx.dataset.label}: ${ctx.parsed.y} event`;
+                return ` ${ctx.dataset.label}: ${fmtRp(ctx.parsed.y)}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { ticks: { color: '#555050', font:{size:9} }, grid: { color: 'rgba(255,255,255,.04)' } },
+          y: {
+            ticks: { color: '#8a8580', font:{size:9}, callback: v => fmtRp(v) },
+            grid: { color: 'rgba(255,255,255,.04)' }
+          },
+          y2: {
+            position: 'right',
+            ticks: { color: '#6366f1', font:{size:9} },
+            grid: { drawOnChartArea: false }
+          }
+        }
+      }
+    });
+  }, 100);
+
+  return sec;
+}
+
+function renderHeatmap(occData, venues) {
+  const maxEvents = Math.max(...venues.flatMap(v =>
+    MONTHS.map(m => occData[v][m].booked)
+  ), 1);
+
+  const headers = `<div class="hm-cell" style="background:transparent;border:none;"></div>` +
+    MONTH_SHORT.map(m => `<div class="hm-header">${m}</div>`).join('');
+
+  const rows = venues.map(v =>
+    `<div class="hm-venue-lbl">${esc(v)}</div>` +
+    MONTHS.map(m => {
+      const n = occData[v][m].booked;
+      const lv = n === 0 ? 0 : n <= maxEvents*.2 ? 1 : n <= maxEvents*.4 ? 2 : n <= maxEvents*.6 ? 3 : n <= maxEvents*.8 ? 4 : 5;
+      return `<div class="hm-cell lv${lv}" title="${v} ${m}: ${n} event">${n||''}</div>`;
+    }).join('')
+  ).join('');
+
+  return `<div class="heatmap-wrap">
+    <div class="heatmap-grid" style="grid-template-columns:120px repeat(12,1fr);">
+      ${headers}${rows}
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;margin-top:8px;font-size:9px;color:var(--dim);">
+      Density: ${[0,1,2,3,4,5].map(lv=>
+        `<span class="hm-cell lv${lv}" style="width:14px;height:14px;aspect-ratio:auto;display:inline-block;border-radius:3px;flex-shrink:0;"></span>`
+      ).join('')} <span style="margin-left:4px;">Rendah → Tinggi</span>
+    </div>
+  </div>`;
+}
+
+// ── SECTION 7: BUDGET EDITOR ─────────────────────────────────────
+function renderBudgetEditor() {
+  const rows = MONTHS.map((m,i) => {
+    const b = getBudgetFor(m);
+    return `
+      <div class="budget-row">
+        <div class="budget-month">${MONTH_SHORT[i]} · ${m}</div>
+        <div class="budget-inp-wrap">
+          <label class="budget-inp-lbl">Target Revenue (Rp)</label>
+          <input class="budget-inp" id="bud-rev-${m}" type="number" value="${b.targetRevenue||''}" placeholder="0">
+          <label class="budget-inp-lbl" style="margin-top:4px;">Target Events</label>
+          <input class="budget-inp" id="bud-evt-${m}" type="number" value="${b.targetEvents||''}" placeholder="0">
+        </div>
+      </div>`;
+  }).join('');
+
+  const sec = document.createElement('div');
+  sec.innerHTML = `
+    <div class="section-hdr" style="margin-top:28px;">
+      <div class="section-title">◆ Budget Target</div>
+      <div class="section-sub">Edit & Simpan ke Spreadsheet</div>
+    </div>
+    <div class="budget-editor fade-up">
+      <div style="font-size:10px;color:var(--dim);margin-bottom:4px;">
+        Data disimpan ke sheet <b style="color:var(--gold)">BUDGET</b> di spreadsheet. Refresh setelah simpan.
+      </div>
+      <div class="budget-grid">${rows}</div>
+      <button class="budget-save-btn" onclick="saveBudget()">💾 Simpan Semua Budget</button>
+      <div class="budget-status" id="budget-status"></div>
+    </div>`;
+  return sec;
+}
+
+async function saveBudget() {
+  const st = document.getElementById('budget-status');
+  st.textContent = '⏳ Menyimpan...'; st.style.color = 'var(--muted)';
+  try {
+    const rows = MONTHS.map(m => ({
+      bulan:         m,
+      targetRevenue: parseFloat(document.getElementById(`bud-rev-${m}`)?.value) || 0,
+      targetEvents:  parseInt(document.getElementById(`bud-evt-${m}`)?.value)   || 0,
+      targetPax:     0,
+      notes:         ''
+    }));
+    _idToken = await auth.currentUser.getIdToken(true);
+    const res = await gas({ action:'SAVE_BUDGET', budgetJson: JSON.stringify(rows) });
+    if (res.ok) {
+      st.style.color = 'var(--done)';
+      st.textContent = '✦ Budget disimpan. Klik Refresh untuk update chart.';
+      _budgetData = rows;
+    } else {
+      st.style.color = 'var(--red)';
+      st.textContent = '✗ ' + (res.msg || 'Gagal.');
+    }
+  } catch(e) {
+    st.style.color = 'var(--red)';
+    st.textContent = '✗ ' + e.message;
+  }
 }
 </script>
 </body>
