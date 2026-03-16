@@ -8,817 +8,527 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;}
-:root{
-  --bg:#0a0806; --card:#14110d; --surface:#0d0b08;
-  --border:#2a2218; --border2:#3d3028;
-  --gold:#c9a84c; --gold2:#f0c060; --gold3:#b8962e;
-  --text:#e8e0c8; --muted:#7a6e5a; --dim:#5a4a38; --faint:#3a3028;
-  --blue:#5dade2; --green:#2ecc71; --red:#e74c3c; --orange:#f39c12;
-  --purple:#b88fce;
-}
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0806;--card:#14110d;--surface:#0d0b08;--border:#2a2218;--border2:#3d3028;
+  --gold:#c9a84c;--gold2:#f0c060;--gold3:#b8962e;--text:#e8e0c8;--muted:#7a6e5a;
+  --dim:#5a4a38;--faint:#3a3028;--blue:#5dade2;--green:#2ecc71;--red:#e74c3c;
+  --orange:#f39c12;--purple:#b88fce;}
 html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;}
-
-/* ── LOGIN ── */
 #login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
-.login-box{background:var(--card);border:1px solid var(--border2);border-radius:20px;padding:32px 24px;max-width:420px;width:100%;text-align:center;}
-.login-icon{font-size:36px;margin-bottom:10px;}
-.login-title{font-size:17px;font-weight:800;color:var(--gold);letter-spacing:.07em;margin-bottom:3px;}
-.login-sub{font-size:9px;color:var(--dim);letter-spacing:.2em;margin-bottom:24px;}
-.token-area{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;text-align:left;}
-.token-label{font-size:8px;color:var(--muted);font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;}
-textarea#token-input{width:100%;background:#13100d;border:1px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:9px;resize:vertical;min-height:72px;outline:none;font-family:monospace;line-height:1.5;}
-textarea#token-input:focus{border-color:var(--gold3);}
-#login-error{font-size:9px;color:var(--red);margin-top:6px;min-height:14px;}
-.btn-login{width:100%;padding:13px;background:linear-gradient(135deg,#1a0d00,#3d2200);border:1px solid rgba(201,168,76,.4);border-radius:10px;color:var(--gold);font-weight:800;font-size:12px;cursor:pointer;letter-spacing:.08em;margin-bottom:8px;transition:.2s;}
-.btn-login:hover{border-color:var(--gold);}
-.btn-login:disabled{opacity:.5;cursor:not-allowed;}
-.btn-demo{width:100%;padding:10px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--dim);font-size:10px;cursor:pointer;letter-spacing:.06em;transition:.2s;}
-.btn-demo:hover{color:var(--muted);border-color:var(--border2);}
-.demo-badge{display:inline-block;background:rgba(243,156,18,.15);border:1px solid rgba(243,156,18,.3);color:var(--orange);font-size:8px;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:6px;vertical-align:middle;}
-
-/* ── APP ── */
+.lbox{background:var(--card);border:1.5px solid var(--border2);border-radius:22px;padding:36px 28px;max-width:380px;width:100%;text-align:center;}
+.licon{font-size:40px;margin-bottom:10px;}
+.ltitle{font-size:18px;font-weight:800;color:var(--gold);letter-spacing:.07em;margin-bottom:3px;}
+.lsub{font-size:9px;color:var(--dim);letter-spacing:.22em;margin-bottom:28px;}
+.btn-gg{width:100%;padding:14px;border-radius:12px;background:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;font-size:13px;font-weight:700;color:#333;transition:.2s;margin-bottom:10px;}
+.btn-gg:hover{background:#f5f5f5;box-shadow:0 2px 12px rgba(0,0,0,.25);}
+.btn-gg:disabled{opacity:.5;cursor:not-allowed;}
+.btn-gg img{width:20px;height:20px;}
+.btn-demo{width:100%;padding:10px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--dim);font-size:10px;cursor:pointer;}
+.btn-demo:hover{color:var(--muted);}
+#l-status{font-size:10px;color:var(--muted);min-height:18px;margin-bottom:10px;}
+#l-err{font-size:9px;color:var(--red);min-height:14px;margin-bottom:8px;}
+.dpill{background:rgba(243,156,18,.15);border:1px solid rgba(243,156,18,.3);color:var(--orange);font-size:8px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:middle;}
+#load-ov{position:fixed;inset:0;background:rgba(10,8,6,.93);z-index:999;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+#load-ov.show{display:flex;}
+.spinner{width:42px;height:42px;border:3px solid var(--border2);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ltxt{font-size:11px;color:var(--muted);}
+.lsub2{font-size:9px;color:var(--dim);text-align:center;max-width:220px;}
+.lbwrap{width:220px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;}
+.lbfill{height:100%;background:linear-gradient(90deg,var(--gold3),var(--gold2));border-radius:3px;transition:width .3s;}
 #app{display:none;}
-.header{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:100;}
-.header-left .brand{font-size:14px;font-weight:800;color:var(--gold);letter-spacing:.08em;}
-.header-left .sub{font-size:8px;color:var(--dim);letter-spacing:.2em;margin-top:1px;}
-.year-picker{display:flex;align-items:center;gap:8px;}
-.year-picker button{background:var(--card);border:1px solid var(--border2);color:var(--muted);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:13px;font-weight:700;transition:.15s;}
-.year-picker button:hover{border-color:var(--gold);color:var(--gold);}
-.year-val{font-size:16px;font-weight:800;color:var(--gold);min-width:52px;text-align:center;}
-
-/* ── TABS ── */
-.tabs{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;}
-.tab-btn{padding:12px 16px;background:none;border:none;border-bottom:2px solid transparent;color:var(--dim);font-weight:700;font-size:11px;cursor:pointer;letter-spacing:.06em;transition:.2s;white-space:nowrap;}
-.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);}
-.tabs-right{margin-left:auto;padding:6px 0;}
-select.month-filter{background:var(--card);border:1px solid var(--border2);border-radius:6px;color:var(--gold);padding:5px 10px;font-size:10px;outline:none;cursor:pointer;}
-
-/* ── CONTENT ── */
-.content{padding:16px 20px;max-width:1100px;}
-
-/* ── KPI GRID ── */
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px;}
-.kpi-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;}
-.kpi-label{font-size:8px;color:var(--dim);font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px;}
-.kpi-val{font-size:18px;font-weight:800;line-height:1;}
-.kpi-sub{font-size:8px;color:var(--muted);margin-top:4px;}
-
-/* ── CHART ── */
-.chart-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:14px;}
-.chart-title{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:12px;}
-.bar-chart{display:flex;gap:3px;align-items:flex-end;height:110px;}
-.bar-group{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;}
-.bar-pair{width:100%;display:flex;gap:1px;align-items:flex-end;height:90px;}
-.bar{flex:1;border-radius:3px 3px 0 0;min-height:2px;transition:height .4s ease;}
-.bar-lbl{font-size:6px;color:var(--dim);text-align:center;margin-top:2px;}
-.legend{display:flex;gap:12px;margin-top:8px;}
-.legend-item{display:flex;align-items:center;gap:4px;font-size:8px;color:var(--dim);}
-.legend-dot{width:10px;height:6px;border-radius:2px;}
-
-/* ── PROGRESS BAR ── */
-.progress-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:14px;}
-.progress-header{display:flex;justify-content:space-between;margin-bottom:8px;}
-.progress-track{background:var(--surface);border-radius:6px;height:12px;overflow:hidden;}
-.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:6px;transition:width .6s ease;}
-.progress-footer{display:flex;justify-content:space-between;margin-top:6px;font-size:8px;color:var(--dim);}
-
-/* ── TABLE ── */
-.table-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:12px;}
-.table-header{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);}
-.table-title{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.1em;}
-.table-wrap{overflow-x:auto;}
-.table-wrap-scroll{overflow-x:auto;max-height:380px;overflow-y:auto;}
+.hdr{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:100;}
+.brand{font-size:14px;font-weight:800;color:var(--gold);letter-spacing:.08em;}
+.bsub{font-size:8px;color:var(--dim);letter-spacing:.2em;margin-top:1px;}
+.hr{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.yp{display:flex;align-items:center;gap:6px;}
+.yp button{background:var(--card);border:1px solid var(--border2);color:var(--muted);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:13px;font-weight:700;}
+.yp button:hover{border-color:var(--gold);color:var(--gold);}
+.yv{font-size:16px;font-weight:800;color:var(--gold);min-width:52px;text-align:center;}
+.bact{background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);color:var(--gold);border-radius:8px;padding:5px 12px;font-size:9px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.bact:hover{background:rgba(201,168,76,.2);}
+.bout{background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:6px;padding:5px 10px;font-size:10px;cursor:pointer;}
+.bout:hover{color:var(--red);border-color:var(--red);}
+.tabs{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;overflow-x:auto;}
+.tab{padding:12px 16px;background:none;border:none;border-bottom:2px solid transparent;color:var(--dim);font-weight:700;font-size:11px;cursor:pointer;letter-spacing:.06em;white-space:nowrap;}
+.tab.on{color:var(--gold);border-bottom-color:var(--gold);}
+.tabsr{margin-left:auto;padding:5px 0;flex-shrink:0;}
+.mfsel{background:var(--card);border:1px solid var(--border2);border-radius:6px;color:var(--gold);padding:5px 10px;font-size:10px;outline:none;cursor:pointer;}
+.panel{padding:16px 20px;max-width:1100px;}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(138px,1fr));gap:10px;margin-bottom:16px;}
+.kc{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;}
+.kl{font-size:8px;color:var(--dim);font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px;}
+.kv{font-size:18px;font-weight:800;line-height:1;}
+.ks{font-size:8px;color:var(--muted);margin-top:4px;}
+.cc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:14px;}
+.ct{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:12px;}
+.bchart{display:flex;gap:3px;align-items:flex-end;height:110px;}
+.bg{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;}
+.bp{width:100%;display:flex;gap:1px;align-items:flex-end;height:90px;}
+.b{flex:1;border-radius:3px 3px 0 0;min-height:2px;transition:height .4s;}
+.bl{font-size:6px;color:var(--dim);text-align:center;margin-top:2px;}
+.leg{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;}
+.li{display:flex;align-items:center;gap:4px;font-size:8px;color:var(--dim);}
+.ld{width:10px;height:6px;border-radius:2px;}
+.pgc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:14px;}
+.pgh{display:flex;justify-content:space-between;margin-bottom:8px;}
+.pgt{background:var(--surface);border-radius:6px;height:12px;overflow:hidden;}
+.pgf{height:100%;background:linear-gradient(90deg,var(--gold3),var(--gold2));border-radius:6px;transition:width .6s;}
+.pgft{display:flex;justify-content:space-between;margin-top:6px;font-size:8px;color:var(--dim);}
+.tc{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px;}
+.th2{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);}
+.tt{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.1em;}
+.tw{overflow-x:auto;} .tws{overflow-x:auto;max-height:380px;overflow-y:auto;}
 table{width:100%;border-collapse:collapse;font-size:10px;}
-thead th{padding:8px 10px;color:var(--dim);font-weight:700;font-size:8px;letter-spacing:.08em;white-space:nowrap;background:var(--surface);position:sticky;top:0;}
-th.r,td.r{text-align:right;}
-th.l,td.l{text-align:left;}
+thead th{padding:8px 10px;color:var(--dim);font-weight:700;font-size:8px;letter-spacing:.08em;white-space:nowrap;background:var(--surface);position:sticky;top:0;z-index:1;}
 tbody tr{border-top:1px solid #1a1510;}
 tbody tr:nth-child(even){background:#0f0d0a;}
 td{padding:7px 10px;}
 tfoot td{padding:8px 10px;border-top:2px solid var(--border2);background:#1a1410;font-weight:800;}
-
-/* ── VENUE GRID ── */
-.venue-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;margin-bottom:16px;}
-.venue-card{background:var(--card);border-radius:12px;padding:12px 14px;}
-.venue-bar{width:20px;height:3px;border-radius:2px;margin-bottom:6px;}
-.venue-name{font-size:9px;font-weight:700;margin-bottom:4px;}
-.venue-rev{font-size:15px;font-weight:800;color:var(--text);}
-.venue-sub{font-size:8px;color:var(--dim);margin-top:3px;}
-
-/* Venue breakdown bars */
-.venue-breakdown-item{margin-bottom:10px;}
-.venue-breakdown-row{display:flex;justify-content:space-between;margin-bottom:4px;font-size:9px;}
-.venue-breakdown-track{background:var(--surface);border-radius:4px;height:6px;overflow:hidden;}
-.venue-breakdown-fill{height:100%;border-radius:4px;}
-
-/* ── STATUS BADGE ── */
+.r{text-align:right;}.l{text-align:left;}.nw{white-space:nowrap;}
+.vg{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;margin-bottom:14px;}
+.vc{background:var(--card);border-radius:12px;padding:12px 14px;}
+.vb{width:20px;height:3px;border-radius:2px;margin-bottom:6px;}
+.vn{font-size:9px;font-weight:700;margin-bottom:4px;}
+.vr{font-size:15px;font-weight:800;color:var(--text);}
+.vs{font-size:8px;color:var(--dim);margin-top:3px;}
 .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:8px;font-weight:800;}
-.badge-confirm{background:rgba(46,204,113,.15);color:#2ecc71;border:1px solid rgba(46,204,113,.3);}
-.badge-tentative{background:rgba(243,156,18,.12);color:#f39c12;border:1px solid rgba(243,156,18,.3);}
-.badge-done{background:rgba(93,173,226,.12);color:#5dade2;border:1px solid rgba(93,173,226,.3);}
-
-/* ── PRINT BTN ── */
-.btn-export{background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);color:var(--gold);border-radius:8px;padding:5px 12px;font-size:9px;font-weight:700;cursor:pointer;letter-spacing:.06em;white-space:nowrap;transition:.2s;}
-.btn-export:hover{background:rgba(201,168,76,.18);border-color:var(--gold);}
-.btn-logout{background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:6px;padding:5px 10px;font-size:10px;cursor:pointer;}
-.btn-logout:hover{color:var(--red);border-color:var(--red);}
-
-/* Empty */
+.bc{background:rgba(46,204,113,.15);color:#2ecc71;border:1px solid rgba(46,204,113,.3);}
+.bt{background:rgba(243,156,18,.12);color:#f39c12;border:1px solid rgba(243,156,18,.3);}
 .empty{padding:28px;text-align:center;color:var(--faint);font-size:11px;}
-
-/* ── RESPONSIVE ── */
-@media(max-width:600px){
-  .content{padding:12px;}
-  .header{padding:10px 12px;}
-  .tabs{padding:0 12px;}
-  .kpi-grid{grid-template-columns:1fr 1fr;}
-  .kpi-val{font-size:15px;}
-}
-@media print{
-  .header,.tabs{position:static;}
-  .btn-export,.btn-logout,.tabs-right{display:none!important;}
-  body{background:#fff;color:#000;}
-  .card,.kpi-card,.chart-card,.table-card,.venue-card,.progress-card{border:1px solid #ccc;background:#fff;}
-}
+.sl{font-size:9px;color:var(--dim);font-weight:700;letter-spacing:.1em;margin-bottom:10px;}
+.vbi{margin-bottom:10px;}
+.vbr{display:flex;justify-content:space-between;margin-bottom:4px;font-size:9px;}
+.vbt{background:var(--surface);border-radius:4px;height:6px;overflow:hidden;}
+.vbf{height:100%;border-radius:4px;}
+@media(max-width:600px){.panel{padding:12px;}.hdr{padding:10px 12px;}.tabs{padding:0 12px;}.kgrid{grid-template-columns:1fr 1fr;}.kv{font-size:14px;}}
+@media print{.hdr,.tabs{position:static;}.bact,.bout,.tabsr,#load-ov{display:none!important;}}
 </style>
 </head>
 <body>
 
-<!-- ══ LOGIN SCREEN ══ -->
+<div id="load-ov">
+  <div class="spinner"></div>
+  <div class="ltxt" id="ltxt">Memuat data...</div>
+  <div class="lbwrap"><div class="lbfill" id="lbfill" style="width:0%"></div></div>
+  <div class="lsub2" id="lsub2"></div>
+</div>
+
 <div id="login-screen">
-  <div class="login-box">
-    <div class="login-icon">📊</div>
-    <div class="login-title">MANAGEMENT REPORT</div>
-    <div class="login-sub">LOTUS GARDEN BY WH · KEDIRI</div>
-
-    <div id="login-status" style="font-size:10px;color:var(--muted);margin-bottom:16px;min-height:18px;"></div>
-
-    <button class="btn-login" id="btn-google-login" onclick="loginWithGoogle()">
-      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-           style="width:18px;height:18px;vertical-align:middle;margin-right:8px;">
+  <div class="lbox">
+    <div class="licon">📊</div>
+    <div class="ltitle">MANAGEMENT REPORT</div>
+    <div class="lsub">LOTUS GARDEN BY WH · KEDIRI</div>
+    <div id="l-status"></div>
+    <button class="btn-gg" id="btn-gg" onclick="loginGoogle()">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg">
       Masuk dengan Google
     </button>
-
-    <div id="login-error" style="font-size:9px;color:var(--red);margin:8px 0;min-height:14px;"></div>
-
-    <button class="btn-demo" onclick="loadDemo()">👁 Lihat Demo <span class="demo-badge">DATA SAMPEL</span></button>
+    <div id="l-err"></div>
+    <button class="btn-demo" onclick="loadDemo()">👁 Demo <span class="dpill">DATA SAMPEL</span></button>
   </div>
 </div>
 
-<!-- ══ APP SHELL ══ -->
 <div id="app">
-
-  <!-- Header -->
-  <div class="header">
-    <div class="header-left">
-      <div class="brand">📊 MANAGEMENT REPORT <span id="demo-badge-header" style="display:none" class="demo-badge">DEMO</span></div>
-      <div class="sub">LOTUS GARDEN BY WH · KEDIRI</div>
+  <div class="hdr">
+    <div>
+      <div class="brand">📊 MANAGEMENT REPORT <span id="dpill2" style="display:none" class="dpill">DEMO</span></div>
+      <div class="bsub">LOTUS GARDEN BY WH · KEDIRI</div>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-      <div class="year-picker">
-        <button onclick="changeYear(-1)">◀</button>
-        <div class="year-val" id="year-display">2025</div>
-        <button onclick="changeYear(1)">▶</button>
+    <div class="hr">
+      <div class="yp">
+        <button onclick="chgY(-1)">◀</button>
+        <div class="yv" id="ydsp">2025</div>
+        <button onclick="chgY(1)">▶</button>
       </div>
-      <button id="btn-reload" class="btn-export" onclick="reloadData()" title="Reload data realtime">🔄 Reload</button>
-      <button class="btn-logout" onclick="doLogout()">⎋ Keluar</button>
+      <button class="bact" id="btn-rl" onclick="reloadData()">🔄 Reload</button>
+      <button class="bout" onclick="doLogout()">⎋ Keluar</button>
     </div>
   </div>
-
-  <!-- Tabs -->
   <div class="tabs">
-    <button class="tab-btn active" id="tab-bulanan" onclick="switchTab('bulanan')">📅 Laporan Bulanan</button>
-    <button class="tab-btn" id="tab-onhand" onclick="switchTab('onhand')">📋 Onhand vs Budget</button>
-    <div class="tabs-right">
-      <select class="month-filter" id="month-filter" onchange="render()" style="display:none;">
-        <option value="ALL">Semua Bulan</option>
-        <script>
-          ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"]
-            .forEach((m,i) => document.write(`<option value="${i}">${m}</option>`));
-        </script>
-      </select>
-    </div>
+    <button class="tab on" id="t-b" onclick="swTab('b')">📅 Laporan Bulanan</button>
+    <button class="tab"    id="t-o" onclick="swTab('o')">📋 Onhand vs Budget</button>
+    <div class="tabsr"><select class="mfsel" id="mf" onchange="render()" style="display:none"></select></div>
   </div>
-
-  <!-- Content panels -->
-  <div class="content" id="panel-bulanan"></div>
-  <div class="content" id="panel-onhand" style="display:none;"></div>
-
+  <div class="panel" id="p-b" style="display:block"></div>
+  <div class="panel" id="p-o" style="display:none"></div>
 </div>
 
 <script>
-// ══════════════════════════════════════════════════════
-// CONFIG
-// ══════════════════════════════════════════════════════
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbyQTrvw2WtHV0zpItsVA2hG_02R0gscUrOua2rnOqw750PvT3PODSaO6LaM3HWUTXJi/exec';
-const MONTHS       = ['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'];
-const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-const VENUES       = ['Ball Room','VIP Room','Teratai Room','Fox Steak House'];
-const VENUE_COLORS = { 'Ball Room':'#c9a84c','VIP Room':'#5dade2','Teratai Room':'#2ecc71','Fox Steak House':'#e74c3c' };
+const GAS='https://script.google.com/macros/s/AKfycbyQTrvw2WtHV0zpItsVA2hG_02R0gscUrOua2rnOqw750PvT3PODSaO6LaM3HWUTXJi/exec';
+const MO =['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'];
+const MOS=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+const VN =['Ball Room','VIP Room','Teratai Room','Fox Steak House'];
+const VC ={'Ball Room':'#c9a84c','VIP Room':'#5dade2','Teratai Room':'#2ecc71','Fox Steak House':'#e74c3c'};
 
-// ══════════════════════════════════════════════════════
-// STATE
-// ══════════════════════════════════════════════════════
-let _rows    = [];
-let _budgets = {};
-let _year    = new Date().getFullYear();
-let _tab     = 'bulanan';
-let _token   = '';
-let _demo    = false;
+// Build month filter
+const mfEl=document.getElementById('mf');
+mfEl.innerHTML='<option value="ALL">Semua Bulan</option>';
+MOS.forEach((m,i)=>{const o=document.createElement('option');o.value=i;o.text=m;mfEl.appendChild(o);});
 
-// ══════════════════════════════════════════════════════
-// HELPERS
-// ══════════════════════════════════════════════════════
-const cleanNum = s => parseFloat((s||'').toString().replace(/[^\d.-]/g,'')) || 0;
-const pct      = (a,b) => b > 0 ? Math.round(a/b*100) : 0;
-const esc      = s => (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+let _rows=[],_bud={},_yr=new Date().getFullYear(),_tab='b',_tok='',_demo=false;
 
-function fmtRp(v) {
-  const n = cleanNum(v);
-  if (!n) return 'Rp 0';
-  if (n >= 1e9) return `Rp ${(n/1e9).toFixed(1)}M`;
-  if (n >= 1e6) return `Rp ${(n/1e6).toFixed(1)}jt`;
-  return 'Rp ' + n.toLocaleString('id-ID');
-}
-function fmtRpFull(v) {
-  const n = cleanNum(v);
-  if (!n) return 'Rp 0';
-  return 'Rp ' + n.toLocaleString('id-ID');
-}
-// Parse semua format tanggal dari GAS Summary sheet
-// Format yang mungkin: dd/mm/yyyy, yyyy-mm-dd, dd-mm-yyyy, "1 Maret 2026", Date.toString()
-function parseDateCell(raw) {
-  if (!raw) return null;
-  const s = (raw||'').toString().trim();
-  if (!s) return null;
+// ── Helpers ──────────────────────────────────────────────────────────
+const cn=s=>parseFloat((s||'').toString().replace(/[^\d.-]/g,''))||0;
+const pct=(a,b)=>b>0?Math.round(a/b*100):0;
+const esc=s=>(s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function fR(v){const n=cn(v);if(!n)return'Rp 0';if(n>=1e9)return`Rp ${(n/1e9).toFixed(1)}M`;if(n>=1e6)return`Rp ${(n/1e6).toFixed(1)}jt`;return'Rp '+n.toLocaleString('id-ID');}
+function fRF(v){const n=cn(v);return n?'Rp '+n.toLocaleString('id-ID'):'Rp 0';}
 
-  // dd/mm/yyyy atau dd/mm
-  let m = s.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
-  if (m) return { d:+m[1], mo:+m[2]-1, y:m[3]?+m[3]:null };
-
-  // yyyy-mm-dd (ISO)
-  m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (m) return { d:+m[3], mo:+m[2]-1, y:+m[1] };
-
-  // dd-mm-yyyy
-  m = s.match(/^(\d{1,2})-(\d{1,2})-(\d{2,4})$/);
-  if (m) return { d:+m[1], mo:+m[2]-1, y:+m[3] };
-
-  // "1 Maret 2026" / "Sabtu, 1 Maret 2026" — nama bulan Indonesia
-  const moIdx = MONTHS.findIndex(mn => s.toLowerCase().includes(mn.toLowerCase()));
-  if (moIdx >= 0) {
-    const yr = s.match(/20\d\d/);
-    return { d:0, mo:moIdx, y:yr?+yr[0]:null };
-  }
-
-  // Fallback: JS Date parse (untuk "Mon Mar 01 2026 ...")
-  try {
-    const dt = new Date(s);
-    if (!isNaN(dt.getTime())) return { d:dt.getDate(), mo:dt.getMonth(), y:dt.getFullYear() };
-  } catch(_) {}
-
+function pD(raw){
+  const s=(raw||'').toString().trim();if(!s)return null;
+  let m;
+  m=s.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);if(m)return{mo:+m[2]-1,y:m[3]?+m[3]:null};
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return{mo:+m[2]-1,y:+m[1]};
+  m=s.match(/^(\d{1,2})-(\d{1,2})-(\d{2,4})$/);if(m)return{mo:+m[2]-1,y:+m[3]};
+  for(let i=0;i<MO.length;i++)if(s.toLowerCase().includes(MO[i].toLowerCase())){const yr=s.match(/20\d\d/);return{mo:i,y:yr?+yr[0]:null};}
+  try{const dt=new Date(s);if(!isNaN(dt.getTime()))return{mo:dt.getMonth(),y:dt.getFullYear()};}catch(_){}
   return null;
 }
-function rowYear(d) {
-  const p = parseDateCell(d);
-  return p ? p.y : null;
+function fmtDate(raw){
+  const s=(raw||'').toString().trim();if(!s)return'';
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(s))return s;
+  const p=pD(s);if(!p||!p.y)return s;
+  const dm=s.match(/,\s*(\d{1,2})\s/);
+  const dd=dm?String(dm[1]).padStart(2,'0'):'01';
+  return`${dd}/${String(p.mo+1).padStart(2,'0')}/${p.y}`;
 }
-function rowMonth(d) {
-  const p = parseDateCell(d);
-  return (p && p.mo >= 0) ? p.mo : -1;
-}
-// Format tanggal ke dd/mm/yyyy
-function fmtDate(raw) {
-  if (!raw) return '';
-  const s = (raw||'').toString().trim();
-  // Sudah dd/mm/yyyy
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return s;
-  const p = parseDateCell(s);
-  if (!p || !p.y) return s; // fallback tampilkan apa adanya
-  const dd = String(p.d||1).padStart(2,'0');
-  const mm = String(p.mo+1).padStart(2,'0');
-  return `${dd}/${mm}/${p.y}`;
-}
-function gapColor(gap)    { return gap >= 0 ? '#2ecc71' : '#e74c3c'; }
-function achColor(ach)    { return ach >= 100 ? '#2ecc71' : ach >= 75 ? '#f39c12' : '#e74c3c'; }
+const gC=g=>g>=0?'var(--green)':'var(--red)';
+const aC=a=>a>=100?'var(--green)':a>=75?'var(--orange)':'var(--red)';
 
-// ══════════════════════════════════════════════════════
-// PARSE GAS DATA
-// ══════════════════════════════════════════════════════
-function parseRows(rawRows, overflow) {
-  const rows = [];
-  for (let i = 26; i < rawRows.length; i++) {
-    const r = rawRows[i];
-    if (!r || !r[9] || !r[13]) continue;
-    rows.push({
-      date:    r[9]  || '',
-      name:    r[10] || '',
-      pax:     cleanNum(r[11]),
-      status:  (r[13]||'').toUpperCase(),
-      revenue: cleanNum(r[14]),
-      venue:   r[15] || '',
-      package: r[12] || '',
-      sales:   r[6]  || '',
-    });
-  }
-  (overflow||[]).forEach(o => {
-    if (!o.dateStr || !o.status) return;
-    rows.push({
-      date:    o.dateStr,
-      name:    o.customer || '',
-      pax:     cleanNum(o.pax),
-      status:  (o.status||'').toUpperCase(),
-      revenue: cleanNum(o.totalRevenue || o.price),
-      venue:   o.venue || '',
-      package: o.package || '',
-      sales:   o.sales  || '',
-    });
-  });
-  return rows;
+// ── Loading ───────────────────────────────────────────────────────────
+function sL(t,s,p){
+  document.getElementById('load-ov').classList.add('show');
+  document.getElementById('ltxt').textContent=t||'Memuat...';
+  document.getElementById('lsub2').textContent=s||'';
+  document.getElementById('lbfill').style.width=(p||0)+'%';
 }
-function parseBudgets(rawRows) {
-  const b = {};
-  MONTHS.forEach((m,i) => { b[m] = rawRows[88+i] ? cleanNum(rawRows[88+i][1]) : 0; });
-  return b;
-}
+function upL(p,s){document.getElementById('lbfill').style.width=p+'%';if(s)document.getElementById('lsub2').textContent=s;}
+function hL(){document.getElementById('load-ov').classList.remove('show');}
 
-// ══════════════════════════════════════════════════════
-// FIREBASE GOOGLE AUTH
-// ══════════════════════════════════════════════════════
-const FIREBASE_CONFIG = {
-  apiKey:            "AIzaSyCX0--DGM_tp_2y7hBbrGiMfeVyToVD4zM",
-  authDomain:        "banquet-dashboard-kediri.firebaseapp.com",
-  projectId:         "banquet-dashboard-kediri",
-  storageBucket:     "banquet-dashboard-kediri.firebasestorage.app",
-  messagingSenderId: "716626784276",
-  appId:             "1:716626784276:web:4f7d4d51dace341d21b701"
-};
-firebase.initializeApp(FIREBASE_CONFIG);
-const _fbAuth     = firebase.auth();
-const _fbProvider = new firebase.auth.GoogleAuthProvider();
-_fbProvider.setCustomParameters({ prompt: 'select_account' });
-let _authVerified = false;
-let _authInFlight = false;
+// ── Firebase ──────────────────────────────────────────────────────────
+firebase.initializeApp({apiKey:"AIzaSyCX0--DGM_tp_2y7hBbrGiMfeVyToVD4zM",authDomain:"banquet-dashboard-kediri.firebaseapp.com",projectId:"banquet-dashboard-kediri",storageBucket:"banquet-dashboard-kediri.firebasestorage.app",messagingSenderId:"716626784276",appId:"1:716626784276:web:4f7d4d51dace341d21b701"});
+const fbA=firebase.auth();
+const fbP=new firebase.auth.GoogleAuthProvider();
+fbP.setCustomParameters({prompt:'select_account'});
+let _av=false,_ai=false;
 
-_fbAuth.getRedirectResult().then(r => {
-  if (r && r.user) console.log('[Report] redirect OK:', r.user.email);
-}).catch(e => {
-  if (e.code && e.code !== 'auth/no-auth-event') console.error('[Report]', e.code);
-});
+fbA.getRedirectResult().then(r=>{if(r&&r.user)console.log('[Auth] redirect:',r.user.email);})
+  .catch(e=>{if(e.code&&e.code!=='auth/no-auth-event')console.error('[Auth]',e.code);});
 
-_fbAuth.onAuthStateChanged(async user => {
-  const statusEl = document.getElementById('login-status');
-  const errEl    = document.getElementById('login-error');
-  const btnEl    = document.getElementById('btn-google-login');
-  if (!user) {
-    setTimeout(() => {
-      if (!_authVerified && !_authInFlight && !_fbAuth.currentUser) {
-        if (statusEl) statusEl.textContent = '';
-        if (btnEl) { btnEl.disabled = false; btnEl.style.opacity = '1'; }
-      }
-    }, 2500);
+fbA.onAuthStateChanged(async user=>{
+  if(!user){
+    setTimeout(()=>{if(!_av&&!_ai&&!fbA.currentUser){hL();setBtn(true);}},2500);
     return;
   }
-  if (_authVerified) return;
-  if (_authInFlight) return;
-  _authInFlight = true;
-  if (statusEl) statusEl.textContent = '⏳ Memuat data laporan...';
-  if (btnEl) { btnEl.disabled = true; btnEl.style.opacity = '.6'; }
-  try {
-    const idToken = await user.getIdToken(false);
-    const res     = await fetch(GAS_URL + '?' + new URLSearchParams({ action:'READ_SUMMARY', idToken }), { redirect:'follow' });
-    const data    = await res.json();
-    if (!data.ok) {
-      const msg = data.msg || 'Gagal';
-      if (msg.includes('tidak terdaftar') || msg.includes('Akses ditolak')) { _fbAuth.signOut(); }
-      if (errEl) errEl.textContent = '⚠ ' + msg;
-      if (statusEl) statusEl.textContent = '';
-      if (btnEl) { btnEl.disabled = false; btnEl.style.opacity = '1'; }
-      _authInFlight = false;
-      return;
-    }
-    _token = idToken; _authVerified = true;
-    _rows    = parseRows(data.rows || [], data.overflow || []);
-    _budgets = parseBudgets(data.rows || []);
+  if(_av||_ai)return;
+  _ai=true;
+  sL('Memverifikasi akses...','',5);
+  setBtn(false);
+  try{
+    const tok=await user.getIdToken(false);
+    _tok=tok;
+    await fetchAll(tok);
+    _av=true;
     showApp(false);
-  } catch(e) {
-    if (errEl) errEl.textContent = '⚠ ' + (e.message || 'Gagal terhubung ke server');
-    if (statusEl) statusEl.textContent = '';
-    if (btnEl) { btnEl.disabled = false; btnEl.style.opacity = '1'; }
-  } finally { _authInFlight = false; }
+  }catch(e){
+    hL();setBtn(true);
+    const em=(e.message||'');
+    document.getElementById('l-err').textContent='⚠ '+em;
+    document.getElementById('l-status').textContent='';
+    if(em.includes('tidak terdaftar')||em.includes('ditolak'))fbA.signOut();
+  }finally{_ai=false;}
 });
 
-function loginWithGoogle() {
-  const errEl = document.getElementById('login-error');
-  if (errEl) errEl.textContent = '';
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if (isMobile) {
-    _fbAuth.signInWithRedirect(_fbProvider).catch(e => { if (errEl) errEl.textContent = '⚠ ' + (e.message||e.code); });
-  } else {
-    _fbAuth.signInWithPopup(_fbProvider).catch(e => { if (errEl) errEl.textContent = '⚠ ' + (e.message||e.code); });
+function setBtn(en){const b=document.getElementById('btn-gg');if(b){b.disabled=!en;b.style.opacity=en?'1':'.6';}}
+
+function loginGoogle(){
+  document.getElementById('l-err').textContent='';
+  const isMob=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if(isMob)fbA.signInWithRedirect(fbP).catch(e=>{document.getElementById('l-err').textContent='⚠ '+(e.message||e.code);});
+  else fbA.signInWithPopup(fbP).catch(e=>{document.getElementById('l-err').textContent='⚠ '+(e.message||e.code);});
+}
+
+function doLogout(){
+  _rows=[];_bud={};_tok='';_demo=false;_av=false;_ai=false;
+  fbA.signOut();
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('l-err').textContent='';
+}
+
+// ── Fetch semua bulan parallel ────────────────────────────────────────
+async function fetchAll(tok){
+  sL('Memuat data laporan...','Mengambil data 12 bulan...',8);
+  const results=await Promise.allSettled(
+    MO.map((m,i)=>
+      fetch(GAS+'?'+new URLSearchParams({action:'READ_MONTH',sheetName:m,idToken:tok}),{redirect:'follow'})
+        .then(r=>r.json())
+        .then(d=>({mi:i,d}))
+    )
+  );
+  upL(65,'Memproses data booking...');
+  const all=[];
+  results.forEach(res=>{
+    if(res.status!=='fulfilled')return;
+    const{mi,d}=res.value;
+    if(!d.ok)return;
+    (d.rows||[]).forEach(r=>{
+      if(!r.customer)return;
+      const yr2=function(s){const m2=(s||'').toString().match(/20\d\d/);return m2?+m2[0]:null;}(r.dateLabel);
+      all.push({date:r.dateLabel||'',name:r.customer||'',pax:cn(r.pax),revenue:cn(r.price),
+        status:(r.status||'').toUpperCase(),venue:r.venue||'',package:r.package||'',
+        sales:r.sales||'',_mo:mi,_yr:yr2||_yr});
+    });
+    (d.overflow||[]).forEach(o=>{
+      if(!o.customer)return;
+      const p2=pD(o.dateStr||'');
+      all.push({date:o.dateStr||'',name:o.customer||'',pax:cn(o.pax),
+        revenue:cn(o.totalRevenue||o.price),status:(o.status||'').toUpperCase(),
+        venue:o.venue||'',package:o.package||'',sales:o.sales||'',
+        _mo:p2?p2.mo:mi,_yr:p2?p2.y||_yr:_yr});
+    });
+  });
+  upL(85,'Memuat budget...');
+  try{
+    const sr=await fetch(GAS+'?'+new URLSearchParams({action:'READ_SUMMARY',idToken:tok}),{redirect:'follow'});
+    const sd=await sr.json();
+    if(sd.ok&&sd.rows)MO.forEach((m,i)=>{const row=sd.rows[88+i];if(row)_bud[m]=cn(row[1]);});
+  }catch(_){}
+  upL(100,'Selesai');
+  _rows=all;
+  console.log('[Report] Total rows:',all.length,'— year:',_yr);
+}
+
+// ── Show App ──────────────────────────────────────────────────────────
+function showApp(isDemo){
+  _demo=isDemo;hL();
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('dpill2').style.display=isDemo?'inline-block':'none';
+  document.getElementById('ydsp').textContent=_yr;
+  render();
+}
+function chgY(d){_yr+=d;document.getElementById('ydsp').textContent=_yr;render();}
+
+async function reloadData(){
+  if(_demo){loadDemo();return;}
+  const btn=document.getElementById('btn-rl');
+  if(btn){btn.textContent='⏳';btn.disabled=true;}
+  try{
+    const user=fbA.currentUser;
+    const tok=user?await user.getIdToken(false):_tok;
+    if(!tok)throw new Error('Tidak ada sesi');
+    _tok=tok;await fetchAll(tok);hL();render();
+    if(btn){btn.textContent='✓';setTimeout(()=>{btn.textContent='🔄 Reload';btn.disabled=false;},1800);}
+  }catch(e){
+    hL();if(btn){btn.textContent='✗ Gagal';setTimeout(()=>{btn.textContent='🔄 Reload';btn.disabled=false;},2000);}
   }
 }
 
-async function reloadData() {
-  if (_demo) { loadDemo(); return; }
-  const btn = document.getElementById('btn-reload');
-  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
-  try {
-    // Ambil token fresh (auto-refresh jika expired)
-    const user    = _fbAuth.currentUser;
-    const idToken = user ? await user.getIdToken(false) : _token;
-    if (!idToken) throw new Error('Tidak ada sesi aktif');
-    _token = idToken;
-    const res  = await fetch(GAS_URL + '?' + new URLSearchParams({ action:'READ_SUMMARY', idToken }), { redirect:'follow' });
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.msg || 'Gagal');
-    _rows    = parseRows(data.rows || [], data.overflow || []);
-    _budgets = parseBudgets(data.rows || []);
-    render();
-    if (btn) { btn.textContent = '✓ Updated'; setTimeout(() => { btn.textContent='🔄 Reload'; btn.disabled=false; }, 1500); }
-  } catch(e) {
-    if (btn) { btn.textContent = '✗ ' + (e.message||'Gagal'); btn.disabled = false; }
-  }
-}
-
-function doLogout() {
-  _rows=[]; _budgets={}; _token=''; _demo=false;
-  _authVerified=false; _authInFlight=false;
-  _fbAuth.signOut();
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
-  const errEl = document.getElementById('login-error');
-  if (errEl) errEl.textContent = '';
-}
-
-function showApp(isDemo) {
-  _demo = isDemo;
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  document.getElementById('demo-badge-header').style.display = isDemo ? 'inline-block' : 'none';
-  document.getElementById('year-display').textContent = _year;
-  render();
-}
-
-function changeYear(d) {
-  _year += d;
-  document.getElementById('year-display').textContent = _year;
-  render();
-}
-
-function switchTab(tab) {
-  _tab = tab;
-  ['bulanan','onhand'].forEach(t => {
-    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
-    document.getElementById('panel-' + t).style.display = t === tab ? 'block' : 'none';
+function swTab(t){
+  _tab=t;
+  ['b','o'].forEach(id=>{
+    document.getElementById('t-'+id).classList.toggle('on',id===t);
+    document.getElementById('p-'+id).style.display=id===t?'block':'none';
   });
-  document.getElementById('month-filter').style.display = tab === 'onhand' ? 'block' : 'none';
+  document.getElementById('mf').style.display=t==='o'?'block':'none';
   render();
 }
 
-// ══════════════════════════════════════════════════════
-// COMPUTE
-// ══════════════════════════════════════════════════════
-function computeMonthly() {
-  return MONTHS.map((m, mi) => {
-    const mRows = _rows.filter(r => rowYear(r.date) === _year && rowMonth(r.date) === mi);
-    const done  = mRows.filter(r => r.status === 'DONE' || r.status === 'CONFIRM');
-    const rev   = done.reduce((s,r) => s + r.revenue, 0);
-    const px    = done.reduce((s,r) => s + r.pax, 0);
-    const bud   = _budgets[m] || 0;
-    return {
-      m, short: MONTHS_SHORT[mi], idx: mi,
-      events: done.length, pax: px, revenue: rev,
-      budget: bud, ach: pct(rev, bud),
-      tentative: mRows.filter(r => r.status === 'TENTATIVE').length,
-    };
+// ── Compute ───────────────────────────────────────────────────────────
+function compMon(){
+  return MO.map((m,mi)=>{
+    const mr=_rows.filter(r=>r._yr===_yr&&r._mo===mi);
+    const dn=mr.filter(r=>r.status==='DONE'||r.status==='CONFIRM');
+    const rv=dn.reduce((s,r)=>s+r.revenue,0);
+    const px=dn.reduce((s,r)=>s+r.pax,0);
+    const bd=_bud[m]||0;
+    return{m,sh:MOS[mi],mi,events:dn.length,pax:px,revenue:rv,budget:bd,ach:pct(rv,bd),tent:mr.filter(r=>r.status==='TENTATIVE').length};
   });
 }
-
-function getFilteredRows() {
-  const fm = document.getElementById('month-filter')?.value || 'ALL';
-  return _rows.filter(r => {
-    if (rowYear(r.date) !== _year) return false;
-    if (fm !== 'ALL' && rowMonth(r.date) !== parseInt(fm)) return false;
+function fRows(){
+  const fm=document.getElementById('mf')?.value||'ALL';
+  return _rows.filter(r=>{
+    if(r._yr!==_yr)return false;
+    if(fm!=='ALL'&&r._mo!==parseInt(fm))return false;
     return true;
   });
 }
 
-// ══════════════════════════════════════════════════════
-// RENDER
-// ══════════════════════════════════════════════════════
-function render() {
-  if (_tab === 'bulanan') renderBulanan();
-  else renderOnhand();
-}
+// ── Render ────────────────────────────────────────────────────────────
+function render(){if(_tab==='b')rBulanan();else rOnhand();}
 
-function renderBulanan() {
-  const monthly = computeMonthly();
-  const totRev  = monthly.reduce((s,m) => s + m.revenue, 0);
-  const totBud  = monthly.reduce((s,m) => s + m.budget, 0);
-  const totEvt  = monthly.reduce((s,m) => s + m.events, 0);
-  const totPax  = monthly.reduce((s,m) => s + m.pax, 0);
-  const totAch  = pct(totRev, totBud);
-  const totTent = monthly.reduce((s,m) => s + m.tentative, 0);
-  const maxRev  = Math.max(...monthly.map(m => Math.max(m.revenue, m.budget)), 1);
+function rBulanan(){
+  const mn=compMon();
+  const tR=mn.reduce((s,m)=>s+m.revenue,0),tB=mn.reduce((s,m)=>s+m.budget,0);
+  const tE=mn.reduce((s,m)=>s+m.events,0),tP=mn.reduce((s,m)=>s+m.pax,0);
+  const tA=pct(tR,tB),tT=mn.reduce((s,m)=>s+m.tent,0);
+  const mx=Math.max(...mn.map(m=>Math.max(m.revenue,m.budget)),1);
 
-  // KPI
-  const kpis = [
-    { label:'Total Revenue',  val:fmtRp(totRev),  sub:`dari ${fmtRp(totBud)} budget`, color:'var(--gold)' },
-    { label:'Achievement',    val:totAch+'%',      sub: totRev>=totBud?'✓ On Track':`${fmtRp(totBud-totRev)} kurang`, color: totAch>=100?'var(--green)':'var(--red)' },
-    { label:'Total Events',   val:totEvt,          sub:`${totPax.toLocaleString()} pax`, color:'var(--blue)' },
-    { label:'Avg / Event',    val:fmtRp(totEvt?totRev/totEvt:0), sub:'rata-rata revenue', color:'var(--purple)' },
-  ];
-  const kpiHtml = kpis.map(k => `
-    <div class="kpi-card">
-      <div class="kpi-label">${esc(k.label)}</div>
-      <div class="kpi-val" style="color:${k.color}">${esc(String(k.val))}</div>
-      <div class="kpi-sub">${esc(k.sub)}</div>
-    </div>`).join('');
+  const kH=[
+    {l:'Total Revenue',v:fR(tR),s:`dari ${fR(tB)} budget`,c:'var(--gold)'},
+    {l:'Achievement',v:tA+'%',s:tR>=tB?'✓ On Track':fR(tB-tR)+' kurang',c:aC(tA)},
+    {l:'Total Events',v:tE,s:tP.toLocaleString()+' pax total',c:'var(--blue)'},
+    {l:'Rata-rata/Event',v:fR(tE?Math.round(tR/tE):0),s:'revenue per event',c:'var(--purple)'},
+  ].map(k=>`<div class="kc"><div class="kl">${esc(k.l)}</div><div class="kv" style="color:${k.c}">${esc(''+k.v)}</div><div class="ks">${esc(k.s)}</div></div>`).join('');
 
-  // Chart
-  const bars = monthly.map(m => {
-    const bh = m.budget  ? Math.round(m.budget/maxRev*82)  : 2;
-    const rh = m.revenue ? Math.round(m.revenue/maxRev*82) : 2;
-    const rc = m.revenue >= m.budget && m.budget > 0 ? 'var(--green)' : 'var(--gold)';
-    return `<div class="bar-group">
-      <div class="bar-pair">
-        <div class="bar" style="height:${bh}px;background:#2a2218;" title="Budget: ${fmtRp(m.budget)}"></div>
-        <div class="bar" style="height:${rh}px;background:${rc};" title="Revenue: ${fmtRp(m.revenue)}"></div>
-      </div>
-      <div class="bar-lbl">${m.short}</div>
-    </div>`;
+  const bars=mn.map(m=>{
+    const bh=m.budget?(m.budget/mx*82)|0:2,rh=m.revenue?(m.revenue/mx*82)|0:2;
+    const rc=m.revenue>=m.budget&&m.budget>0?'var(--green)':'var(--gold)';
+    return`<div class="bg"><div class="bp"><div class="b" style="height:${bh}px;background:#2a2218" title="${fR(m.budget)}"></div><div class="b" style="height:${rh}px;background:${rc}" title="${fR(m.revenue)}"></div></div><div class="bl">${m.sh}</div></div>`;
   }).join('');
 
-  // Table rows
-  const tRows = monthly.map((m,i) => `
-    <tr>
-      <td class="l" style="color:${m.revenue>0?'var(--text)':'var(--faint)'};font-weight:600">${m.short}</td>
-      <td class="r" style="color:var(--blue)">${m.events||'—'}</td>
-      <td class="r" style="color:#7a8a9a">${m.pax?m.pax.toLocaleString():'—'}</td>
-      <td class="r" style="color:var(--gold);font-weight:700">${m.revenue?fmtRp(m.revenue):'—'}</td>
-      <td class="r" style="color:var(--dim)">${m.budget?fmtRp(m.budget):'—'}</td>
-      <td class="r"><span style="color:${m.budget>0?achColor(m.ach):'var(--dim)'};font-weight:700">${m.budget>0?m.ach+'%':'—'}</span></td>
-      <td class="r" style="color:${m.budget>0?gapColor(m.revenue-m.budget):'var(--dim)'}">${m.budget>0?fmtRp(m.revenue-m.budget):'—'}</td>
-      <td class="r" style="color:var(--orange)">${m.tentative||'—'}</td>
-    </tr>`).join('');
+  const tr=mn.map(m=>`<tr>
+    <td class="l nw" style="color:${m.revenue>0?'var(--text)':'var(--faint)'};font-weight:600">${m.sh}</td>
+    <td class="r" style="color:var(--blue)">${m.events||'—'}</td>
+    <td class="r" style="color:#7a8a9a">${m.pax?m.pax.toLocaleString():'—'}</td>
+    <td class="r" style="color:var(--gold);font-weight:700">${m.revenue?fR(m.revenue):'—'}</td>
+    <td class="r" style="color:var(--dim)">${m.budget?fR(m.budget):'—'}</td>
+    <td class="r"><span style="color:${m.budget>0?aC(m.ach):'var(--dim)'};font-weight:700">${m.budget>0?m.ach+'%':'—'}</span></td>
+    <td class="r" style="color:${m.budget>0?gC(m.revenue-m.budget):'var(--dim)'}">${m.budget>0?fR(m.revenue-m.budget):'—'}</td>
+    <td class="r" style="color:var(--orange)">${m.tent||'—'}</td>
+  </tr>`).join('');
 
-  // Venue cards
-  const venueCards = VENUES.map(v => {
-    const vr  = _rows.filter(r => r.venue===v && rowYear(r.date)===_year && (r.status==='DONE'||r.status==='CONFIRM'));
-    const rev = vr.reduce((s,r) => s+r.revenue, 0);
-    const col = VENUE_COLORS[v] || 'var(--gold)';
-    return `<div class="venue-card" style="border:1px solid ${col}33">
-      <div class="venue-bar" style="background:${col}"></div>
-      <div class="venue-name" style="color:${col}">${esc(v)}</div>
-      <div class="venue-rev">${fmtRp(rev)}</div>
-      <div class="venue-sub">${vr.length} event · ${vr.reduce((s,r)=>s+r.pax,0).toLocaleString()} pax</div>
-    </div>`;
+  const vc=VN.map(v=>{
+    const vr=_rows.filter(r=>r.venue===v&&r._yr===_yr&&(r.status==='DONE'||r.status==='CONFIRM'));
+    const rv=vr.reduce((s,r)=>s+r.revenue,0);const cl=VC[v]||'var(--gold)';
+    return`<div class="vc" style="border:1px solid ${cl}33"><div class="vb" style="background:${cl}"></div><div class="vn" style="color:${cl}">${esc(v)}</div><div class="vr">${fR(rv)}</div><div class="vs">${vr.length} event · ${vr.reduce((s,r)=>s+r.pax,0).toLocaleString()} pax</div></div>`;
   }).join('');
 
-  document.getElementById('panel-bulanan').innerHTML = `
-    <div class="kpi-grid">${kpiHtml}</div>
-
-    <div class="chart-card">
-      <div class="chart-title">REVENUE vs BUDGET PER BULAN ${_year}</div>
-      <div class="bar-chart">${bars}</div>
-      <div class="legend">
-        <div class="legend-item"><div class="legend-dot" style="background:#2a2218"></div>Budget</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>Revenue</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>On Target</div>
+  document.getElementById('p-b').innerHTML=`
+    <div class="kgrid">${kH}</div>
+    <div class="cc"><div class="ct">REVENUE vs BUDGET PER BULAN ${_yr}</div>
+      <div class="bchart">${bars}</div>
+      <div class="leg">
+        <div class="li"><div class="ld" style="background:#2a2218"></div>Budget</div>
+        <div class="li"><div class="ld" style="background:var(--gold)"></div>Revenue</div>
+        <div class="li"><div class="ld" style="background:var(--green)"></div>On Target</div>
       </div>
     </div>
-
-    <div class="table-card">
-      <div class="table-header">
-        <span class="table-title">DETAIL PER BULAN ${_year}</span>
-        <button class="btn-export" onclick="exportBulanan()">🖨 Export Excel</button>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr>
-            <th class="l">Bulan</th><th class="r">Event</th><th class="r">Pax</th>
-            <th class="r">Revenue</th><th class="r">Budget</th><th class="r">Ach%</th>
-            <th class="r">Gap</th><th class="r">Tentative</th>
-          </tr></thead>
-          <tbody>${tRows}</tbody>
-          <tfoot><tr>
-            <td class="l" style="color:var(--gold)">TOTAL</td>
-            <td class="r" style="color:var(--blue)">${totEvt}</td>
-            <td class="r" style="color:#7a8a9a">${totPax.toLocaleString()}</td>
-            <td class="r" style="color:var(--gold)">${fmtRp(totRev)}</td>
-            <td class="r" style="color:var(--dim)">${fmtRp(totBud)}</td>
-            <td class="r" style="color:${achColor(totAch)}">${totAch}%</td>
-            <td class="r" style="color:${gapColor(totRev-totBud)}">${fmtRp(totRev-totBud)}</td>
-            <td class="r" style="color:var(--orange)">${totTent}</td>
-          </tr></tfoot>
-        </table>
-      </div>
+    <div class="tc"><div class="th2"><span class="tt">DETAIL PER BULAN ${_yr}</span>
+      <button class="bact" onclick="exBulanan()">🖨 Export Excel</button></div>
+      <div class="tw"><table>
+        <thead><tr><th class="l">Bulan</th><th class="r">Event</th><th class="r">Pax</th><th class="r">Revenue</th><th class="r">Budget</th><th class="r">Ach%</th><th class="r">Gap</th><th class="r">Tent.</th></tr></thead>
+        <tbody>${tr}</tbody>
+        <tfoot><tr><td class="l" style="color:var(--gold)">TOTAL</td><td class="r" style="color:var(--blue)">${tE}</td><td class="r" style="color:#7a8a9a">${tP.toLocaleString()}</td><td class="r" style="color:var(--gold)">${fR(tR)}</td><td class="r" style="color:var(--dim)">${fR(tB)}</td><td class="r" style="color:${aC(tA)}">${tA}%</td><td class="r" style="color:${gC(tR-tB)}">${fR(tR-tB)}</td><td class="r" style="color:var(--orange)">${tT}</td></tr></tfoot>
+      </table></div>
     </div>
-
-    <div style="font-size:9px;color:var(--dim);font-weight:700;letter-spacing:.1em;margin-bottom:10px;">BREAKDOWN PER VENUE ${_year}</div>
-    <div class="venue-grid">${venueCards}</div>
-  `;
+    <div class="sl">BREAKDOWN PER VENUE ${_yr}</div>
+    <div class="vg">${vc}</div>`;
 }
 
-function renderOnhand() {
-  const fm        = document.getElementById('month-filter')?.value || 'ALL';
-  const filtered  = getFilteredRows();
-  const onhand    = filtered.filter(r => r.status === 'CONFIRM' || r.status === 'TENTATIVE');
-  const done      = filtered.filter(r => r.status === 'DONE');
-  const onRev     = onhand.reduce((s,r) => s+r.revenue, 0);
-  const onPax     = onhand.reduce((s,r) => s+r.pax, 0);
-  const doneRev   = done.reduce((s,r) => s+r.revenue, 0);
+function rOnhand(){
+  const fm=document.getElementById('mf')?.value||'ALL';
+  const fr=fRows();
+  const oh=fr.filter(r=>r.status==='CONFIRM'||r.status==='TENTATIVE');
+  const dn=fr.filter(r=>r.status==='DONE');
+  const oR=oh.reduce((s,r)=>s+r.revenue,0),oP=oh.reduce((s,r)=>s+r.pax,0);
+  const dR=dn.reduce((s,r)=>s+r.revenue,0);
+  const sb=fm==='ALL'?MO.reduce((s,m)=>s+(_bud[m]||0),0):(_bud[MO[parseInt(fm)]]||0);
+  const ap=pct(oR,sb),gp=oR-sb;
+  const pl=fm==='ALL'?'target tahunan':MOS[parseInt(fm)];
 
-  const selBudget = fm === 'ALL'
-    ? MONTHS.reduce((s,m) => s + (_budgets[m]||0), 0)
-    : (_budgets[MONTHS[parseInt(fm)]] || 0);
+  const kH=[
+    {l:'Onhand Revenue',v:fR(oR),s:`${oh.length} event onhand`,c:'var(--blue)'},
+    {l:'Budget',v:fR(sb),s:pl,c:'var(--muted)'},
+    {l:'Gap Onhand',v:fR(gp),s:gp>=0?'✓ Tercapai':'belum tercapai',c:gC(gp)},
+    {l:'Revenue Done',v:fR(dR),s:`${dn.length} event selesai`,c:'var(--green)'},
+  ].map(k=>`<div class="kc"><div class="kl">${esc(k.l)}</div><div class="kv" style="color:${k.c}">${esc(''+k.v)}</div><div class="ks">${esc(k.s)}</div></div>`).join('');
 
-  const achPct    = pct(onRev, selBudget);
-  const gap       = onRev - selBudget;
-  const periodLbl = fm === 'ALL' ? 'target tahunan' : MONTHS_SHORT[parseInt(fm)];
-
-  // KPI
-  const kpis = [
-    { label:'Onhand Revenue',  val:fmtRp(onRev),      sub:`${onhand.length} event onhand`,     color:'var(--blue)'  },
-    { label:'Budget',          val:fmtRp(selBudget),  sub:periodLbl,                           color:'var(--muted)' },
-    { label:'Gap Onhand',      val:fmtRp(gap),        sub:gap>=0?'✓ Tercapai':'belum tercapai', color:gapColor(gap) },
-    { label:'Revenue Done',    val:fmtRp(doneRev),    sub:`${done.length} event selesai`,      color:'var(--green)' },
-  ];
-  const kpiHtml = kpis.map(k => `
-    <div class="kpi-card">
-      <div class="kpi-label">${esc(k.label)}</div>
-      <div class="kpi-val" style="color:${k.color}">${esc(String(k.val))}</div>
-      <div class="kpi-sub">${esc(k.sub)}</div>
-    </div>`).join('');
-
-  // Venue breakdown
-  const vBreak = VENUES.map(v => {
-    const vr  = onhand.filter(r => r.venue === v);
-    const rev = vr.reduce((s,r) => s+r.revenue, 0);
-    const pct2= onRev > 0 ? pct(rev, onRev) : 0;
-    const col = VENUE_COLORS[v] || 'var(--gold)';
-    return `<div class="venue-breakdown-item">
-      <div class="venue-breakdown-row">
-        <span style="color:${col};font-weight:700">${esc(v)}</span>
-        <span>${fmtRp(rev)} · ${vr.length} event</span>
-      </div>
-      <div class="venue-breakdown-track">
-        <div class="venue-breakdown-fill" style="width:${pct2}%;background:${col}"></div>
-      </div>
-    </div>`;
+  const vb=VN.map(v=>{
+    const vr=oh.filter(r=>r.venue===v),rv=vr.reduce((s,r)=>s+r.revenue,0);
+    const p=oR>0?pct(rv,oR):0,cl=VC[v]||'var(--gold)';
+    return`<div class="vbi"><div class="vbr"><span style="color:${cl};font-weight:700">${esc(v)}</span><span>${fR(rv)} · ${vr.length} event</span></div><div class="vbt"><div class="vbf" style="width:${p}%;background:${cl}"></div></div></div>`;
   }).join('');
 
-  // Table rows
-  const tRows = onhand.length === 0
-    ? `<tr><td colspan="6" class="empty">Tidak ada data onhand untuk periode ini</td></tr>`
-    : onhand.map((r,i) => {
-      const badgeCls = r.status==='CONFIRM' ? 'badge-confirm' : 'badge-tentative';
-      const col = VENUE_COLORS[r.venue] || 'var(--gold)';
-      return `<tr>
-        <td class="l" style="color:#7a8a9a;font-size:9px">${fmtDate(r.date)}</td>
-        <td class="l" style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.name)}</td>
-        <td class="l"><span style="color:${col};font-weight:600;font-size:9px">${esc(r.venue)}</span></td>
+  const tr=oh.length===0?`<tr><td colspan="6" class="empty">Tidak ada data onhand</td></tr>`
+    :oh.map(r=>{
+      const bc=r.status==='CONFIRM'?'bc':'bt',vc=VC[r.venue]||'var(--gold)';
+      return`<tr>
+        <td class="l nw" style="color:#7a8a9a;font-size:9px">${fmtDate(r.date)}</td>
+        <td class="l" style="font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.name)}</td>
+        <td class="l"><span style="color:${vc};font-weight:600;font-size:9px">${esc(r.venue)}</span></td>
         <td class="r" style="color:#7a8a9a">${r.pax.toLocaleString()}</td>
-        <td class="r" style="color:var(--gold);font-weight:700">${fmtRp(r.revenue)}</td>
-        <td class="r"><span class="badge ${badgeCls}">${r.status}</span></td>
+        <td class="r" style="color:var(--gold);font-weight:700">${fR(r.revenue)}</td>
+        <td class="r"><span class="badge ${bc}">${r.status}</span></td>
       </tr>`;
     }).join('');
 
-  document.getElementById('panel-onhand').innerHTML = `
-    <div class="kpi-grid">${kpiHtml}</div>
-
-    <div class="progress-card">
-      <div class="progress-header">
-        <span style="font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.08em">ONHAND vs BUDGET</span>
-        <span style="font-size:12px;font-weight:800;color:${achPct>=100?'var(--green)':'var(--gold)'}">${achPct}%</span>
-      </div>
-      <div class="progress-track">
-        <div class="progress-fill" style="width:${Math.min(achPct,100)}%"></div>
-      </div>
-      <div class="progress-footer">
-        <span>Onhand: ${fmtRpFull(onRev)}</span>
-        <span>Budget: ${fmtRpFull(selBudget)}</span>
-      </div>
+  document.getElementById('p-o').innerHTML=`
+    <div class="kgrid">${kH}</div>
+    <div class="pgc"><div class="pgh"><span style="font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.08em">ONHAND vs BUDGET</span><span style="font-size:12px;font-weight:800;color:${ap>=100?'var(--green)':'var(--gold)'}">${ap}%</span></div>
+      <div class="pgt"><div class="pgf" style="width:${Math.min(ap,100)}%"></div></div>
+      <div class="pgft"><span>Onhand: ${fRF(oR)}</span><span>Budget: ${fRF(sb)}</span></div>
     </div>
-
-    <div class="chart-card">
-      <div class="chart-title">BREAKDOWN ONHAND PER VENUE</div>
-      ${vBreak}
-    </div>
-
-    <div class="table-card">
-      <div class="table-header">
-        <span class="table-title">DETAIL ONHAND (${onhand.length} EVENT)</span>
-        <button class="btn-export" onclick="exportOnhand()">🖨 Export Excel</button>
-      </div>
-      <div class="table-wrap-scroll">
-        <table>
-          <thead><tr>
-            <th class="l">Tanggal</th><th class="l">Customer</th><th class="l">Venue</th>
-            <th class="r">Pax</th><th class="r">Revenue</th><th class="r">Status</th>
-          </tr></thead>
-          <tbody>${tRows}</tbody>
-        </table>
-      </div>
-    </div>
-  `;
+    <div class="cc"><div class="ct">BREAKDOWN ONHAND PER VENUE</div>${vb}</div>
+    <div class="tc"><div class="th2"><span class="tt">DETAIL ONHAND (${oh.length} EVENT)</span>
+      <button class="bact" onclick="exOnhand()">🖨 Export Excel</button></div>
+      <div class="tws"><table>
+        <thead><tr><th class="l">Tanggal</th><th class="l">Customer</th><th class="l">Venue</th><th class="r">Pax</th><th class="r">Revenue</th><th class="r">Status</th></tr></thead>
+        <tbody>${tr}</tbody>
+      </table></div>
+    </div>`;
 }
 
-// ══════════════════════════════════════════════════════
-// EXPORT EXCEL
-// ══════════════════════════════════════════════════════
-function exportBulanan() {
-  if (!window.XLSX) { alert('SheetJS belum load. Coba refresh halaman.'); return; }
-  const monthly = computeMonthly();
-  const totRev  = monthly.reduce((s,m)=>s+m.revenue,0);
-  const totBud  = monthly.reduce((s,m)=>s+m.budget,0);
-  const totEvt  = monthly.reduce((s,m)=>s+m.events,0);
-  const totPax  = monthly.reduce((s,m)=>s+m.pax,0);
-  const totAch  = pct(totRev,totBud);
-
-  const header  = ['Bulan','Total Event','Pax','Revenue (Rp)','Budget (Rp)','Achievement %','Gap (Rp)','Tentative'];
-  const rows    = monthly.map(m => [m.short, m.events, m.pax, m.revenue, m.budget, m.ach+'%', m.revenue-m.budget, m.tentative]);
-  const total   = ['TOTAL', totEvt, totPax, totRev, totBud, totAch+'%', totRev-totBud, ''];
-
-  // Venue sheet
-  const venueHeader = ['Venue','Events','Pax','Revenue (Rp)'];
-  const venueRows   = VENUES.map(v => {
-    const vr = _rows.filter(r => r.venue===v && rowYear(r.date)===_year && (r.status==='DONE'||r.status==='CONFIRM'));
-    return [v, vr.length, vr.reduce((s,r)=>s+r.pax,0), vr.reduce((s,r)=>s+r.revenue,0)];
-  });
-
-  const wb = window.XLSX.utils.book_new();
-
-  const ws1 = window.XLSX.utils.aoa_to_sheet([header, ...rows, [], total]);
-  ws1['!cols'] = [10,12,10,18,18,14,18,10].map(w => ({wch:w}));
-  window.XLSX.utils.book_append_sheet(wb, ws1, `Bulanan ${_year}`);
-
-  const ws2 = window.XLSX.utils.aoa_to_sheet([venueHeader, ...venueRows]);
-  ws2['!cols'] = [20,10,10,18].map(w => ({wch:w}));
-  window.XLSX.utils.book_append_sheet(wb, ws2, `Per Venue ${_year}`);
-
-  window.XLSX.writeFile(wb, `Laporan_Bulanan_${_year}.xlsx`);
+// ── Export Excel ──────────────────────────────────────────────────────
+function exBulanan(){
+  if(!window.XLSX){alert('SheetJS belum load');return;}
+  const mn=compMon();
+  const tR=mn.reduce((s,m)=>s+m.revenue,0),tB=mn.reduce((s,m)=>s+m.budget,0);
+  const tE=mn.reduce((s,m)=>s+m.events,0),tP=mn.reduce((s,m)=>s+m.pax,0);
+  const hdr=['Bulan','Total Event','Pax','Revenue (Rp)','Budget (Rp)','Achievement %','Gap (Rp)','Tentative'];
+  const rows=mn.map(m=>[m.sh,m.events,m.pax,m.revenue,m.budget,m.ach+'%',m.revenue-m.budget,m.tent]);
+  const tot=['TOTAL',tE,tP,tR,tB,pct(tR,tB)+'%',tR-tB,''];
+  const vH=['Venue','Events','Pax','Revenue (Rp)'];
+  const vR=VN.map(v=>{const vr=_rows.filter(r=>r.venue===v&&r._yr===_yr&&(r.status==='DONE'||r.status==='CONFIRM'));return[v,vr.length,vr.reduce((s,r)=>s+r.pax,0),vr.reduce((s,r)=>s+r.revenue,0)];});
+  const wb=window.XLSX.utils.book_new();
+  const w1=window.XLSX.utils.aoa_to_sheet([hdr,...rows,[],tot]);w1['!cols']=[10,12,10,18,18,14,18,10].map(w=>({wch:w}));
+  window.XLSX.utils.book_append_sheet(wb,w1,`Bulanan ${_yr}`);
+  const w2=window.XLSX.utils.aoa_to_sheet([vH,...vR]);w2['!cols']=[22,10,10,18].map(w=>({wch:w}));
+  window.XLSX.utils.book_append_sheet(wb,w2,`Per Venue ${_yr}`);
+  window.XLSX.writeFile(wb,`Laporan_Bulanan_${_yr}.xlsx`);
 }
 
-function exportOnhand() {
-  if (!window.XLSX) { alert('SheetJS belum load. Coba refresh halaman.'); return; }
-  const fm      = document.getElementById('month-filter')?.value || 'ALL';
-  const onhand  = getFilteredRows().filter(r => r.status==='CONFIRM'||r.status==='TENTATIVE');
-  const onRev   = onhand.reduce((s,r)=>s+r.revenue,0);
-  const onPax   = onhand.reduce((s,r)=>s+r.pax,0);
-  const selBud  = fm==='ALL' ? MONTHS.reduce((s,m)=>s+(_budgets[m]||0),0) : (_budgets[MONTHS[parseInt(fm)]]||0);
-  const period  = fm==='ALL' ? _year : MONTHS_SHORT[parseInt(fm)]+'_'+_year;
-
-  const header  = ['Tanggal','Customer','Venue','Package','Sales','Pax','Revenue (Rp)','Status'];
-  const rows    = onhand.map(r => [fmtDate(r.date), r.name, r.venue, r.package, r.sales, r.pax, r.revenue, r.status]);
-
-  const wb = window.XLSX.utils.book_new();
-  const ws = window.XLSX.utils.aoa_to_sheet([
-    header, ...rows, [],
-    ['','TOTAL ONHAND','','','',onPax, onRev,''],
-    ['','BUDGET','','','','', selBud,''],
-    ['','GAP (Onhand - Budget)','','','','', onRev-selBud,''],
+function exOnhand(){
+  if(!window.XLSX){alert('SheetJS belum load');return;}
+  const fm=document.getElementById('mf')?.value||'ALL';
+  const oh=fRows().filter(r=>r.status==='CONFIRM'||r.status==='TENTATIVE');
+  const oR=oh.reduce((s,r)=>s+r.revenue,0),oP=oh.reduce((s,r)=>s+r.pax,0);
+  const sb=fm==='ALL'?MO.reduce((s,m)=>s+(_bud[m]||0),0):(_bud[MO[parseInt(fm)]]||0);
+  const pr=fm==='ALL'?_yr:MOS[parseInt(fm)]+'_'+_yr;
+  const hdr=['Tanggal','Customer','Venue','Package','Sales','Pax','Revenue (Rp)','Status'];
+  const rows=oh.map(r=>[fmtDate(r.date),r.name,r.venue,r.package,r.sales,r.pax,r.revenue,r.status]);
+  const wb=window.XLSX.utils.book_new();
+  const ws=window.XLSX.utils.aoa_to_sheet([hdr,...rows,[],
+    ['','TOTAL ONHAND','','','',oP,oR,''],
+    ['','BUDGET','','','','',sb,''],
+    ['','GAP (Onhand - Budget)','','','','',oR-sb,''],
   ]);
-  ws['!cols'] = [16,28,18,14,10,8,18,12].map(w => ({wch:w}));
-  window.XLSX.utils.book_append_sheet(wb, ws, `Onhand ${period}`);
-  window.XLSX.writeFile(wb, `Laporan_Onhand_${period}.xlsx`);
+  ws['!cols']=[14,26,18,14,10,8,18,12].map(w=>({wch:w}));
+  window.XLSX.utils.book_append_sheet(wb,ws,`Onhand ${pr}`);
+  window.XLSX.writeFile(wb,`Laporan_Onhand_${pr}.xlsx`);
 }
 
-// ══════════════════════════════════════════════════════
-// DEMO MODE
-// ══════════════════════════════════════════════════════
-function loadDemo() {
-  const demo = [];
-  const statPool = ['DONE','DONE','DONE','CONFIRM','CONFIRM','TENTATIVE'];
-  const pkgPool  = ['WEDDING','MEETING','BIRTHDAY','DINNER','SEMINAR','GATHERING'];
-  const salesP   = ['DWI','TINA'];
-  const names    = ['PT Maju Jaya','Bu Hartini','Reuni SMA 92','Wisuda UB','Arisan PKK','Wedding Sari','Training PLN','Seminar BPJS'];
-  let d = new Date(_year, 0, 1);
-  for (let i = 0; i < 180; i++) {
-    d.setDate(d.getDate() + Math.ceil(Math.random()*3));
-    if (d.getFullYear() > _year) break;
-    const venue = VENUES[Math.floor(Math.random()*VENUES.length)];
-    const pax   = Math.floor(Math.random()*300) + 30;
-    const price = Math.floor(Math.random()*150000 + 50000);
-    const mi    = d.getMonth();
-    const dateStr = `${d.getDate()} ${MONTHS[mi]} ${d.getFullYear()}`;
-    demo.push({ date:dateStr, name:names[Math.floor(Math.random()*names.length)]+' '+(i+1),
-      pax, revenue:pax*price, status:statPool[Math.floor(Math.random()*statPool.length)],
-      venue, package:pkgPool[Math.floor(Math.random()*pkgPool.length)],
-      sales:salesP[Math.floor(Math.random()*salesP.length)] });
+// ── Demo ──────────────────────────────────────────────────────────────
+function loadDemo(){
+  const st=['DONE','DONE','DONE','CONFIRM','CONFIRM','TENTATIVE'];
+  const pk=['WEDDING','MEETING','BIRTHDAY','DINNER','SEMINAR','GATHERING'];
+  const sl=['DWI','TINA'];
+  const nm=['PT Maju Jaya','Bu Hartini','Reuni SMA 92','Wisuda UB','Arisan PKK','Wedding Sari','Training PLN','Seminar BPJS'];
+  const demo=[];
+  for(let mi=0;mi<12;mi++){
+    for(let i=0;i<Math.floor(Math.random()*15)+5;i++){
+      const d=Math.floor(Math.random()*28)+1,v=VN[Math.floor(Math.random()*VN.length)];
+      const pax=Math.floor(Math.random()*300)+30,price=Math.floor(Math.random()*150000+50000);
+      demo.push({date:`${d} ${MO[mi]} ${_yr}`,name:nm[i%nm.length]+' '+(i+1),pax,revenue:pax*price,
+        status:st[Math.floor(Math.random()*st.length)],venue:v,package:pk[Math.floor(Math.random()*pk.length)],
+        sales:sl[Math.floor(Math.random()*sl.length)],_mo:mi,_yr:_yr});
+    }
   }
-  _rows = demo;
-  _budgets = {};
-  MONTHS.forEach(m => { _budgets[m] = Math.floor(Math.random()*50000000+80000000); });
+  _rows=demo;_bud={};MO.forEach(m=>{_bud[m]=Math.floor(Math.random()*50000000+80000000);});
   showApp(true);
 }
-
-// Enter key on token input
-document.getElementById('token-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && e.ctrlKey) doLogin();
-});
 </script>
 </body>
 </html>
