@@ -1159,14 +1159,22 @@ function filterDetailTable() {
            (!vnFil || e.venue.toUpperCase().includes(vnFil.toUpperCase()));
   });
 
-  document.getElementById('tbl-count').textContent = `${filtered.length} data`;
+  const activeFiltered = filtered.filter(e => e.status !== 'CANCEL');
+  const grandPax = activeFiltered.reduce((s,e) => s + (e.pax||0), 0);
+  const grandRev = activeFiltered.reduce((s,e) => s + getRevenue(e.revenue||0), 0);
+  document.getElementById('tbl-count').textContent =
+    `${filtered.length} data · ${grandPax.toLocaleString('id-ID')} pax · ${fmtRp(grandRev)}`;
 
   if (filtered.length === 0) {
     tbody.innerHTML = `<tr><td colspan="11" class="tbl-empty">Tidak ada data sesuai filter</td></tr>`;
     return;
   }
-  tbody.innerHTML = filtered.map(e => `
-    <tr>
+
+  // Data rows
+  let html = filtered.map(e => {
+    const revDisplay   = e.revenue > 0 ? getRevenue(e.revenue) : 0;
+    const priceDisplay = e.price   > 0 ? getRevenue(e.price)   : 0;  // ikut Nett/Gross
+    return `<tr>
       <td style="color:var(--dim);font-size:10px;">${e.bulan||'—'}</td>
       <td style="color:var(--muted)">${e.day||'—'}</td>
       <td style="font-weight:600;">${esc(e.customer)}</td>
@@ -1174,12 +1182,26 @@ function filterDetailTable() {
       <td>${esc(e.package)}</td>
       <td><span class="badge ${e.status}">${e.status}</span></td>
       <td class="tbl-pax">${e.pax||'—'}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:10px;">${e.price > 0 ? fmtRpFull(e.price) : '—'}</td>
-      <td class="tbl-revenue">${e.revenue > 0 ? fmtRp(e.revenue) : '—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:10px;">${priceDisplay > 0 ? fmtRpFull(priceDisplay) : '—'}</td>
+      <td class="tbl-revenue">${revDisplay > 0 ? fmtRp(revDisplay) : '—'}</td>
       <td style="color:var(--muted)">${esc(e.sales)}</td>
       <td style="color:var(--dim);font-size:10px;">${esc(e.time)}</td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
+
+  // GRAND TOTAL row
+  html += `<tr style="background:rgba(201,168,76,.12);border-top:2px solid rgba(201,168,76,.4);">
+    <td colspan="2" style="font-weight:800;color:var(--gold);font-size:11px;letter-spacing:.05em;padding:8px 12px;">TOTAL</td>
+    <td colspan="4" style="font-size:10px;color:var(--dim);">${filtered.length} event · ${activeFiltered.length} aktif</td>
+    <td style="font-weight:800;color:var(--gold);font-size:12px;">${grandPax.toLocaleString('id-ID')}</td>
+    <td></td>
+    <td style="font-weight:800;color:var(--gold);font-size:12px;font-family:'DM Mono',monospace;">${fmtRp(grandRev)}</td>
+    <td colspan="2"></td>
+  </tr>`;
+
+  tbody.innerHTML = html;
 }
+
 
 // ── SECTION: PACKAGE & TYPE OF EVENT DONUT ──────────────────
 let _pkgChartInst = null;
@@ -1628,65 +1650,81 @@ function _showToast(msg) {
 // ══════════════════════════════════════════════════════════════════
 function exportTableExcel() {
   if (typeof XLSX === 'undefined') {
-    _showToast('⚠ SheetJS belum termuat. Coba refresh halaman.');
-    return;
+    _showToast('⚠ SheetJS belum termuat. Coba refresh halaman.'); return;
   }
-  const events = getFilteredEvents();
-  if (!events.length) { _showToast('⚠ Tidak ada data untuk di-export.'); return; }
+  const events = getFilteredEvents().filter(e => e.status !== 'CANCEL');
+  if (!events.length) { _showToast('⚠ Tidak ada data.'); return; }
 
+  const modeLabel = _revenueMode === 'nett' ? 'Nett' : 'Gross';
   const headers = ['Bulan','Tgl','Customer','Venue','Package','Type of Event',
-                   'Status','Pax','Harga/Pax','Revenue','Sales','Waktu'];
-  const rows = events.map(e => [
-    e.bulan || '—', e.day || '—', e.customer, e.venue, e.package,
-    e.eventType || e.package, e.status, e.pax,
-    e.price > 0 ? (getRevenue(e.price * e.pax) / (e.pax||1)) : 0,
-    e.revenue > 0 ? getRevenue(e.revenue) : 0,
+                   'Status','Pax','Harga/Pax','Revenue '+modeLabel,'Sales','Waktu'];
+
+  // Semua angka sebagai NUMBER agar bisa formula di Excel
+  const dataRows = events.map(e => [
+    e.bulan || '', e.day || '', e.customer, e.venue,
+    e.package, e.eventType || e.package, e.status,
+    e.pax || 0,
+    e.price > 0 ? Math.round(getRevenue(e.price)) : 0,        // Harga/Pax Nett/Gross
+    e.revenue > 0 ? Math.round(getRevenue(e.revenue)) : 0,    // Revenue Nett/Gross
     e.sales, e.time
   ]);
 
-  const wsData = [headers, ...rows];
-  const ws     = XLSX.utils.aoa_to_sheet(wsData);
+  // Total row
+  const totalPax = dataRows.reduce((s,r)=>s+r[7],0);
+  const totalRev = dataRows.reduce((s,r)=>s+r[9],0);
+  const totalRow = ['TOTAL','','','','','',
+    dataRows.length+' event', totalPax, '', totalRev, '', ''];
+
+  const wsData = [headers, ...dataRows, totalRow];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
 
   // Column widths
   ws['!cols'] = [
-    {wch:10},{wch:5},{wch:28},{wch:16},{wch:14},{wch:18},
-    {wch:12},{wch:6},{wch:14},{wch:14},{wch:8},{wch:12}
+    {wch:12},{wch:5},{wch:30},{wch:16},{wch:14},{wch:18},
+    {wch:12},{wch:8},{wch:16},{wch:18},{wch:8},{wch:12}
   ];
 
-  // Format header row
-  headers.forEach((_, ci) => {
-    const cell = ws[XLSX.utils.encode_cell({r:0, c:ci})];
-    if (cell) {
-      cell.s = {
-        font:    { bold:true, color:{ rgb:'C9A84C' } },
-        fill:    { fgColor:{ rgb:'1A1428' } },
-        alignment: { horizontal:'center' }
-      };
-    }
-  });
-
-  // Format number columns (Harga, Revenue)
-  rows.forEach((_, ri) => {
-    [8,9].forEach(ci => {
-      const ref = XLSX.utils.encode_cell({r:ri+1, c:ci});
+  // Format number columns sebagai number (angka murni, bisa SUM)
+  const lastDataRow = dataRows.length + 1; // +1 untuk header
+  for (let ri = 1; ri <= lastDataRow; ri++) {
+    [7, 8, 9].forEach(ci => {
+      const ref = XLSX.utils.encode_cell({r:ri, c:ci});
       const cell = ws[ref];
       if (cell && typeof cell.v === 'number') {
-        cell.z = '#,##0';
+        cell.t = 'n'; // pastikan tipe number
+        cell.z = '#,##0'; // format ribuan tanpa desimal
       }
     });
+  }
+
+  // Style header
+  headers.forEach((_, ci) => {
+    const cell = ws[XLSX.utils.encode_cell({r:0, c:ci})];
+    if (cell) cell.s = {
+      font: { bold:true, color:{ rgb:'C9A84C' } },
+      fill: { fgColor:{ rgb:'1A1428' } },
+      alignment: { horizontal:'center' }
+    };
+  });
+
+  // Style total row
+  const totalRowIdx = dataRows.length + 1;
+  [0,7,9].forEach(ci => {
+    const ref = XLSX.utils.encode_cell({r:totalRowIdx, c:ci});
+    const cell = ws[ref];
+    if (cell) cell.s = { font: { bold:true }, fill: { fgColor:{ rgb:'FFF3CD' } } };
   });
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Detail Booking');
-
-  // Add summary sheet
   _addSummarySheet(wb);
 
   const month = _selMonth === 'ALL' ? 'Semua_Bulan' : _selMonth;
   const date  = new Date().toISOString().slice(0,10);
-  XLSX.writeFile(wb, 'Lotus_Garden_Report_' + month + '_' + date + '.xlsx');
-  _showToast('📊 File Excel berhasil diunduh!');
+  XLSX.writeFile(wb, `Lotus_Garden_${modeLabel}_${month}_${date}.xlsx`);
+  _showToast(`📊 Excel ${modeLabel} berhasil diunduh!`);
 }
+
 
 function _addSummarySheet(wb) {
   if (!_reportData) return;
