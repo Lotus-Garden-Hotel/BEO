@@ -911,13 +911,20 @@ function renderDonutSVG(events) {
 
 // ── SECTION 3: PERFORMANCE CHART 12 BULAN ───────────────────────
 function renderPerformanceChart() {
-  const maxRev = Math.max(...MONTHS.map(m => (_reportData?.[m]?.revenue||0)), 1);
-  const maxBud = Math.max(...MONTHS.map(m => getBudgetFor(m).targetRevenue), maxRev, 1);
+  // Helper: revenue per bulan dengan Nett/Gross filter
+  function monthRev(m) {
+    return (_reportData?.[m]?.events||[])
+      .filter(e=>e.status!=='CANCEL')
+      .reduce((s,e)=>s+getRevenue(e.revenue||0),0);
+  }
+
+  const maxRev = Math.max(...MONTHS.map(m => monthRev(m)), 1);
+  const maxBud = Math.max(...MONTHS.map(m => getBudgetDisplay(getBudgetFor(m).targetRevenue)), maxRev, 1);
   const absMax = Math.max(maxRev, maxBud);
 
   const bars = MONTHS.map((m, i) => {
-    const rev    = _reportData?.[m]?.revenue || 0;
-    const bud    = getBudgetFor(m).targetRevenue;
+    const rev    = monthRev(m);
+    const bud    = getBudgetDisplay(getBudgetFor(m).targetRevenue);
     const cnt    = _reportData?.[m]?.count   || 0;
     const h_rev  = Math.round(rev / absMax * 90);
     const h_bud  = bud > 0 ? Math.round(bud / absMax * 90) : 0;
@@ -1734,13 +1741,14 @@ function _addSummarySheet(wb) {
     const d = _reportData[m];
     const b = getBudgetFor(m);
     const rev = d ? (d.events||[]).filter(e=>e.status!=='CANCEL').reduce((s,e)=>s+getRevenue(e.revenue),0) : 0;
-    const ach = b.targetRevenue > 0 ? Math.round(rev/b.targetRevenue*100) : 0;
+    const budDisplay = getBudgetDisplay(b.targetRevenue);
+    const ach = budDisplay > 0 ? Math.round(rev/budDisplay*100) : 0;
     return [
       m, d ? d.count : 0,
       d ? d.countConfirm : 0, d ? d.countTentative : 0,
       d ? d.countDone : 0, d ? d.countCancel : 0,
-      d ? d.pax : 0, rev, b.targetRevenue,
-      b.targetRevenue > 0 ? (ach + '%') : '—'
+      d ? d.pax : 0, rev, budDisplay,
+      budDisplay > 0 ? (ach + '%') : '—'
     ];
   });
 
