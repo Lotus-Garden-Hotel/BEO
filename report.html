@@ -156,6 +156,9 @@ body {
 }
 .ctrl-btn:hover { border-color:var(--gold); color:var(--gold); }
 .ctrl-btn.primary { background:rgba(201,168,76,.1); border-color:rgba(201,168,76,.3); color:var(--gold); }
+.ctrl-btn.onhand-off { background:var(--card); border:1.5px solid var(--border2); color:var(--muted); font-weight:700; }
+.ctrl-btn.onhand-on  { background:rgba(245,158,11,.18); border:1.5px solid #f59e0b; color:#fbbf24; font-weight:700; box-shadow:0 0 8px rgba(245,158,11,.25); animation:onhandPulse 2s ease-in-out infinite; }
+@keyframes onhandPulse { 0%,100%{box-shadow:0 0 6px rgba(245,158,11,.2)} 50%{box-shadow:0 0 14px rgba(245,158,11,.5)} }
 .topbar-user { font-size:10px; color:var(--dim); white-space:nowrap; }
 
 /* ── MAIN CONTENT ── */
@@ -394,6 +397,76 @@ body.light-mode .hm-cell.lv5     { background:rgba(140,100,20,1);   color:#fff; 
   .card, .kpi-card, .chart-card, .onhand-card { border-color:#ddd; background:#fff; }
 }
 
+/* ── BOOKING DETAIL MODAL ── */
+.bk-modal-overlay {
+  position:fixed; inset:0; z-index:500;
+  background:rgba(0,0,0,.7); backdrop-filter:blur(6px);
+  display:flex; align-items:center; justify-content:center; padding:16px;
+  animation:fadeIn .15s ease;
+}
+.bk-modal-overlay.hide { display:none; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.bk-modal {
+  background:var(--card); border:1px solid var(--border2);
+  border-radius:20px; width:100%; max-width:480px;
+  max-height:90vh; overflow-y:auto;
+  animation:modalUp .2s cubic-bezier(.175,.885,.32,1.275) both;
+}
+@keyframes modalUp { from{opacity:0;transform:translateY(16px) scale(.97)} to{opacity:1;transform:none} }
+.bk-modal-head {
+  padding:20px 22px 14px; border-bottom:1px solid var(--border);
+  display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+}
+.bk-modal-title { font-family:'Cormorant Garamond',serif; font-size:18px; font-weight:700; color:var(--gold); }
+.bk-modal-sub { font-size:10px; color:var(--dim); margin-top:2px; letter-spacing:.05em; }
+.bk-modal-close {
+  background:none; border:none; color:var(--dim); font-size:18px;
+  cursor:pointer; padding:2px 6px; border-radius:6px; transition:color .15s; flex-shrink:0;
+}
+.bk-modal-close:hover { color:var(--text); }
+.bk-modal-body { padding:16px 22px 20px; }
+.bk-status-row { display:flex; align-items:center; gap:8px; margin-bottom:16px; }
+.bk-status-badge {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:4px 12px; border-radius:20px; font-size:10px; font-weight:800;
+  letter-spacing:.08em; text-transform:uppercase;
+}
+.bk-status-badge.CONFIRM   { background:rgba(99,102,241,.2);  color:#818cf8; border:1px solid rgba(99,102,241,.3); }
+.bk-status-badge.TENTATIVE { background:rgba(245,158,11,.2);  color:#fbbf24; border:1px solid rgba(245,158,11,.3); }
+.bk-status-badge.DONE      { background:rgba(16,185,129,.15); color:#34d399; border:1px solid rgba(16,185,129,.25);}
+.bk-status-badge.CANCEL    { background:rgba(239,68,68,.15);  color:#f87171; border:1px solid rgba(239,68,68,.25); }
+.bk-date-chip {
+  font-size:10px; color:var(--muted); background:var(--surface);
+  border:1px solid var(--border); border-radius:8px; padding:4px 10px;
+}
+.bk-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+.bk-grid.full { grid-template-columns:1fr; }
+.bk-field { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 12px; }
+.bk-field-lbl { font-size:8px; color:var(--dim); letter-spacing:.12em; text-transform:uppercase; margin-bottom:4px; }
+.bk-field-val { font-size:12px; color:var(--text); font-weight:600; word-break:break-word; }
+.bk-field-val.gold { color:var(--gold); font-family:'DM Mono',monospace; }
+.bk-field-val.muted { color:var(--muted); font-weight:400; }
+.bk-divider { border:none; border-top:1px solid var(--border); margin:14px 0; }
+.bk-modal-foot { padding:0 22px 20px; display:flex; gap:8px; flex-wrap:wrap; }
+.bk-btn {
+  flex:1; min-width:120px; padding:12px; border-radius:12px; font-size:12px;
+  font-weight:700; cursor:pointer; border:none; transition:all .2s; letter-spacing:.04em;
+}
+.bk-btn-edit {
+  background:linear-gradient(135deg,rgba(201,168,76,.2),rgba(201,168,76,.1));
+  border:1px solid rgba(201,168,76,.4); color:var(--gold);
+}
+.bk-btn-edit:hover { background:rgba(201,168,76,.3); transform:translateY(-1px); }
+.bk-btn-close {
+  background:var(--surface); border:1px solid var(--border); color:var(--muted);
+}
+.bk-btn-close:hover { border-color:var(--border2); color:var(--text); }
+.bk-loading-row { text-align:center; padding:24px; color:var(--dim); font-size:12px; }
+.bk-spinner { width:24px; height:24px; border:2px solid var(--border); border-top-color:var(--gold); border-radius:50%; animation:spin .7s linear infinite; display:inline-block; margin-bottom:8px; }
+/* Row hover cursor */
+.detail-tbl tbody tr.clickable-row { cursor:pointer; }
+.detail-tbl tbody tr.clickable-row:hover td { background:rgba(201,168,76,.04); }
+
 /* ── ANIMATIONS ── */
 @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
 .fade-up { animation:fadeUp .4s ease both; }
@@ -443,6 +516,7 @@ body.light-mode .hm-cell.lv5     { background:rgba(140,100,20,1);   color:#fff; 
         <option value="NOVEMBER">November</option>
         <option value="DESEMBER">Desember</option>
       </select>
+      <button class="ctrl-btn onhand-off" id="btn-onhand" onclick="toggleOnhand()" title="Filter hanya Confirm & Tentative (belum Done/Cancel)">⏳ ONHAND</button>
       <button class="ctrl-btn" onclick="loadAll()">↺ Refresh</button>
       <button class="ctrl-btn" onclick="window.print()">🖨 Print</button>
       <button class="ctrl-btn primary" onclick="exportExcel()">📊 Export Excel</button>
@@ -456,7 +530,24 @@ body.light-mode .hm-cell.lv5     { background:rgba(140,100,20,1);   color:#fff; 
     <div style="text-align:center;padding:60px;color:var(--dim);">Memuat report...</div>
   </div>
 
-</div>
+  <!-- BOOKING DETAIL MODAL -->
+  <div class="bk-modal-overlay hide" id="bk-modal-overlay" onclick="closeBkModal(event)">
+    <div class="bk-modal" id="bk-modal">
+      <div class="bk-modal-head">
+        <div>
+          <div class="bk-modal-title" id="bk-m-customer">—</div>
+          <div class="bk-modal-sub" id="bk-m-sub">—</div>
+        </div>
+        <button class="bk-modal-close" onclick="hideBkModal()">✕</button>
+      </div>
+      <div class="bk-modal-body" id="bk-modal-body">
+        <div class="bk-loading-row"><div class="bk-spinner"></div><br>Memuat detail...</div>
+      </div>
+      <div class="bk-modal-foot" id="bk-modal-foot"></div>
+    </div>
+  </div>
+
+</div><!-- /#app -->
 
 <script>
 // ══════════════════════════════════════════════════════════════════
@@ -491,6 +582,7 @@ let _reportData = null;   // { JANUARI:{events,revenue,pax,count,...}, ... }
 let _budgetData = null;   // [{ bulan, targetRevenue, targetEvents, targetPax }, ...]
 let _selMonth  = 'ALL';
 let _revenueMode = 'nett'; // 'nett' atau 'gross'
+let _onhandMode  = false;  // true = tampilkan hanya CONFIRM & TENTATIVE
 const VAT = 1.21; // PPN 11% → sebenarnya 1.11, tapi pakai 1.21 sesuai request
 
 function getRevenue(grossValue) {
@@ -509,6 +601,18 @@ firebase.initializeApp(FIREBASE_CONFIG);
 const _auth     = firebase.auth();
 const _provider = new firebase.auth.GoogleAuthProvider();
 
+// [FIX-B2] Set persistence LOCAL secara eksplisit agar session survive hard refresh
+_auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
+
+// [FIX-B2] Sembunyikan login gate selama Firebase restore session (~300-800ms)
+// Hindari flicker "minta login" padahal session masih valid
+const _gate = document.getElementById('login-gate');
+_gate.classList.add('hide'); // sembunyikan dulu
+let _sessionRestoreTimeout = setTimeout(() => {
+  // Jika 3 detik belum ada user → tampilkan login gate
+  if (!_authVerified) _gate.classList.remove('hide');
+}, 3000);
+
 // Race condition guard — sama dengan entry_live_secure.html
 let _authVerified = false;
 let _authInFlight = false;
@@ -518,6 +622,7 @@ _auth.onAuthStateChanged(async user => {
   const errEl  = document.getElementById('login-err');
 
   if (!user) {
+    clearTimeout(_sessionRestoreTimeout);
     if (!_authVerified) {
       gate.classList.remove('hide');
       document.getElementById('app').classList.remove('show');
@@ -657,6 +762,20 @@ function onFilterChange() {
   if (_reportData) renderAll();
 }
 
+// ── ONHAND TOGGLE ────────────────────────────────────────────────
+function toggleOnhand() {
+  _onhandMode = !_onhandMode;
+  const btn = document.getElementById('btn-onhand');
+  if (btn) {
+    btn.className = 'ctrl-btn ' + (_onhandMode ? 'onhand-on' : 'onhand-off');
+    btn.textContent = _onhandMode ? '⏳ ONHAND ✓' : '⏳ ONHAND';
+  }
+  // Saat ONHAND aktif, reset tbl-status-filter agar tidak bentrok
+  const stFil = document.getElementById('tbl-status-filter');
+  if (stFil && _onhandMode) stFil.value = '';
+  if (_reportData) renderAll();
+}
+
 // ══════════════════════════════════════════════════════════════════
 // HELPERS
 // ══════════════════════════════════════════════════════════════════
@@ -675,10 +794,15 @@ function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 
 function getFilteredEvents() {
   if (!_reportData) return [];
+  let evts;
   if (_selMonth === 'ALL') {
-    return MONTHS.flatMap(m => (_reportData[m]?.events || []).map(e => ({...e, bulan:m})));
+    evts = MONTHS.flatMap(m => (_reportData[m]?.events || []).map(e => ({...e, bulan:m})));
+  } else {
+    evts = (_reportData[_selMonth]?.events || []).map(e => ({...e, bulan:_selMonth}));
   }
-  return (_reportData[_selMonth]?.events || []).map(e => ({...e, bulan:_selMonth}));
+  // ONHAND mode: hanya CONFIRM & TENTATIVE
+  if (_onhandMode) evts = evts.filter(e => e.status === 'CONFIRM' || e.status === 'TENTATIVE');
+  return evts;
 }
 
 function getBudgetFor(month) {
@@ -1113,16 +1237,19 @@ function renderSalesLeaderboard() {
 
 // ── SECTION 6: DETAIL TABLE ─────────────────────────────────────
 function renderDetailTable() {
+  const onhandBadge = _onhandMode
+    ? `<span style="background:rgba(245,158,11,.2);border:1px solid #f59e0b;color:#fbbf24;font-size:9px;font-weight:800;padding:3px 10px;border-radius:20px;letter-spacing:.08em;margin-left:8px;">⏳ ONHAND AKTIF</span>`
+    : '';
   const sec = document.createElement('div');
   sec.innerHTML = `
     <div class="section-hdr" style="margin-top:28px;">
-      <div class="section-title">◆ Detail Booking</div>
-      <div class="section-sub">Semua Transaksi</div>
+      <div class="section-title">◆ Detail Booking${onhandBadge}</div>
+      <div class="section-sub">${_onhandMode ? 'Hanya Confirm & Tentative' : 'Semua Transaksi'}</div>
     </div>
     <div class="chart-card full fade-up">
       <div class="tbl-controls">
         <input class="tbl-search" id="tbl-search" placeholder="🔍 Cari customer, venue, package..." oninput="filterDetailTable()">
-        <select class="tbl-filter" id="tbl-status-filter" onchange="filterDetailTable()">
+        <select class="tbl-filter" id="tbl-status-filter" onchange="filterDetailTable()" ${_onhandMode ? 'disabled title="Nonaktifkan ONHAND untuk filter status"' : ''}>
           <option value="">Semua Status</option>
           <option>CONFIRM</option><option>TENTATIVE</option><option>DONE</option><option>CANCEL</option>
         </select>
@@ -1158,11 +1285,13 @@ function filterDetailTable() {
   const tbody  = document.getElementById('detail-tbody');
   if (!tbody) return;
 
-  const events = getFilteredEvents();
+  const events = getFilteredEvents(); // sudah terfilter ONHAND jika aktif
   const filtered = events.filter(e => {
     const txt = [e.customer,e.venue,e.package,e.sales,e.eventType].join(' ').toLowerCase();
+    // Jika ONHAND aktif, abaikan status filter (sudah dihandle di getFilteredEvents)
+    const statusMatch = _onhandMode ? true : (!stFil || e.status === stFil);
     return (!q || txt.includes(q)) &&
-           (!stFil || e.status === stFil) &&
+           statusMatch &&
            (!vnFil || e.venue.toUpperCase().includes(vnFil.toUpperCase()));
   });
 
@@ -1177,11 +1306,20 @@ function filterDetailTable() {
     return;
   }
 
-  // Data rows
-  let html = filtered.map(e => {
+  // Data rows — simpan event obj ke cache global, row pakai index
+  if (!window._bkRowCache) window._bkRowCache = {};
+  window._bkRowCache = {}; // reset tiap render
+
+  let html = filtered.map((e, idx) => {
     const revDisplay   = e.revenue > 0 ? getRevenue(e.revenue) : 0;
-    const priceDisplay = e.price   > 0 ? getRevenue(e.price)   : 0;  // ikut Nett/Gross
-    return `<tr>
+    const priceDisplay = e.price   > 0 ? getRevenue(e.price)   : 0;
+    // Simpan ke cache — aman dari karakter spesial
+    window._bkRowCache[idx] = {
+      day: e.day, bulan: e.bulan, venue: e.venue, customer: e.customer,
+      status: e.status, package: e.package, eventType: e.eventType,
+      sales: e.sales, time: e.time, pax: e.pax, price: e.price, revenue: e.revenue
+    };
+    return `<tr class="clickable-row" onclick="openBkModal(window._bkRowCache[${idx}])">
       <td style="color:var(--dim);font-size:10px;">${e.bulan||'—'}</td>
       <td style="color:var(--muted)">${e.day||'—'}</td>
       <td style="font-weight:600;">${esc(e.customer)}</td>
@@ -1582,8 +1720,221 @@ function setRevenueMode(mode) {
 }
 
 // ══════════════════════════════════════════════════════════════════
-// THEME TOGGLE
+// BOOKING DETAIL MODAL
 // ══════════════════════════════════════════════════════════════════
+
+// Bulan index map untuk konversi ke YYYY-MM-DD
+const MONTH_NUM = {
+  JANUARI:'01',FEBRUARI:'02',MARET:'03',APRIL:'04',MEI:'05',JUNI:'06',
+  JULI:'07',AGUSTUS:'08',SEPTEMBER:'09',OKTOBER:'10',NOVEMBER:'11',DESEMBER:'12'
+};
+
+function openBkModal(eventObj) {
+  // eventObj = {day, bulan, venue, customer, status, package, eventType, sales, time, pax, price, revenue}
+
+  // [FIX-B1] Batalkan fetch sebelumnya jika masih berjalan
+  if (window._bkAbortCtrl) { window._bkAbortCtrl.abort(); }
+  window._bkAbortCtrl = new AbortController();
+  const fetchId = ++_bkFetchCounter; // ID unik per open, cegah stale write
+
+  const overlay = document.getElementById('bk-modal-overlay');
+  const body    = document.getElementById('bk-modal-body');
+  const foot    = document.getElementById('bk-modal-foot');
+
+  // Header
+  document.getElementById('bk-m-customer').textContent = eventObj.customer || '—';
+  document.getElementById('bk-m-sub').textContent =
+    (eventObj.bulan || '') + ' · ' + (eventObj.venue || '') + ' · ' + (eventObj.sales || '');
+
+  // Loading state
+  body.innerHTML = `<div class="bk-loading-row"><div class="bk-spinner"></div><br>Memuat detail...</div>`;
+  foot.innerHTML = '';
+  overlay.classList.remove('hide');
+  document.body.style.overflow = 'hidden';
+
+  // Fetch detail via GAS CHECK action
+  const mm  = MONTH_NUM[eventObj.bulan] || '01';
+  const dd  = String(eventObj.day || 1).padStart(2, '0');
+  const dateStr = `2026-${mm}-${dd}`;
+
+  _fetchBkDetail(eventObj, dateStr, fetchId, window._bkAbortCtrl.signal);
+}
+
+// Counter untuk guard stale fetch
+let _bkFetchCounter = 0;
+
+async function _fetchBkDetail(ev, dateStr, fetchId, signal) {
+  const body = document.getElementById('bk-modal-body');
+  const foot = document.getElementById('bk-modal-foot');
+  const isAdmin = (window._userRole === 'ADMIN' || window._userRole === 'SUPER_ADMIN');
+
+  let detail = null;
+  try {
+    // [FIX-B1] Timeout 5 detik + abort signal — tidak gantung selamanya
+    const timeoutId = setTimeout(() => { if (window._bkAbortCtrl) window._bkAbortCtrl.abort(); }, 5000);
+    const url = GAS_URL + '?' + new URLSearchParams({
+      action: 'CHECK', date: dateStr, venue: ev.venue,
+      sheet: ev.bulan, idToken: _idToken
+    });
+    const res  = await fetch(url, { redirect:'follow', signal });
+    clearTimeout(timeoutId);
+    const data = await res.json();
+    if (data.ok && data.data) detail = data.data;
+  } catch(err) {
+    if (err.name === 'AbortError') return; // [FIX-B1] fetch dibatalkan → jangan tulis apapun
+    // Error lain → lanjut pakai data report saja
+  }
+
+  // [FIX-B1] Cek apakah ini masih fetch yang relevan (bukan fetch lama yang stale)
+  if (fetchId !== _bkFetchCounter) return;
+
+  // Merge: data GAS lebih lengkap, fallback ke data report
+  const d = {
+    customer:      detail?.customer      || ev.customer || '—',
+    status:        detail?.status        || ev.status   || '—',
+    venue:         ev.venue              || '—',
+    package:       detail?.package       || ev.package  || '—',
+    eventType:     ev.eventType          || '—',
+    sales:         detail?.sales         || ev.sales    || '—',
+    time:          detail?.time          || ev.time     || '—',
+    setup:         detail?.setup         || '—',
+    pax:           detail?.pax           || ev.pax      || '—',
+    price:         detail?.price         || ev.price    || 0,
+    eventTitle:    detail?.eventTitle    || '—',
+    contactPerson: detail?.contactPerson || '—',
+    phone:         detail?.phone         || '—',
+    notes:         detail?.notes         || '—',
+    source:        detail?.source        || ev.source   || 'BULAN'
+  };
+
+  const priceDisp  = d.price  > 0 ? fmtRpFull(getRevenue(d.price))  : '—';
+  const revDisp    = (ev.revenue||0) > 0 ? fmtRp(getRevenue(ev.revenue)) : '—';
+  const modeLabel  = _revenueMode === 'nett' ? 'Nett' : 'Gross';
+  const ovfBadge   = d.source === 'OVERFLOW'
+    ? `<span style="font-size:9px;background:rgba(93,173,226,.15);color:#5dade2;border:1px solid rgba(93,173,226,.3);border-radius:6px;padding:2px 7px;margin-left:6px;">OVERFLOW</span>` : '';
+
+  body.innerHTML = `
+    <div class="bk-status-row">
+      <span class="bk-status-badge ${d.status}">${d.status}</span>
+      <span class="bk-date-chip">📅 ${ev.bulan} ${ev.day}, 2026</span>
+      ${ovfBadge}
+    </div>
+
+    <div class="bk-grid">
+      <div class="bk-field">
+        <div class="bk-field-lbl">Venue</div>
+        <div class="bk-field-val">${esc(d.venue)}</div>
+      </div>
+      <div class="bk-field">
+        <div class="bk-field-lbl">Waktu</div>
+        <div class="bk-field-val">${esc(d.time)}</div>
+      </div>
+    </div>
+
+    <div class="bk-grid">
+      <div class="bk-field">
+        <div class="bk-field-lbl">Package</div>
+        <div class="bk-field-val">${esc(d.package)}</div>
+      </div>
+      <div class="bk-field">
+        <div class="bk-field-lbl">Type of Event</div>
+        <div class="bk-field-val">${esc(d.eventType)}</div>
+      </div>
+    </div>
+
+    <div class="bk-grid">
+      <div class="bk-field">
+        <div class="bk-field-lbl">Pax</div>
+        <div class="bk-field-val">${esc(String(d.pax))}</div>
+      </div>
+      <div class="bk-field">
+        <div class="bk-field-lbl">Sales</div>
+        <div class="bk-field-val">${esc(d.sales)}</div>
+      </div>
+    </div>
+
+    <div class="bk-grid">
+      <div class="bk-field">
+        <div class="bk-field-lbl">Harga/Pax (${modeLabel})</div>
+        <div class="bk-field-val gold">${priceDisp}</div>
+      </div>
+      <div class="bk-field">
+        <div class="bk-field-lbl">Revenue (${modeLabel})</div>
+        <div class="bk-field-val gold">${revDisp}</div>
+      </div>
+    </div>
+
+    <hr class="bk-divider">
+
+    <div class="bk-grid full">
+      <div class="bk-field">
+        <div class="bk-field-lbl">Event Title</div>
+        <div class="bk-field-val ${d.eventTitle==='—'?'muted':''}">${esc(d.eventTitle)}</div>
+      </div>
+    </div>
+
+    <div class="bk-grid">
+      <div class="bk-field">
+        <div class="bk-field-lbl">Contact Person</div>
+        <div class="bk-field-val ${d.contactPerson==='—'?'muted':''}">${esc(d.contactPerson)}</div>
+      </div>
+      <div class="bk-field">
+        <div class="bk-field-lbl">Phone</div>
+        <div class="bk-field-val ${d.phone==='—'?'muted':''}">${esc(d.phone)}</div>
+      </div>
+    </div>
+
+    ${d.notes !== '—' ? `
+    <div class="bk-grid full" style="margin-top:0">
+      <div class="bk-field">
+        <div class="bk-field-lbl">Notes</div>
+        <div class="bk-field-val muted" style="font-size:11px;line-height:1.5;">${esc(d.notes)}</div>
+      </div>
+    </div>` : ''}
+
+    <div class="bk-grid full" style="margin-top:10px">
+      <div class="bk-field">
+        <div class="bk-field-lbl">Setup</div>
+        <div class="bk-field-val muted">${esc(d.setup)}</div>
+      </div>
+    </div>`;
+
+  // Footer buttons — simpan params ke cache untuk menghindari encoding issue di onclick
+  window._bkEditParams = { dateStr, venue: ev.venue, bulan: ev.bulan };
+  const editHtml = isAdmin ? `
+    <button class="bk-btn bk-btn-edit" onclick="openEntryEdit(window._bkEditParams.dateStr, window._bkEditParams.venue, window._bkEditParams.bulan)">
+      ✏️ Edit di Entry Form
+    </button>` : '';
+
+  foot.innerHTML = editHtml + `
+    <button class="bk-btn bk-btn-close" onclick="hideBkModal()">Tutup</button>`;
+}
+
+function openEntryEdit(dateStr, venue, bulan) {
+  // Cari entry.html di path yang sama dengan report.html
+  const base = window.location.href.replace(/[^\/]*$/, '');
+  const url  = base + 'entry.html?prefill_date=' + encodeURIComponent(dateStr)
+                    + '&prefill_venue=' + encodeURIComponent(venue)
+                    + '&prefill_month=' + encodeURIComponent(bulan);
+  window.open(url, '_blank');
+}
+
+function hideBkModal() {
+  // [FIX-B1] Batalkan fetch yang masih berjalan saat modal ditutup
+  if (window._bkAbortCtrl) { window._bkAbortCtrl.abort(); window._bkAbortCtrl = null; }
+  document.getElementById('bk-modal-overlay').classList.add('hide');
+  document.body.style.overflow = '';
+}
+
+function closeBkModal(e) {
+  // Tutup jika klik overlay (bukan konten modal)
+  if (e.target === document.getElementById('bk-modal-overlay')) hideBkModal();
+}
+
+// Tutup modal dengan Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') hideBkModal();
+});
 function toggleTheme() {
   const isLight = document.body.classList.toggle('light-mode');
   const btn = document.getElementById('btn-theme');
