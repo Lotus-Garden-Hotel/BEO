@@ -347,23 +347,33 @@ table.detail-tbl { width:100%; border-collapse:collapse; font-size:11px; }
 canvas { width:100% !important; }
 
 /* ── HEATMAP CALENDAR ── */
-.heatmap-wrap { overflow-x:auto; padding-bottom:4px; }
-.heatmap-grid { display:grid; grid-template-columns:repeat(13,1fr); gap:3px; min-width:520px; }
+.heatmap-wrap { overflow-x:auto; padding-bottom:8px; }
+.heatmap-grid { display:grid; grid-template-columns:repeat(13,1fr); gap:6px; min-width:600px; }
 .hm-header { font-size:8px; color:var(--dim); text-align:center; padding:2px 0; letter-spacing:.05em; }
 .hm-cell {
-  aspect-ratio:1; border-radius:3px; cursor:pointer;
-  background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.04);
+  aspect-ratio:1; border-radius:6px; cursor:pointer;
+  background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06);
   display:flex; align-items:center; justify-content:center;
-  font-size:7px; color:transparent; transition:all .15s;
-  position:relative;
+  font-size:14px; font-weight:800; color:rgba(255,255,255,.25);
+  transition:all .2s; font-family:'DM Mono',monospace;
 }
-.hm-cell:hover { border-color:var(--gold); color:var(--text); z-index:2; }
-.hm-cell.lv1 { background:rgba(201,168,76,.15); }
-.hm-cell.lv2 { background:rgba(201,168,76,.35); }
-.hm-cell.lv3 { background:rgba(201,168,76,.6); }
-.hm-cell.lv4 { background:rgba(201,168,76,.85); }
-.hm-cell.lv5 { background:rgba(201,168,76,1); color:#000; }
-.hm-venue-lbl { font-size:9px; color:var(--muted); padding:2px 4px; white-space:nowrap; }
+.hm-cell:hover { border-color:var(--gold); transform:scale(1.05); z-index:2; }
+.hm-cell.lv0 { color:rgba(255,255,255,.15); }
+.hm-cell.lv1 { background:rgba(201,168,76,.18); color:rgba(201,168,76,.7); }
+.hm-cell.lv2 { background:rgba(201,168,76,.35); color:rgba(201,168,76,.85); }
+.hm-cell.lv3 { background:rgba(201,168,76,.55); color:#fff; }
+.hm-cell.lv4 { background:rgba(201,168,76,.78); color:#fff; }
+.hm-cell.lv5 { background:rgba(201,168,76,1);   color:#1a1000; }
+/* Light mode heatmap */
+body.light-mode .hm-cell         { background:rgba(0,0,0,.04); border-color:rgba(0,0,0,.08); color:rgba(0,0,0,.2); }
+body.light-mode .hm-cell.lv0     { color:rgba(0,0,0,.15); }
+body.light-mode .hm-cell.lv1     { background:rgba(160,120,48,.15); color:rgba(140,100,30,.8); }
+body.light-mode .hm-cell.lv2     { background:rgba(160,120,48,.32); color:rgba(100,70,10,.9); }
+body.light-mode .hm-cell.lv3     { background:rgba(160,120,48,.55); color:#fff; }
+body.light-mode .hm-cell.lv4     { background:rgba(160,120,48,.78); color:#fff; }
+body.light-mode .hm-cell.lv5     { background:rgba(140,100,20,1);   color:#fff; }
+.hm-venue-lbl { font-size:11px; font-weight:600; color:var(--text); padding:4px 6px; white-space:nowrap; }
+.hm-header    { font-size:10px; font-weight:700; color:var(--dim); text-align:center; padding:4px 2px; letter-spacing:.05em; }
 
 /* ── OCCUPANCY TABLE ── */
 .occ-table { width:100%; border-collapse:collapse; font-size:10px; }
@@ -414,6 +424,10 @@ canvas { width:100% !important; }
   <div class="topbar">
     <div class="topbar-brand">◆ Management Report <span>Lotus Garden by WH</span></div>
     <div class="topbar-controls">
+      <div style="display:flex;gap:2px;background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:2px;">
+        <button id="btn-nett"  onclick="setRevenueMode('nett')"  style="padding:5px 12px;border-radius:6px;font-size:11px;font-weight:700;border:none;cursor:pointer;background:var(--gold);color:#000;transition:all .2s;">Nett</button>
+        <button id="btn-gross" onclick="setRevenueMode('gross')" style="padding:5px 12px;border-radius:6px;font-size:11px;font-weight:700;border:none;cursor:pointer;background:transparent;color:var(--muted);transition:all .2s;">Gross</button>
+      </div>
       <select class="ctrl-select" id="sel-month" onchange="onFilterChange()">
         <option value="ALL">Semua Bulan</option>
         <option value="JANUARI">Januari</option>
@@ -476,6 +490,17 @@ let _idToken   = '';
 let _reportData = null;   // { JANUARI:{events,revenue,pax,count,...}, ... }
 let _budgetData = null;   // [{ bulan, targetRevenue, targetEvents, targetPax }, ...]
 let _selMonth  = 'ALL';
+let _revenueMode = 'nett'; // 'nett' atau 'gross'
+const VAT = 1.21; // PPN 11% → sebenarnya 1.11, tapi pakai 1.21 sesuai request
+
+function getRevenue(grossValue) {
+  // grossValue = pax * price dari spreadsheet (diasumsikan GROSS)
+  return _revenueMode === 'nett' ? grossValue / VAT : grossValue;
+}
+function getBudgetDisplay(targetRevenue) {
+  // budget di sheet = NETT, jika mode gross kalikan 1.21
+  return _revenueMode === 'gross' ? targetRevenue * VAT : targetRevenue;
+}
 
 // ══════════════════════════════════════════════════════════════════
 // FIREBASE AUTH
@@ -682,7 +707,7 @@ function renderAll() {
 function renderKPI() {
   const events = getFilteredEvents();
   const activeEvents = events.filter(e => e.status !== 'CANCEL');
-  const revenue  = activeEvents.reduce((s,e) => s + e.revenue, 0);
+  const revenue  = activeEvents.reduce((s,e) => s + getRevenue(e.revenue), 0);
   const pax      = activeEvents.reduce((s,e) => s + e.pax, 0);
   const count    = activeEvents.length;
   const avgPax   = count > 0 ? Math.round(pax/count) : 0;
@@ -695,9 +720,9 @@ function renderKPI() {
   // Budget comparison
   let budgetRev = 0, budgetEvt = 0;
   if (_selMonth === 'ALL') {
-    MONTHS.forEach(m => { const b = getBudgetFor(m); budgetRev += b.targetRevenue; budgetEvt += b.targetEvents; });
+    MONTHS.forEach(m => { const b = getBudgetFor(m); budgetRev += getBudgetDisplay(b.targetRevenue); budgetEvt += b.targetEvents; });
   } else {
-    const b = getBudgetFor(_selMonth); budgetRev = b.targetRevenue; budgetEvt = b.targetEvents;
+    const b = getBudgetFor(_selMonth); budgetRev = getBudgetDisplay(b.targetRevenue); budgetEvt = b.targetEvents;
   }
   const revPct = pct(revenue, budgetRev);
   const evtPct = pct(count, budgetEvt);
@@ -757,13 +782,13 @@ function renderOnHand() {
   const onHandEvts = (monthData.events||[]).filter(e => e.status === 'CONFIRM' || e.status === 'TENTATIVE');
   const doneEvts   = (monthData.events||[]).filter(e => e.status === 'DONE');
 
-  const totalRev   = activeEvts.reduce((s,e)=>s+e.revenue,0);
-  const onHandRev  = onHandEvts.reduce((s,e)=>s+e.revenue,0);
-  const doneRev    = doneEvts.reduce((s,e)=>s+e.revenue,0);
-  const confirmRev = (monthData.events||[]).filter(e=>e.status==='CONFIRM').reduce((s,e)=>s+e.revenue,0);
-  const tentRev    = (monthData.events||[]).filter(e=>e.status==='TENTATIVE').reduce((s,e)=>s+e.revenue,0);
+  const totalRev   = activeEvts.reduce((s,e)=>s+getRevenue(e.revenue),0);
+  const onHandRev  = onHandEvts.reduce((s,e)=>s+getRevenue(e.revenue),0);
+  const doneRev    = doneEvts.reduce((s,e)=>s+getRevenue(e.revenue),0);
+  const confirmRev = (monthData.events||[]).filter(e=>e.status==='CONFIRM').reduce((s,e)=>s+getRevenue(e.revenue),0);
+  const tentRev    = (monthData.events||[]).filter(e=>e.status==='TENTATIVE').reduce((s,e)=>s+getRevenue(e.revenue),0);
 
-  const budRev  = budget.targetRevenue;
+  const budRev  = getBudgetDisplay(budget.targetRevenue);
   const achPct  = pct(totalRev, budRev);
   const ohPct   = pct(onHandRev, budRev);
   const donePct = pct(doneRev, budRev);
@@ -936,10 +961,11 @@ function renderMonthlyTable() {
   const rows = MONTHS.map((m, i) => {
     const d = _reportData?.[m];
     const b = getBudgetFor(m);
-    const rev = d?.revenue || 0;
+    const rev = d ? (d.events||[]).filter(e=>e.status!=='CANCEL').reduce((s,e)=>s+getRevenue(e.revenue),0) : 0;
     const cnt = d?.count   || 0;
     const pax = d?.pax     || 0;
-    const ach = pct(rev, b.targetRevenue);
+    const budDisplay = getBudgetDisplay(b.targetRevenue);
+    const ach = pct(rev, budDisplay);
     const isActive = _selMonth === m || _selMonth === 'ALL';
     return `<tr style="opacity:${isActive?1:.4}">
       <td style="font-weight:700;color:var(--gold)">${MONTH_SHORT[i]}</td>
@@ -950,8 +976,8 @@ function renderMonthlyTable() {
       <td><span class="badge CANCEL">${d?.countCancel||0}</span></td>
       <td>${pax.toLocaleString('id-ID')}</td>
       <td class="tbl-revenue">${fmtRp(rev)}</td>
-      <td style="color:var(--muted)">${b.targetRevenue > 0 ? fmtRp(b.targetRevenue) : '—'}</td>
-      <td style="font-weight:700;color:${ach>=100?'var(--done)':ach>=70?'var(--amber)':'var(--red)'}">${b.targetRevenue>0?ach+'%':'—'}</td>
+      <td style="color:var(--muted)">${budDisplay > 0 ? fmtRp(budDisplay) : '—'}</td>
+      <td style="font-weight:700;color:${ach>=100?'var(--done)':ach>=70?'var(--amber)':'var(--red)'}">${budDisplay>0?ach+'%':'—'}</td>
     </tr>`;
   }).join('');
 
@@ -975,7 +1001,7 @@ function renderBreakdowns() {
   const venueMap = {};
   events.forEach(e => {
     if (!venueMap[e.venue]) venueMap[e.venue] = { rev:0, cnt:0, pax:0 };
-    venueMap[e.venue].rev += e.revenue;
+    venueMap[e.venue].rev += getRevenue(e.revenue);
     venueMap[e.venue].cnt++;
     venueMap[e.venue].pax += e.pax;
   });
@@ -984,7 +1010,7 @@ function renderBreakdowns() {
   events.forEach(e => {
     const k = e.package || 'OTHER';
     if (!pkgMap[k]) pkgMap[k] = { rev:0, cnt:0 };
-    pkgMap[k].rev += e.revenue; pkgMap[k].cnt++;
+    pkgMap[k].rev += getRevenue(e.revenue); pkgMap[k].cnt++;
   });
 
   const maxVenueRev = Math.max(...Object.values(venueMap).map(v=>v.rev), 1);
@@ -1045,7 +1071,7 @@ function renderSalesLeaderboard() {
   events.forEach(e => {
     const s = e.sales || 'Unknown';
     if (!salesMap[s]) salesMap[s] = { rev:0, cnt:0, pax:0, done:0 };
-    salesMap[s].rev += e.revenue; salesMap[s].cnt++;
+    salesMap[s].rev += getRevenue(e.revenue); salesMap[s].cnt++;
     salesMap[s].pax += e.pax;
     if (e.status === 'DONE') salesMap[s].done++;
   });
@@ -1296,8 +1322,8 @@ function renderOccupancySection() {
   });
 
   // Revenue trend per bulan (line chart)
-  const trendRevenue = MONTHS.map(m => _reportData?.[m]?.revenue || 0);
-  const trendBudget  = MONTHS.map(m => getBudgetFor(m).targetRevenue);
+  const trendRevenue = MONTHS.map(m => (_reportData?.[m]?.events||[]).filter(e=>e.status!=='CANCEL').reduce((s,e)=>s+getRevenue(e.revenue),0));
+  const trendBudget  = MONTHS.map(m => getBudgetDisplay(getBudgetFor(m).targetRevenue));
   const trendCount   = MONTHS.map(m => _reportData?.[m]?.count || 0);
 
   const sec = document.createElement('div');
@@ -1437,12 +1463,12 @@ function renderHeatmap(occData, venues) {
     MONTHS.map(m => {
       const n = occData[v][m].booked;
       const lv = n === 0 ? 0 : n <= maxEvents*.2 ? 1 : n <= maxEvents*.4 ? 2 : n <= maxEvents*.6 ? 3 : n <= maxEvents*.8 ? 4 : 5;
-      return `<div class="hm-cell lv${lv}" title="${v} ${m}: ${n} event">${n||''}</div>`;
+      return `<div class="hm-cell lv${lv}" title="${v} ${m}: ${n} event">${n > 0 ? n : ''}</div>`;
     }).join('')
   ).join('');
 
   return `<div class="heatmap-wrap">
-    <div class="heatmap-grid" style="grid-template-columns:120px repeat(12,1fr);">
+    <div class="heatmap-grid" style="grid-template-columns:130px repeat(12,1fr);gap:6px;">
       ${headers}${rows}
     </div>
     <div style="display:flex;gap:6px;align-items:center;margin-top:8px;font-size:9px;color:var(--dim);">
@@ -1512,6 +1538,20 @@ async function saveBudget() {
     st.textContent = '✗ ' + e.message;
   }
 }
+// ══════════════════════════════════════════════════════════════════
+// REVENUE MODE TOGGLE
+// ══════════════════════════════════════════════════════════════════
+function setRevenueMode(mode) {
+  _revenueMode = mode;
+  const btnNett  = document.getElementById('btn-nett');
+  const btnGross = document.getElementById('btn-gross');
+  const activeStyle  = 'padding:5px 12px;border-radius:6px;font-size:11px;font-weight:700;border:none;cursor:pointer;background:var(--gold);color:#000;transition:all .2s;';
+  const inactiveStyle= 'padding:5px 12px;border-radius:6px;font-size:11px;font-weight:700;border:none;cursor:pointer;background:transparent;color:var(--muted);transition:all .2s;';
+  if (btnNett)  btnNett.style.cssText  = mode === 'nett'  ? activeStyle : inactiveStyle;
+  if (btnGross) btnGross.style.cssText = mode === 'gross' ? activeStyle : inactiveStyle;
+  if (_reportData) renderAll();
+}
+
 // ══════════════════════════════════════════════════════════════════
 // THEME TOGGLE
 // ══════════════════════════════════════════════════════════════════
@@ -1599,8 +1639,8 @@ function exportTableExcel() {
   const rows = events.map(e => [
     e.bulan || '—', e.day || '—', e.customer, e.venue, e.package,
     e.eventType || e.package, e.status, e.pax,
-    e.price > 0 ? e.price : 0,
-    e.revenue > 0 ? e.revenue : 0,
+    e.price > 0 ? (getRevenue(e.price * e.pax) / (e.pax||1)) : 0,
+    e.revenue > 0 ? getRevenue(e.revenue) : 0,
     e.sales, e.time
   ]);
 
@@ -1655,7 +1695,7 @@ function _addSummarySheet(wb) {
   const rows = MONTHS.map((m, i) => {
     const d = _reportData[m];
     const b = getBudgetFor(m);
-    const rev = d ? d.revenue : 0;
+    const rev = d ? (d.events||[]).filter(e=>e.status!=='CANCEL').reduce((s,e)=>s+getRevenue(e.revenue),0) : 0;
     const ach = b.targetRevenue > 0 ? Math.round(rev/b.targetRevenue*100) : 0;
     return [
       m, d ? d.count : 0,
@@ -1667,8 +1707,8 @@ function _addSummarySheet(wb) {
   });
 
   // Add total row
-  const totRev = MONTHS.reduce((s,m) => s + (_reportData[m]?.revenue||0), 0);
-  const totBud = MONTHS.reduce((s,m) => s + getBudgetFor(m).targetRevenue, 0);
+  const totRev = MONTHS.reduce((s,m) => s + (_reportData[m]?.events||[]).filter(e=>e.status!=='CANCEL').reduce((ss,e)=>ss+getRevenue(e.revenue),0), 0);
+  const totBud = MONTHS.reduce((s,m) => s + getBudgetDisplay(getBudgetFor(m).targetRevenue), 0);
   rows.push(['TOTAL',
     MONTHS.reduce((s,m) => s + (_reportData[m]?.count||0), 0),
     MONTHS.reduce((s,m) => s + (_reportData[m]?.countConfirm||0), 0),
