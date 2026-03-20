@@ -661,12 +661,16 @@ function renderTable(){
   visVenues.forEach(v=>vs[v]={c:0,t:0,d:0,occ:0});
   let tK=0,tT=0,tC=0,tD=0,tCF=0;
   const totalSlots=days.length;
+  // Vacant: hitung hanya dari hari ini ke depan
+  const todayDate=new Date(today.getFullYear(),today.getMonth(),today.getDate());
 
   days.forEach(day=>{
     const iso=day.toISOString().slice(0,10);
+    const dayDate=new Date(day.getFullYear(),day.getMonth(),day.getDate());
+    const isFuture=dayDate>=todayDate; // hari ini + ke depan
     visVenues.forEach(v=>{
       const evs=(evMap[v]?.[iso]||[]).filter(e=>{const s=(e.status||'').toUpperCase();return s!=='CANCEL';});
-      if(!evs.length){tK++;}
+      if(!evs.length&&isFuture){tK++;} // vacant hanya dari hari ini
       evs.forEach(e=>{
         const s=(e.status||'').toUpperCase().trim();
         if(s==='CONFIRM'){tC++;vs[v].c++;vs[v].occ++;}
@@ -852,7 +856,7 @@ function closePopup(){document.getElementById('popup').classList.remove('show');
 
 function goEntry(date,venue,month){
   const base=window.location.href.replace(/[^\/]*$/,'');
-  window.open(base+'entry.html?prefill_date='+encodeURIComponent(date)
+  window.open(base+'entry_live_cl.html?prefill_date='+encodeURIComponent(date)
     +'&prefill_venue='+encodeURIComponent(venue)
     +'&prefill_month='+encodeURIComponent(month),'_blank');
 }
