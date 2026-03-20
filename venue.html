@@ -856,7 +856,7 @@ function closePopup(){document.getElementById('popup').classList.remove('show');
 
 function goEntry(date,venue,month){
   const base=window.location.href.replace(/[^\/]*$/,'');
-  window.open(base+'entry_live_cl.html?prefill_date='+encodeURIComponent(date)
+  window.open(base+'entry.html?prefill_date='+encodeURIComponent(date)
     +'&prefill_venue='+encodeURIComponent(venue)
     +'&prefill_month='+encodeURIComponent(month),'_blank');
 }
