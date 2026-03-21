@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Check Venue — Lotus Garden by WH</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<style>
+:root{
+  --black:#07070a;--dark:#0d0d12;--surface:#121218;--card:#181820;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.14);
+  --text:#ede9e0;--muted:#7a7570;--dim:#42404e;
+  --gold:#c9a84c;--gold2:#e8c96a;
+  --green:#10b981;--red:#ef4444;--amber:#f59e0b;--teal:#14b8a6;
+  --topbar-h:44px;
+}
+body.light-mode{
+  --black:#f4f3ef;--dark:#eceae4;--surface:#f8f7f4;--card:#fff;
+  --border:rgba(0,0,0,.08);--border2:rgba(0,0,0,.15);
+  --text:#1a1814;--muted:#5a5650;--dim:#9a9890;
+  --gold:#a07830;--gold2:#c89840;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--black);color:var(--text);
+  font-size:13px;min-height:100vh;overflow-x:hidden;}
+
+/* ── LOGIN ── */
+#login-gate{position:fixed;inset:0;z-index:900;
+  background:radial-gradient(ellipse at 60% 20%,rgba(201,168,76,.08),var(--black) 70%);
+  display:flex;align-items:center;justify-content:center;padding:20px;}
+#login-gate.hide{display:none;}
+.login-card{background:var(--card);border:1px solid rgba(201,168,76,.2);
+  border-radius:20px;padding:32px 28px;max-width:340px;width:100%;text-align:center;}
+.login-logo{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px;}
+.login-sub{font-size:10px;color:var(--muted);letter-spacing:.18em;text-transform:uppercase;margin-bottom:24px;}
+.login-btn{width:100%;padding:13px;border-radius:11px;font-size:13px;font-weight:700;
+  background:linear-gradient(135deg,rgba(201,168,76,.2),rgba(201,168,76,.1));
+  border:1px solid rgba(201,168,76,.4);color:var(--gold);cursor:pointer;transition:all .2s;}
+.login-btn:active{opacity:.8;}
+.login-err{font-size:11px;color:var(--red);margin-top:12px;min-height:14px;}
+
+/* ── TOPBAR (compact) ── */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:200;
+  height:var(--topbar-h);
+  background:rgba(7,7,10,.97);backdrop-filter:blur(18px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;padding:0 12px;}
+body.light-mode .topbar{background:rgba(244,243,239,.97);}
+.brand{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:700;
+  color:var(--gold);white-space:nowrap;}
+.topbar-r{display:flex;align-items:center;gap:6px;margin-left:auto;}
+.tb-btn{background:none;border:1px solid var(--border2);color:var(--muted);
+  border-radius:7px;padding:4px 9px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.tb-btn:active{opacity:.7;}
+.tb-btn.red{color:var(--red);border-color:rgba(239,68,68,.3);}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);
+  flex-shrink:0;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.sync-lbl{font-size:9px;color:var(--dim);white-space:nowrap;}
+
+/* ── CONTROLS BAR (auto-hide on scroll) ── */
+#ctrl-bar{
+  position:fixed;top:var(--topbar-h);left:0;right:0;z-index:190;
+  background:rgba(7,7,10,.97);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  padding:6px 10px;
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  transition:transform .25s ease,opacity .25s ease;
+  transform:translateY(0);opacity:1;
+}
+body.light-mode #ctrl-bar{background:rgba(244,243,239,.97);}
+#ctrl-bar.hidden{transform:translateY(-100%);opacity:0;pointer-events:none;}
+.ctrl-sel{background:var(--surface);border:1px solid var(--border2);color:var(--text);
+  border-radius:7px;padding:5px 8px;font-size:11px;font-weight:600;outline:none;cursor:pointer;}
+.vm-toggle{display:flex;gap:1px;background:var(--surface);border:1px solid var(--border2);border-radius:7px;padding:2px;}
+.vm-btn{padding:4px 10px;border-radius:5px;font-size:10px;font-weight:700;
+  border:none;cursor:pointer;background:transparent;color:var(--muted);}
+.vm-btn.active{background:var(--gold);color:#000;}
+--ctrl-h: 38px;
+
+/* ── LOADING ── */
+.loading-bar{position:fixed;top:0;left:0;right:0;height:3px;z-index:999;
+  background:linear-gradient(90deg,var(--gold),var(--teal));
+  display:none;animation:lbar 1.1s ease infinite;}
+.loading-bar.show{display:block;}
+@keyframes lbar{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+
+/* ── APP ── */
+#app{display:none;}
+#app.show{display:block;}
+
+/* ── TABLE CONTAINER ── */
+.tbl-container{
+  position:fixed;
+  top:calc(var(--topbar-h) + 38px);
+  left:0;right:0;
+  bottom:46px;
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+  padding:0;margin:0;
+}
+.tbl-container.ctrl-hidden{
+  top:var(--topbar-h);
+}
+
+/* ── SUMMARY ── */
+.summary{
+  position:fixed;
+  top:calc(var(--topbar-h) + 38px);
+  left:0;right:0;z-index:100;
+  background:rgba(7,7,10,.93);backdrop-filter:blur(8px);
+  padding:4px 10px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  font-size:10px;border-bottom:1px solid var(--border);
+  transition:top .25s ease;
+}
+body.light-mode .summary{background:rgba(244,243,239,.97);border-bottom:1px solid rgba(0,0,0,.1);}
+body.light-mode .summary strong{color:#1a1814;}
+.summary.ctrl-hidden{top:var(--topbar-h);}
+
+/* ── TABLE ── */
+table.vtbl{
+  border-collapse:collapse;
+  table-layout:fixed;
+  width:100%;
+  min-width:100%;
+  font-size:11px;
+}
+
+/* STICKY HEADER - venue names */
+.vtbl thead{
+  position:sticky;
+  top:0; /* relative to tbl-container */
+  z-index:80;
+}
+.th-date{
+  position:sticky;left:0;z-index:90;
+  background:var(--dark);
+  width:52px;min-width:52px;
+  padding:6px 5px;
+  font-size:9px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;
+  color:#c0c0d0;border-bottom:2px solid var(--border);border-right:2px solid var(--border);
+  text-align:center;
+}
+body.light-mode .th-date{color:#1f2937;}
+.th-venue{
+  background:var(--dark);
+  padding:5px 4px;
+  text-align:center;
+  border-bottom:2px solid var(--border);
+  border-right:1px solid var(--border);
+  width:100px;min-width:90px;
+}
+.th-vn{font-size:11px;font-weight:800;color:var(--text);
+  display:flex;align-items:center;justify-content:center;gap:3px;margin-bottom:3px;
+  flex-wrap:wrap;line-height:1.3;}
+.th-stats{display:flex;gap:3px;justify-content:center;flex-wrap:wrap;}
+.th-st{font-size:9px;font-weight:800;padding:2px 5px;border-radius:3px;}
+.th-st.c{background:rgba(99,102,241,.25);color:#c7d2fe;}
+.th-st.t{background:rgba(245,158,11,.22);color:#fde68a;}
+.th-st.d{background:rgba(107,114,128,.18);color:#d1d5db;}
+.th-occ{font-size:9px;font-weight:700;color:var(--muted);font-family:'DM Mono',monospace;margin-top:3px;}
+body.light-mode .th-st.c{background:rgba(99,102,241,.15);color:#3730a3;}
+body.light-mode .th-st.t{background:rgba(245,158,11,.15);color:#78350f;}
+body.light-mode .th-st.d{background:rgba(107,114,128,.12);color:#374151;}
+
+/* DATE CELL */
+td.td-date{
+  position:sticky;left:0;z-index:10;
+  background:var(--card);
+  width:52px;min-width:52px;max-width:52px;
+  border-bottom:1px solid var(--border);
+  border-right:2px solid var(--border);
+  vertical-align:middle;
+  padding:0;
+  text-align:center;
+}
+body.light-mode td.td-date{background:var(--card);}
+.date-inner{padding:5px 4px;text-align:center;}
+.date-num{font-family:'DM Sans',sans-serif;font-size:22px;font-weight:900;
+  color:#ffffff;line-height:1;letter-spacing:-.03em;}
+.date-wd{font-size:10px;font-weight:800;color:#c0c0d0;text-transform:uppercase;
+  letter-spacing:.02em;margin-top:1px;}
+.date-mo{font-size:9px;font-weight:700;color:#8888a0;margin-top:1px;}
+body.light-mode .date-num{color:#0a0a14;}
+body.light-mode .date-wd{color:#1f2937;}
+body.light-mode .date-mo{color:#4b5563;}
+
+/* TODAY */
+tr.today-row td.td-date{background:rgba(201,168,76,.12);border-left:3px solid var(--gold);}
+tr.today-row .date-num{color:var(--gold2)!important;text-shadow:0 0 12px rgba(201,168,76,.5);}
+/* PAST */
+tr.past-row{opacity:.45;}
+tr.past-row:hover{opacity:.8;}
+
+/* VENUE CELL */
+td.td-cell{
+  padding:3px;
+  border-bottom:1px solid var(--border);
+  border-right:1px solid rgba(255,255,255,.04);
+  vertical-align:top;
+}
+.vcell{
+  border-radius:8px;padding:5px 3px;
+  min-height:66px;height:66px;
+  cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;text-align:center;position:relative;
+  transition:filter .12s;
+  overflow:hidden;
+  box-sizing:border-box;
+}
+.vst{text-align:center;width:100%;}
+.vcell:active{filter:brightness(1.3);}
+
+/* VACANT */
+.vc-v{background:rgba(16,185,129,.13);border:1.5px solid rgba(16,185,129,.3);}
+.vc-v .vi{font-size:14px;color:var(--green);font-weight:800;}
+.vc-v .vl{font-size:11px;font-weight:900;color:var(--green);letter-spacing:.04em;}
+.vc-v .vs{font-size:9px;font-weight:700;color:rgba(16,185,129,.65);}
+body.light-mode .vc-v .vl{color:#065f46;}
+body.light-mode .vc-v .vs{color:#047857;}
+body.light-mode .vc-v .vi{color:#065f46;}
+/* VACANT — tanggal sudah lewat: tidak bisa diklik */
+.vc-v-past{background:rgba(255,255,255,.03);border:1.5px dashed rgba(255,255,255,.08);cursor:not-allowed;}
+.vc-v-past .vi{font-size:12px;color:var(--dim);}
+.vc-v-past .vl{font-size:9px;font-weight:700;color:var(--dim);letter-spacing:.03em;}
+.vc-v-past .vs{font-size:8px;font-weight:600;color:rgba(100,100,120,.45);}
+body.light-mode .vc-v-past{background:rgba(0,0,0,.03);border-color:rgba(0,0,0,.08);}
+body.light-mode .vc-v-past .vi,body.light-mode .vc-v-past .vl{color:#c0bdb8;}
+body.light-mode .vc-v-past .vs{color:#d5d2ce;}
+/* CONFIRM */
+.vc-c{background:rgba(99,102,241,.28);border:1.5px solid rgba(99,102,241,.5);}
+.vc-c .vst{font-size:10px;font-weight:900;color:#e0e7ff;letter-spacing:.04em;text-shadow:0 1px 3px rgba(0,0,0,.4);}
+.vc-c .vnm{font-size:9px;font-weight:800;color:#f0f0ff;line-height:1.2;
+  text-shadow:0 1px 2px rgba(0,0,0,.3);
+  overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;
+  max-height:3.6em;word-break:break-word;text-align:center;width:100%;}
+.vc-c .vtm{font-size:10px;font-weight:800;color:#ddd6fe;font-family:'DM Mono',monospace;
+  letter-spacing:.02em;}
+body.light-mode .vc-c{background:rgba(99,102,241,.22);border:1.5px solid rgba(99,102,241,.5);}
+body.light-mode .vc-c .vst{color:#3730a3;}
+body.light-mode .vc-c .vnm{color:#1e1b4b;text-shadow:none;}
+body.light-mode .vc-c .vtm{color:#3730a3;font-weight:800;}
+/* TENTATIVE */
+.vc-t{background:rgba(245,158,11,.25);border:1.5px solid rgba(245,158,11,.5);}
+.vc-t .vst{font-size:10px;font-weight:900;color:#fffbeb;letter-spacing:.04em;text-shadow:0 1px 3px rgba(0,0,0,.35);}
+.vc-t .vnm{font-size:9px;font-weight:800;color:#fff7ed;line-height:1.2;
+  text-shadow:0 1px 2px rgba(0,0,0,.25);
+  overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;
+  max-height:3.6em;word-break:break-word;text-align:center;width:100%;}
+.vc-t .vtm{font-size:10px;font-weight:800;color:#fef08a;font-family:'DM Mono',monospace;
+  letter-spacing:.02em;}
+body.light-mode .vc-t{background:rgba(245,158,11,.2);border:1.5px solid rgba(245,158,11,.5);}
+body.light-mode .vc-t .vst{color:#78350f;}
+body.light-mode .vc-t .vnm{color:#451a03;text-shadow:none;}
+body.light-mode .vc-t .vtm{color:#78350f;font-weight:800;}
+/* DONE */
+.vc-d{background:rgba(107,114,128,.18);border:1.5px solid rgba(107,114,128,.35);}
+.vc-d .vst{font-size:9px;font-weight:800;color:#d1d5db;}
+.vc-d .vnm{font-size:8px;font-weight:700;color:#9ca3af;line-height:1.2;
+  overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;
+  max-height:3.6em;word-break:break-word;text-align:center;width:100%;}
+body.light-mode .vc-d .vst{color:#374151;}
+body.light-mode .vc-d .vnm{color:#6b7280;}
+/* N/S — No Status */
+.vc-ns{background:rgba(100,100,120,.1);border:1.5px dashed rgba(150,150,180,.3);}
+.vc-ns .vst{font-size:9px;font-weight:800;color:#6b7280;}
+.vc-ns .vnm{font-size:8px;font-weight:600;color:#4b5563;line-height:1.3;}
+body.light-mode .vc-ns .vst{color:#9ca3af;}
+body.light-mode .vc-ns .vnm{color:#6b7280;}
+/* MIXED */
+.vc-m{background:linear-gradient(135deg,rgba(99,102,241,.28) 50%,rgba(245,158,11,.25) 50%);
+  border:1.5px solid rgba(201,168,76,.4);}
+.vc-m .vcnt{font-family:'DM Mono',monospace;font-size:16px;font-weight:900;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.4);}
+.vc-m .vlb{font-size:8px;font-weight:700;color:rgba(255,255,255,.7);}
+body.light-mode .vc-m .vcnt{color:#1a1814;text-shadow:none;}
+body.light-mode .vc-m .vlb{color:rgba(0,0,0,.55);}
+/* CONFLICT */
+.vc-conflict{outline:2px solid var(--red);outline-offset:-1px;
+  animation:cg 1.2s infinite;}
+@keyframes cg{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4)}50%{box-shadow:0 0 6px 2px rgba(239,68,68,.25)}}
+.ci{position:absolute;top:-3px;right:-3px;font-size:10px;}
+
+/* ── BOTTOM BAR ── */
+.bottom-bar{
+  position:fixed;bottom:0;left:0;right:0;z-index:150;
+  height:46px;
+  background:rgba(7,7,10,.97);backdrop-filter:blur(14px);
+  border-top:1px solid var(--border);
+  display:none;align-items:center;justify-content:space-around;padding:0 8px;
+}
+body.light-mode .bottom-bar{background:rgba(244,243,239,.97);}
+.bottom-bar.show{display:flex;}
+.bb{display:flex;flex-direction:column;align-items:center;gap:1px;}
+.bb-v{font-family:'DM Mono',monospace;font-size:16px;font-weight:800;line-height:1;}
+.bb-l{font-size:7px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;}
+.bb.ko .bb-v{color:var(--green);} .bb.ko .bb-l{color:rgba(16,185,129,.5);}
+.bb.te .bb-v{color:var(--amber);} .bb.te .bb-l{color:rgba(245,158,11,.5);}
+.bb.co .bb-v{color:#a5b4fc;}     .bb.co .bb-l{color:rgba(99,102,241,.5);}
+.bb.dn .bb-v{color:var(--muted);}.bb.dn .bb-l{color:var(--dim);}
+.bb.cf .bb-v{color:var(--red);}  .bb.cf .bb-l{color:rgba(239,68,68,.5);}
+.bb.dy .bb-v{color:var(--gold);} .bb.dy .bb-l{color:rgba(201,168,76,.5);}
+.bb-sep{width:1px;height:24px;background:var(--border);}
+
+/* ── POPUP ── */
+.pop-overlay{position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.7);
+  backdrop-filter:blur(5px);display:none;align-items:flex-end;justify-content:center;
+  padding:0;}
+.pop-overlay.show{display:flex;}
+.pop-card{background:var(--card);border:1px solid var(--border2);
+  border-radius:20px 20px 0 0;width:100%;max-width:500px;max-height:80vh;overflow-y:auto;
+  animation:slideUp .22s ease both;}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
+.pop-head{padding:14px 18px 10px;border-bottom:1px solid var(--border);
+  display:flex;align-items:flex-start;justify-content:space-between;}
+.pop-drag{width:36px;height:4px;background:var(--border2);border-radius:2px;
+  margin:0 auto 12px;display:block;}
+.pop-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;color:var(--gold);}
+.pop-sub{font-size:10px;color:var(--dim);margin-top:2px;}
+.pop-x{background:none;border:none;color:var(--dim);font-size:18px;cursor:pointer;padding:2px;}
+.pop-body{padding:12px 18px 20px;}
+.pev{background:var(--surface);border-radius:11px;padding:12px 14px;margin-bottom:8px;border:1px solid var(--border);}
+.pev:last-child{margin-bottom:0;}
+.pev-st{display:inline-block;padding:2px 9px;border-radius:5px;font-size:8px;font-weight:800;letter-spacing:.06em;margin-bottom:7px;}
+.pev-st.confirm{background:rgba(99,102,241,.18);color:#a5b4fc;border:1px solid rgba(99,102,241,.25);}
+.pev-st.tentative{background:rgba(245,158,11,.18);color:#fcd34d;border:1px solid rgba(245,158,11,.25);}
+.pev-st.done{background:rgba(107,114,128,.12);color:var(--muted);}
+.pev-cust{font-size:15px;font-weight:700;color:var(--text);margin-bottom:8px;}
+.pev-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.pev-f label{font-size:8px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase;font-weight:700;display:block;margin-bottom:1px;}
+.pev-f span{font-size:11px;font-weight:600;}
+.pev-btns{display:flex;gap:7px;margin-top:11px;}
+.btn-edit{flex:1;padding:9px;border-radius:9px;font-size:11px;font-weight:700;cursor:pointer;
+  background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.25);color:var(--gold);}
+.btn-edit:active{opacity:.75;}
+.vac-pop{text-align:center;padding:6px 0;}
+.vac-icon{font-size:40px;margin-bottom:8px;}
+.vac-title{font-size:16px;font-weight:700;color:var(--green);margin-bottom:4px;}
+.vac-sub{font-size:11px;color:var(--muted);margin-bottom:16px;}
+.btn-add{width:100%;padding:12px;border-radius:10px;font-size:13px;font-weight:700;
+  cursor:pointer;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);color:var(--green);}
+.btn-add:active{opacity:.75;}
+
+/* TOAST */
+#toast{position:fixed;bottom:56px;left:50%;transform:translateX(-50%);
+  background:var(--card);border:1px solid var(--border2);
+  padding:8px 18px;border-radius:10px;font-size:11px;font-weight:600;
+  z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;
+  white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.4);}
+
+@media print{
+  .topbar,.ctrl-bar-wrap,.bottom-bar,.pop-overlay,.loading-bar,#ctrl-bar{display:none!important;}
+  .tbl-container{position:static;top:auto;bottom:auto;overflow:visible;}
+  .summary{position:static;}
+}
+</style>
+</head>
+<body>
+
+<div id="login-gate">
+  <div class="login-card">
+    <div class="login-logo">◆ Check Venue</div>
+    <div class="login-sub">Lotus Garden by WH</div>
+    <button class="login-btn" onclick="doLogin()">🔐 Login dengan Google</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<div class="loading-bar" id="lbar"></div>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="brand">◆ Check Venue</div>
+  <div class="topbar-r">
+    <div class="live-dot" id="live-dot"></div>
+    <span class="sync-lbl" id="sync-lbl"></span>
+    <button class="tb-btn" onclick="loadData()">↺</button>
+    <button class="tb-btn" onclick="window.print()">🖨</button>
+    <button class="tb-btn" id="btn-theme" onclick="toggleTheme()">🌙</button>
+    <button class="tb-btn red" onclick="logoutUser()">⎋</button>
+  </div>
+</div>
+
+<!-- Controls bar (auto-hide) -->
+<div id="ctrl-bar">
+  <div class="vm-toggle">
+    <button class="vm-btn active" id="vm-m" onclick="setVM('month')">Bulan</button>
+    <button class="vm-btn" id="vm-r" onclick="setVM('range')">Range</button>
+  </div>
+  <select class="ctrl-sel" id="sel-month" onchange="renderTable()">
+    <option value="JANUARI">Januari</option><option value="FEBRUARI">Februari</option>
+    <option value="MARET">Maret</option><option value="APRIL">April</option>
+    <option value="MEI">Mei</option><option value="JUNI">Juni</option>
+    <option value="JULI">Juli</option><option value="AGUSTUS">Agustus</option>
+    <option value="SEPTEMBER">September</option><option value="OKTOBER">Oktober</option>
+    <option value="NOVEMBER">November</option><option value="DESEMBER">Desember</option>
+  </select>
+  <input type="date" class="ctrl-sel" id="df" style="display:none" onchange="renderTable()">
+  <input type="date" class="ctrl-sel" id="dt" style="display:none" onchange="renderTable()">
+  <select class="ctrl-sel" id="sel-venue" onchange="renderTable()">
+    <option value="ALL">Semua Venue</option>
+  </select>
+  <select class="ctrl-sel" id="sel-st" onchange="renderTable()">
+    <option value="ALL">Semua Status</option>
+    <option value="CONFIRM">Confirm</option>
+    <option value="TENTATIVE">Tentative</option>
+    <option value="DONE">Done</option>
+  </select>
+</div>
+
+<!-- App -->
+<div id="app">
+  <!-- Summary -->
+  <div class="summary" id="summary" style="display:none"></div>
+  <!-- Table container -->
+  <div class="tbl-container" id="tbl-container">
+    <div style="padding:40px;text-align:center;color:var(--dim);">Memuat data...</div>
+  </div>
+</div>
+
+<!-- Bottom bar -->
+<div class="bottom-bar" id="bbar">
+  <div class="bb ko"><div class="bb-v" id="bb-k">0</div><div class="bb-l">Kosong</div></div>
+  <div class="bb-sep"></div>
+  <div class="bb te"><div class="bb-v" id="bb-t">0</div><div class="bb-l">Tentative</div></div>
+  <div class="bb-sep"></div>
+  <div class="bb co"><div class="bb-v" id="bb-c">0</div><div class="bb-l">Confirm</div></div>
+  <div class="bb-sep"></div>
+  <div class="bb dn"><div class="bb-v" id="bb-d">0</div><div class="bb-l">Done</div></div>
+  <div class="bb-sep"></div>
+  <div class="bb cf"><div class="bb-v" id="bb-cf">0</div><div class="bb-l">⚠Conflict</div></div>
+  <div class="bb-sep"></div>
+  <div class="bb dy"><div class="bb-v" id="bb-dy">0</div><div class="bb-l">Hari</div></div>
+</div>
+
+<!-- Popup (bottom sheet) -->
+<div class="pop-overlay" id="popup" onclick="if(event.target===this)closePopup()">
+  <div class="pop-card">
+    <span class="pop-drag"></span>
+    <div class="pop-head">
+      <div><div class="pop-title" id="pop-t"></div><div class="pop-sub" id="pop-s"></div></div>
+      <button class="pop-x" onclick="closePopup()">✕</button>
+    </div>
+    <div class="pop-body" id="pop-b"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══ CONFIG ══
+const FB={apiKey:'AIzaSyCX0--DGM_tp_2y7hBbrGiMfeVyToVD4zM',authDomain:'banquet-dashboard-kediri.firebaseapp.com',projectId:'banquet-dashboard-kediri',storageBucket:'banquet-dashboard-kediri.firebasestorage.app',messagingSenderId:'716626784276',appId:'1:716626784276:web:4f7d4d51dace341d21b701'};
+// Use ENTRY GAS URL (has READ_MONTH action with live data)
+const GAS='https://script.google.com/macros/s/AKfycbyQTrvw2WtHV0zpItsVA2hG_02R0gscUrOua2rnOqw750PvT3PODSaO6LaM3HWUTXJi/exec';
+const MONTHS=['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'];
+const MNAMES=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const MI={JANUARI:0,FEBRUARI:1,MARET:2,APRIL:3,MEI:4,JUNI:5,JULI:6,AGUSTUS:7,SEPTEMBER:8,OKTOBER:9,NOVEMBER:10,DESEMBER:11};
+const DS=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+
+// ══ STATE ══
+let _auth,_prov,_tok='',_av=false,_af=false;
+let _rows={};    // {MARET:[{day,venue,status,customer,time,pax,package,sales},...]}
+let _venues=[];
+let _vm='month',_at=null;
+
+// ══ FIREBASE ══
+firebase.initializeApp(FB);
+_auth=firebase.auth();
+_prov=new firebase.auth.GoogleAuthProvider();
+_auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
+
+_auth.onAuthStateChanged(async u=>{
+  const gate=document.getElementById('login-gate');
+  const err=document.getElementById('login-err');
+  if(!u){if(!_av){gate.classList.remove('hide');document.getElementById('app').classList.remove('show');}return;}
+  if(_av||_af)return;
+  _af=true;
+  try{
+    _tok=await u.getIdToken(true);
+    // CHECK_ACCESS
+    let r=null;
+    try{const c=new AbortController();const t=setTimeout(()=>c.abort(),10000);
+      r=await(await fetch(GAS+'?'+new URLSearchParams({action:'CHECK_ACCESS',idToken:_tok,from:'venue'}),{redirect:'follow',signal:c.signal})).json();
+      clearTimeout(t);}catch(e){r=null;}
+    if(r&&!r.ok&&r.msg&&r.msg.includes('tidak terdaftar')){
+      _auth.signOut();err.textContent='⚠ Akun tidak diizinkan.';_av=false;_af=false;return;}
+    _av=true;
+    gate.classList.add('hide');
+    document.getElementById('app').classList.add('show');
+    applyTheme();initDefaults();
+    await loadData();
+    startAutoRefresh();
+    initScrollHide();
+  }catch(e){
+    if(_auth.currentUser){_av=true;document.getElementById('login-gate').classList.add('hide');document.getElementById('app').classList.add('show');initDefaults();await loadData();}
+    else err.textContent='⚠ Gagal verifikasi.';
+  }finally{_af=false;}
+});
+
+function doLogin(){
+  document.getElementById('login-err').textContent='';
+  _auth.signInWithPopup(_prov).catch(e=>{
+    document.getElementById('login-err').textContent=
+      e.code==='auth/popup-blocked'?'⚠ Izinkan popup browser.':
+      e.code==='auth/popup-closed-by-user'?'':'⚠ '+e.message;
+  });
+}
+function logoutUser(){_auth.signOut();_av=false;_af=false;_rows={};_venues=[];clearInterval(_at);}
+
+// ══ INIT ══
+function initDefaults(){
+  const now=new Date();
+  document.getElementById('sel-month').value=MONTHS[now.getMonth()]||'JANUARI';
+  const y=now.getFullYear(),m=now.getMonth();
+  document.getElementById('df').value=new Date(y,m,1).toISOString().slice(0,10);
+  document.getElementById('dt').value=new Date(y,m+1,0).toISOString().slice(0,10);
+}
+
+// ══ GAS CALL ══
+async function gas(params){
+  const url=GAS+'?'+new URLSearchParams({...params,idToken:_tok,_t:Date.now()});
+  const r=await fetch(url,{redirect:'follow',cache:'no-store'});
+  return r.json();
+}
+
+// ══ LOAD DATA — READ_MONTH per bulan ══
+async function loadData(){
+  showLoad();
+  try{
+    _tok=await _auth.currentUser.getIdToken(true);
+    // Load ALL 12 months to capture all venues across the year
+    const now=new Date();
+    const curMi=now.getMonth();
+    const toLoad=[0,1,2,3,4,5,6,7,8,9,10,11]; // all months
+    _rows={};
+    await Promise.all(toLoad.map(async mi=>{
+      const sheetName=MONTHS[mi];
+      try{
+        const res=await gas({action:'READ_MONTH',sheetName});
+        if(res.ok&&res.rows){
+          _rows[sheetName]=res.rows.filter(r=>r.customer&&r.customer.trim());
+        }
+      }catch(e){console.warn('Failed to load',sheetName,e);}
+    }));
+    // Build venue list from all loaded data
+    const allVenues=new Set();
+    Object.values(_rows).forEach(rows=>rows.forEach(r=>{
+      if(r.venue&&r.venue.trim()) allVenues.add(r.venue.trim());
+    }));
+    _venues=[...allVenues].sort();
+    // Update sync time
+    const now2=new Date();
+    document.getElementById('sync-lbl').textContent=now2.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+    flashDot();
+    // Update venue filter dropdown
+    const vSel=document.getElementById('sel-venue');
+    if(vSel){
+      const cur=vSel.value;
+      vSel.innerHTML='<option value="ALL">Semua Venue</option>';
+      _venues.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;vSel.appendChild(o);});
+      if([..._venues,'ALL'].includes(cur)) vSel.value=cur;
+    }
+    renderTable();
+  }catch(e){toast('⚠ '+e.message);console.error(e);}
+  hideLoad();
+}
+function startAutoRefresh(){clearInterval(_at);_at=setInterval(loadData,5*60*1000);}
+function flashDot(){const d=document.getElementById('live-dot');d.style.background='var(--gold)';setTimeout(()=>d.style.background='var(--green)',600);}
+
+// ══ VIEW MODE ══
+function setVM(m){
+  _vm=m;
+  document.getElementById('vm-m').classList.toggle('active',m==='month');
+  document.getElementById('vm-r').classList.toggle('active',m==='range');
+  document.getElementById('sel-month').style.display=m==='month'?'':'none';
+  document.getElementById('df').style.display=m==='range'?'':'none';
+  document.getElementById('dt').style.display=m==='range'?'':'none';
+  renderTable();
+}
+
+// ══ DATE RANGE ══
+function getRange(){
+  if(_vm==='month'){
+    const key=document.getElementById('sel-month').value;
+    const mi=MI[key]??0;
+    const yr=new Date().getFullYear();
+    return{from:new Date(yr,mi,1),to:new Date(yr,mi+1,0),months:[key]};
+  }
+  const f=document.getElementById('df').value;
+  const t=document.getElementById('dt').value;
+  if(!f||!t)return null;
+  const from=new Date(f+'T00:00:00'),to=new Date(t+'T00:00:00');
+  // Collect all months in range
+  const months=[];
+  const d=new Date(from.getFullYear(),from.getMonth(),1);
+  while(d<=to){months.push(MONTHS[d.getMonth()]);d.setMonth(d.getMonth()+1);}
+  return{from,to,months:[...new Set(months)]};
+}
+function getDays(from,to){
+  const days=[];const d=new Date(from);
+  while(d<=to){days.push(new Date(d));d.setDate(d.getDate()+1);}
+  return days;
+}
+
+// ══ TIME OVERLAP ══
+function toMin(s){const[h,m]=(s||'').trim().replace('.',':').split(':');return(parseInt(h)||0)*60+(parseInt(m)||0);}
+function hasOverlap(evs){
+  const t=evs.map(e=>{const p=(e.time||'').replace(/\./g,':').split('-');return p.length>=2?{s:toMin(p[0]),e:toMin(p[1])}:null;}).filter(Boolean);
+  for(let i=0;i<t.length;i++)for(let j=i+1;j<t.length;j++)if(t[i].s<t[j].e&&t[j].s<t[i].e)return true;
+  return false;
+}
+
+// ══ VENUE ICON ══
+function vIcon(n){
+  const l=n.toLowerCase();
+  if(l.includes('ball'))return'🏛';if(l.includes('vip'))return'⭐';
+  if(l.includes('teratai'))return'🌺';if(l.includes('fox')||l.includes('steak'))return'🥩';
+  if(l.includes('meet'))return'🤝';if(l.includes('garden')||l.includes('outdoor'))return'🌿';
+  return'🏠';
+}
+
+// ══ BUILD EVENT MAP ══
+function buildEvMap(days,months,stFilter,vFilter){
+  const evMap={};
+  _venues.forEach(v=>{if(vFilter==='ALL'||v===vFilter)evMap[v]={};});
+  months.forEach(mKey=>{
+    const mRows=_rows[mKey]||[];
+    const mi=MI[mKey]??0;
+    const yr=new Date().getFullYear();
+    mRows.forEach(r=>{
+      if(stFilter!=='ALL'&&r.status!==stFilter)return;
+      const day=parseInt(r.day);if(!day||isNaN(day))return;
+      const dateObj=new Date(yr,mi,day);
+      const dayFrom=new Date(days[0].getFullYear(),days[0].getMonth(),days[0].getDate());
+      const dayTo=new Date(days[days.length-1].getFullYear(),days[days.length-1].getMonth(),days[days.length-1].getDate());
+      const de=new Date(dateObj.getFullYear(),dateObj.getMonth(),dateObj.getDate());
+      if(de<dayFrom||de>dayTo)return;
+      const iso=dateObj.toISOString().slice(0,10);
+      const vk=(r.venue||'Unknown').trim();
+      if(!evMap[vk])evMap[vk]={};
+      if(!evMap[vk][iso])evMap[vk][iso]=[];
+      evMap[vk][iso].push({...r,_month:mKey,_venueKey:vk});
+    });
+  });
+  return evMap;
+}
+
+// ══ RENDER TABLE ══
+function renderTable(){
+  const range=getRange();
+  if(!range||!_venues.length){
+    document.getElementById('tbl-container').innerHTML='<div style="padding:40px;text-align:center;color:var(--dim)">'+(!_venues.length?'Belum ada data venue':'Pilih rentang tanggal')+'</div>';
+    return;
+  }
+  const days=getDays(range.from,range.to);
+  const today=new Date();
+  const stFilter=document.getElementById('sel-st').value;
+  const vFilter=document.getElementById('sel-venue')?.value||'ALL';
+  const visVenues=vFilter==='ALL'?_venues:_venues.filter(v=>v===vFilter);
+  const evMap=buildEvMap(days,range.months,stFilter,vFilter);
+
+  // ── Stats per venue ──
+  const vs={};
+  visVenues.forEach(v=>vs[v]={c:0,t:0,d:0,occ:0});
+  let tK=0,tT=0,tC=0,tD=0,tCF=0;
+  const totalSlots=days.length;
+  // Vacant: hitung hanya dari hari ini ke depan
+  const todayDate=new Date(today.getFullYear(),today.getMonth(),today.getDate());
+
+  days.forEach(day=>{
+    const iso=day.toISOString().slice(0,10);
+    const dayDate=new Date(day.getFullYear(),day.getMonth(),day.getDate());
+    const isFuture=dayDate>=todayDate; // hari ini + ke depan
+    visVenues.forEach(v=>{
+      const evs=(evMap[v]?.[iso]||[]).filter(e=>{const s=(e.status||'').toUpperCase();return s!=='CANCEL';});
+      if(!evs.length&&isFuture){tK++;} // vacant hanya dari hari ini
+      evs.forEach(e=>{
+        const s=(e.status||'').toUpperCase().trim();
+        if(s==='CONFIRM'){tC++;vs[v].c++;vs[v].occ++;}
+        else if(s==='TENTATIVE'){tT++;vs[v].t++;vs[v].occ++;}
+        else if(s==='DONE'){tD++;vs[v].d++;vs[v].occ++;}
+        // N/S tidak dihitung occ
+      });
+      if(evs.length>1&&hasOverlap(evs))tCF++;
+    });
+  });
+
+  // ── Column width: always fit all venues in viewport ──
+  // Available = viewport - date col (60px) - borders
+  // Target: all venues visible without horizontal scroll
+  // Use clientWidth for accurate measurement (excludes scrollbar)
+  const vw=document.documentElement.clientWidth||window.innerWidth||390;
+  const dateColW=52; // exact date column width
+  const borderTotal=(visVenues.length+1)*1; // ~1px borders
+  const avail=vw-dateColW-borderTotal-2; // 2px safety margin
+  const perVenue=Math.max(Math.floor(avail/visVenues.length),58);
+  const cw=`width:${perVenue}px;min-width:${perVenue}px;max-width:${perVenue}px`;
+
+  // ── Header ──
+  const thV=visVenues.map(v=>{
+    const s=vs[v];
+    const occ=totalSlots>0?Math.round(s.occ/totalSlots*100):0;
+    return`<th class="th-venue" style="${cw}">
+      <div class="th-vn">${vIcon(v)} ${v}</div>
+      <div class="th-stats">
+        ${s.c?`<span class="th-st c">🔵${s.c}</span>`:''}
+        ${s.t?`<span class="th-st t">🟡${s.t}</span>`:''}
+        ${s.d?`<span class="th-st d">✓${s.d}</span>`:''}
+      </div>
+      <div class="th-occ">${occ}% terisi</div>
+    </th>`;
+  }).join('');
+
+  // ── Rows ──
+  const rows=days.map(day=>{
+    const iso=day.toISOString().slice(0,10);
+    const isToday=day.toDateString()===today.toDateString();
+    const isPast=day<new Date(today.getFullYear(),today.getMonth(),today.getDate());
+    const dn=day.getDate(),wd=DS[day.getDay()],mo=MNAMES[day.getMonth()].slice(0,3);
+    const cells=visVenues.map(v=>{
+      const evs=(evMap[v]?.[iso]||[]).filter(e=>e.status!=='CANCEL');
+      const conflict=evs.length>1&&hasOverlap(evs);
+      const mKey=MONTHS[day.getMonth()];
+      const ci=conflict?`<span class="ci">⚠</span>`:'';
+      if(!evs.length){
+        // Tanggal sudah lewat → tampil disabled, tidak bisa buat booking baru
+        if(isPast){
+          return`<td class="td-cell" style="${cw}"><div class="vcell vc-v-past">
+            <div class="vi">—</div><div class="vl">VACANT</div><div class="vs">Tgl lewat</div></div></td>`;
+        }
+        return`<td class="td-cell" style="${cw}"><div class="vcell vc-v" onclick="openAvail('${v}','${dn}','${wd} ${dn} ${mo}','${mKey}')">
+          ${ci}<div class="vi">✓</div><div class="vl">VACANT</div><div class="vs">Tap isi</div></div></td>`;
+      }
+      const hasC=evs.some(e=>e.status==='CONFIRM');
+      const hasT=evs.some(e=>e.status==='TENTATIVE');
+      const ed=encEvs(evs);
+      const dayStr=`${wd} ${dn} ${mo}`;
+      if(evs.length>1&&(hasC&&hasT||evs.length>2)){
+        return`<td class="td-cell" style="${cw}"><div class="vcell vc-m${conflict?' vc-conflict':''}" onclick="openEvs(${ed},'${v}','${dayStr}')">
+          ${ci}<div class="vcnt">${evs.length}</div><div class="vlb">event</div></div></td>`;
+      }
+      const ev=evs[0];
+      const st=(ev.status||'').toUpperCase().trim();
+      const isNS=!st||st==='N/S'||st==='NS'||st==='NO STATUS'||st==='';
+      const cls=st==='CONFIRM'?'vc-c':st==='TENTATIVE'?'vc-t':isNS?'vc-ns':'vc-d';
+      const lbl=st==='CONFIRM'?'✓ CONF':st==='TENTATIVE'?'~ TENT':isNS?'— N/S':'✓ DONE';
+      const nm=(ev.customer||'').split(' ').slice(0,3).join(' ');
+      return`<td class="td-cell" style="${cw}"><div class="vcell ${cls}${conflict?' vc-conflict':''}" onclick="openEvs(${ed},'${v}','${dayStr}')">
+        ${ci}<div class="vst">${lbl}${evs.length>1?' ×'+evs.length:''}</div>
+        <div class="vnm">${nm}</div><div class="vtm">${ev.time||''}</div></div></td>`;
+    }).join('');
+    return`<tr class="${isToday?'today-row':isPast?'past-row':''}" id="${isToday?'today-row':''}">
+      <td class="td-date"><div class="date-inner">
+        <div class="date-num">${dn}</div>
+        <div class="date-wd">${wd}${isToday?' 🟡':''}</div>
+        <div class="date-mo">${mo}</div>
+      </div></td>${cells}</tr>`;
+  }).join('');
+
+  document.getElementById('tbl-container').innerHTML=`
+    <table class="vtbl">
+      <thead><tr><th class="th-date">TANGGAL</th>${thV}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+
+  // Summary
+  const sum=document.getElementById('summary');
+  sum.style.display='flex';
+  const label=_vm==='month'?MNAMES[MI[document.getElementById('sel-month').value]]+' '+new Date().getFullYear():document.getElementById('df').value+' – '+document.getElementById('dt').value;
+  sum.innerHTML=`<strong style="color:var(--text)">${label}</strong>
+    <span style="color:var(--green);font-weight:700">✓ ${tK} kosong</span>
+    ${tCF?`<span style="color:var(--red);font-weight:700;animation:cg 1.2s infinite">⚠ ${tCF} konflik</span>`:''}
+    <span style="margin-left:auto;font-size:9px;color:var(--dim)">${days.length}hr · ${_venues.length}venue · ${tC+tT+tD}evt</span>`;
+
+  // Bottom bar
+  document.getElementById('bbar').classList.add('show');
+  document.getElementById('bb-k').textContent=tK;
+  document.getElementById('bb-t').textContent=tT;
+  document.getElementById('bb-c').textContent=tC;
+  document.getElementById('bb-d').textContent=tD;
+  document.getElementById('bb-cf').textContent=tCF;
+  document.getElementById('bb-dy').textContent=days.length;
+
+  // Recompute ctrl-bar height for summary/container positioning
+  updateHeights();
+
+  // Scroll to today
+  setTimeout(()=>{
+    const el=document.getElementById('today-row');
+    if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+  },150);
+}
+
+// ══ HEIGHTS ══
+function updateHeights(){
+  const cb=document.getElementById('ctrl-bar');
+  const cbH=cb.classList.contains('hidden')?0:cb.offsetHeight;
+  const tph=44+cbH; // topbar + ctrl
+  const sum=document.getElementById('summary');
+  const tc=document.getElementById('tbl-container');
+  sum.style.top=tph+'px';
+  const sumH=sum.style.display!=='none'?sum.offsetHeight:0;
+  tc.style.top=(tph+sumH)+'px';
+}
+
+// ══ SCROLL HIDE CTRL ══
+function initScrollHide(){
+  const tc=document.getElementById('tbl-container');
+  let lastY=0;
+  tc.addEventListener('scroll',()=>{
+    const y=tc.scrollTop;
+    const cb=document.getElementById('ctrl-bar');
+    if(y>lastY&&y>30){
+      cb.classList.add('hidden');
+    } else if(y<lastY){
+      cb.classList.remove('hidden');
+    }
+    lastY=y;
+    updateHeights();
+  },{passive:true});
+}
+
+// ══ POPUPS ══
+function encEvs(evs){return"'"+btoa(unescape(encodeURIComponent(JSON.stringify(evs))))+"'";}
+function decEvs(s){try{return JSON.parse(decodeURIComponent(escape(atob(s))));}catch(_){return[];}}
+
+function openEvs(enc,venue,dayStr){
+  const evs=decEvs(enc);
+  document.getElementById('pop-t').textContent=venue;
+  document.getElementById('pop-s').textContent=dayStr+' · '+evs.length+' event';
+  document.getElementById('pop-b').innerHTML=evs.map(ev=>{
+    const cls=(ev.status||'').toLowerCase();
+    const lbl={CONFIRM:'✓ CONFIRM',TENTATIVE:'~ TENTATIVE',DONE:'✓ DONE'}[ev.status]||ev.status;
+    return`<div class="pev">
+      <span class="pev-st ${cls}">${lbl}</span>
+      <div class="pev-cust">${ev.customer||'—'}</div>
+      <div class="pev-grid">
+        <div class="pev-f"><label>Waktu</label><span>${ev.time||'—'}</span></div>
+        <div class="pev-f"><label>Pax</label><span>${ev.pax||'—'}</span></div>
+        <div class="pev-f"><label>Package</label><span>${ev.package||'—'}</span></div>
+        <div class="pev-f"><label>Sales</label><span>${ev.sales||'—'}</span></div>
+      </div>
+      <div class="pev-btns">
+        <button class="btn-edit" onclick="goEntry('${ev.day}','${ev._venueKey||venue}','${ev._month}')">✏ Edit di Live Entry</button>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('popup').classList.add('show');
+}
+
+function openAvail(venue,day,dayStr,mKey){
+  document.getElementById('pop-t').textContent='Tersedia';
+  document.getElementById('pop-s').textContent=venue+' · '+dayStr;
+  document.getElementById('pop-b').innerHTML=`<div class="vac-pop">
+    <div class="vac-icon">✅</div>
+    <div class="vac-title">${venue}</div>
+    <div class="vac-sub">${dayStr} · Tidak ada booking</div>
+    <button class="btn-add" onclick="goEntry('${day}','${venue}','${mKey}');closePopup()">➕ Tambah Booking</button>
+  </div>`;
+  document.getElementById('popup').classList.add('show');
+}
+
+function closePopup(){document.getElementById('popup').classList.remove('show');}
+
+function goEntry(date,venue,month){
+  const base=window.location.href.replace(/[^\/]*$/,'');
+  window.open(base+'entry.html?prefill_date='+encodeURIComponent(date)
+    +'&prefill_venue='+encodeURIComponent(venue)
+    +'&prefill_month='+encodeURIComponent(month),'_blank');
+}
+
+// ══ UTILS ══
+function showLoad(){document.getElementById('lbar').classList.add('show');}
+function hideLoad(){document.getElementById('lbar').classList.remove('show');}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity='0',2800);}
+function toggleTheme(){
+  const l=document.body.classList.toggle('light-mode');
+  document.getElementById('btn-theme').textContent=l?'🌞':'🌙';
+  try{localStorage.setItem('cv_th',l?'l':'d');}catch(_){}
+}
+function applyTheme(){
+  try{if(localStorage.getItem('cv_th')==='l'){document.body.classList.add('light-mode');const b=document.getElementById('btn-theme');if(b)b.textContent='🌞';}}catch(_){}
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closePopup();});
+applyTheme();
+</script>
+</body>
+</html>
