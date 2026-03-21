@@ -2949,7 +2949,6 @@ async function initAppData() {
   loadScanner(activeTab);
 
   // [PERF] Prefetch semua bulan di background setelah login
-  // Saat user buka Customer History, data sudah siap → langsung tampil
   const role = window._userRole || '';
   if (role === 'MANAGER' || role === 'ADMIN') {
     setTimeout(() => {
@@ -2957,13 +2956,90 @@ async function initAppData() {
         console.log('[PERF] Background prefetch customer data...');
         _prefetchCustData();
       }
-    }, 2000); // tunda 2 detik agar tidak bentrok dengan scanner load
+    }, 2000);
+  }
+
+  // [FIX-PREFILL] Baca URL params setelah auth + config siap
+  // Dipanggil di sini agar dropdown venue sudah terisi oleh applyConfig()
+  applyUrlPrefill();
+}
+
+// ─── URL PREFILL ────────────────────────────────────────────────────────────
+// Membaca parameter prefill_date, prefill_venue, prefill_month dari URL
+// dan mengisi form secara otomatis + trigger CHECK ke GAS.
+//
+// Format URL dari check_venue.html (goEntry):
+//   entry.html?prefill_date=22&prefill_venue=Ball Room&prefill_month=MARET
+//
+// Format date yang dipakai f-date di form: YYYY-MM-DD
+// prefill_date = nomor hari (mis: "22"), prefill_month = nama bulan (mis: "MARET")
+// → dikonversi ke "2026-03-22"
+function applyUrlPrefill() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const rawDay   = params.get('prefill_date');
+    const rawVenue = params.get('prefill_venue');
+    const rawMonth = params.get('prefill_month');
+
+    // Tidak ada prefill params → tidak perlu apa-apa
+    if (!rawDay && !rawVenue) return;
+
+    // ── Hitung tanggal lengkap YYYY-MM-DD ──
+    let dateStr = '';
+    if (rawDay) {
+      const day = parseInt(rawDay, 10);
+      if (!isNaN(day) && day >= 1 && day <= 31) {
+        const now    = new Date();
+        let monthIdx = now.getMonth(); // default bulan sekarang
+        if (rawMonth) {
+          const mi = MONTHS.indexOf(rawMonth.toUpperCase().trim());
+          if (mi >= 0) monthIdx = mi;
+        }
+        const year = now.getFullYear();
+        dateStr = year + '-'
+          + String(monthIdx + 1).padStart(2, '0') + '-'
+          + String(day).padStart(2, '0');
+      }
+    }
+
+    // ── Set field tanggal ──
+    if (dateStr) set('f-date', dateStr);
+
+    // ── Set field venue ──
+    if (rawVenue) {
+      const venueEl = document.getElementById('f-venue');
+      // Cari option yang cocok (case-insensitive, trim)
+      const normalVenue = rawVenue.trim();
+      let matched = false;
+      for (const opt of venueEl.options) {
+        if (opt.value.trim().toLowerCase() === normalVenue.toLowerCase()) {
+          venueEl.value = opt.value;
+          matched = true;
+          break;
+        }
+      }
+      // Fallback: set langsung jika tidak ditemukan di dropdown
+      if (!matched) set('f-venue', normalVenue);
+    }
+
+    // ── Trigger check jika kedua field sudah terisi ──
+    const fDate  = document.getElementById('f-date').value;
+    const fVenue = document.getElementById('f-venue').value;
+    if (fDate && fVenue) {
+      // Kecil delay agar UI sudah render sempurna sebelum request CHECK
+      setTimeout(() => onDateVenueChange(), 100);
+    }
+
+    console.log('[PREFILL] date=' + dateStr + ' venue=' + rawVenue + ' month=' + rawMonth);
+  } catch(e) {
+    console.warn('[PREFILL] Error:', e);
   }
 }
 
 window.addEventListener('load', () => {
   applyConfig(); // ✅ Setup config — tidak fetch data di sini
   // Data di-load oleh initAppData() setelah auth berhasil
+  // applyUrlPrefill() dipanggil dari initAppData() setelah auth + config selesai
 });
 
 // ─── RANGE AVAILABILITY ────────────────────────────────────────────────────
