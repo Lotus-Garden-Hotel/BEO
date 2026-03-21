@@ -2394,26 +2394,18 @@ function _renderApprovalBadges(approvals) {
 }
 
 // Refresh manual — user tap tombol ↻
-// Global helpers — perlu diakses dari IIFE dan dari _manualRefreshApproval
-function _getBeoId() {
-  return ((document.getElementById('i-beo-no')||{}).textContent||'').trim();
-}
-function _isValidBeoId(id) {
-  return id && id !== '—' && !id.includes('···') && !id.includes('—/BEO') && id.length > 5;
-}
-
 function _manualRefreshApproval() {
   const btn    = document.getElementById('btn-refresh-approval');
   const gasUrl = _getGasUrl();
-  const beoId  = _getBeoId();
-  if (!gasUrl || !_isValidBeoId(beoId)) {
+  const beoId  = _getBeoId ? _getBeoId() : ((document.getElementById('i-beo-no')||{}).textContent||'').trim();
+  if (!gasUrl || !beoId || beoId === '—' || beoId.includes('···')) {
     if (btn) { btn.textContent = '✗ BEO ID belum ada'; setTimeout(() => btn.textContent = '↻ Refresh', 2000); }
     return;
   }
   if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
-  _fetchApprovalStatus(gasUrl, beoId)
-    .then(()     => { if(btn){btn.textContent='↻ Refresh'; btn.disabled=false;} })
-    .catch(()    => { if(btn){btn.textContent='↻ Refresh'; btn.disabled=false;} });
+  _fetchApprovalStatus(gasUrl, beoId).finally
+    ? _fetchApprovalStatus(gasUrl, beoId).finally(() => { if(btn){btn.textContent='↻ Refresh';btn.disabled=false;} })
+    : _fetchApprovalStatus(gasUrl, beoId).then(() => { if(btn){btn.textContent='↻ Refresh';btn.disabled=false;} });
 }
 
 (function() {
@@ -2421,7 +2413,13 @@ function _manualRefreshApproval() {
   if (!gasUrl) return;
   // Coba ambil beoId dari i-beo-no, retry sampai 10 detik (menunggu fetch dari GAS)
   let _pollRetry = 0;
-  // _getBeoId dan _isValidBeoId sudah di global scope
+  function _getBeoId() {
+    // Trim whitespace/newline dari textContent
+    return ((document.getElementById('i-beo-no')||{}).textContent||'').trim();
+  }
+  function _isValidBeoId(id) {
+    return id && id !== '—' && !id.includes('···') && !id.includes('—/BEO') && id.length > 5;
+  }
   function _tryStartPolling() {
     const beoId = _getBeoId();
     if (_isValidBeoId(beoId)) {

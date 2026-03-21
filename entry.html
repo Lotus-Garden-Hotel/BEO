@@ -63,46 +63,21 @@
       animation:shimmer 4s linear infinite; line-height:1;
     }
     .brand-sub { font-size:7px; font-weight:500; letter-spacing:.35em; color:var(--dim); text-transform:uppercase; }
-    /* Header — 2 baris, baris 2 khusus SA */
-    .header-right {
-      display:flex; flex-direction:column; align-items:flex-end; gap:3px;
-      flex-shrink:0;
-    }
-    .header-actions {
-      display:flex; gap:4px; align-items:center;
-      flex-wrap:nowrap; justify-content:flex-end;
-    }
-    /* Baris SA: hidden default, tampil setelah login SA */
-    .header-actions-sa {
-      display:none;
-      gap:3px; align-items:center;
-      flex-wrap:nowrap; justify-content:flex-end;
-    }
-    .header-actions-sa.visible { display:flex; }
-    /* Label "SA:" kecil di depan baris 2 */
-    .sa-label {
-      font-size:6px; color:var(--muted); letter-spacing:.08em;
-      white-space:nowrap; align-self:center; padding-right:2px;
-      text-transform:uppercase;
-    }
+    .header-actions { display:flex; gap:5px; align-items:center; flex-wrap:nowrap; flex-shrink:0; }
     .btn-icon {
-      width:32px; height:32px; border-radius:9px;
-      background:var(--card); border:1px solid var(--border);
-      display:flex; align-items:center; justify-content:center;
-      cursor:pointer; position:relative;
-      transition:border-color .2s; font-size:13px; flex-shrink:0;
+      width:36px; height:36px; border-radius:10px; background:var(--card); border:1px solid var(--border);
+      display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative;
+      transition:border-color .2s; font-size:15px; flex-shrink:0;
     }
     .btn-icon:active { transform:scale(.93); }
     .btn-icon:hover  { border-color:var(--gold); }
-    /* Mobile: lebih kecil */
-    @media (max-width:430px) {
-      .btn-icon { width:28px; height:28px; font-size:12px; border-radius:7px; }
-      .header-actions, .header-actions-sa { gap:3px; }
+    @media (max-width:420px) {
+      .btn-icon { width:30px; height:30px; font-size:13px; border-radius:8px; }
+      .header-actions { gap:4px; }
     }
-    @media (max-width:370px) {
-      .btn-icon { width:26px; height:26px; font-size:11px; border-radius:6px; }
-      .header-actions, .header-actions-sa { gap:2px; }
-      .sa-label { display:none; }
+    @media (max-width:360px) {
+      .btn-icon { width:28px; height:28px; font-size:12px; border-radius:7px; }
+      .header-actions { gap:3px; }
     }
     .notif-badge {
       position:absolute; top:-4px; right:-4px; min-width:16px; height:16px; padding:0 4px;
@@ -1143,12 +1118,6 @@
              color:var(--gold);font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.05em;">
       🔄 Coba Login Ulang
     </button>
-    <button onclick="hardResetLogin()"
-      style="margin-top:8px;width:100%;padding:10px;border-radius:10px;
-             background:transparent;border:1px solid rgba(255,255,255,.1);
-             color:#555;font-size:10px;cursor:pointer;letter-spacing:.05em;">
-      ↺ Reset & Login Ulang
-    </button>
   </div>
 </div>
 
@@ -1160,41 +1129,30 @@
       <div class="brand-name" id="ui-brand">BANQUET ELITE</div>
       <div class="brand-sub"  id="ui-version">V.6.3 · Cloud Edition</div>
     </div>
-    <div class="header-right">
-
-      <!-- ── BARIS 1: Icon semua user ── -->
-      <div class="header-actions">
-        <!-- Search (unified popup) -->
-        <div class="btn-icon" onclick="openUnifiedPopup('search')" title="Search BEO"
-          style="background:rgba(201,168,76,.08);border-color:rgba(201,168,76,.25);color:var(--gold);">
-          🔍<span id="notif-badge" class="notif-badge hidden">0</span>
-        </div>
-        <!-- Reset form -->
-        <div class="btn-icon btn-icon-red" onclick="resetForm(true)" title="Reset Form">✕</div>
-        <!-- Template Menu -->
-        <div class="btn-icon" id="btn-menu-tpl" onclick="openMenuTemplate()" title="Template Menu"
-          style="background:rgba(243,156,18,.08);border-color:rgba(243,156,18,.25);color:#f39c12;">🍽</div>
-        <!-- Customer History (non-STAFF) -->
-        <div class="btn-icon" id="btn-cust-history" onclick="openCustHistory()" title="Customer History"
-          style="display:none;background:rgba(46,204,113,.08);border-color:rgba(46,204,113,.25);color:#2ecc71;">👤</div>
-        <!-- Role badge + Logout -->
-        <span id="role-badge"></span>
-        <div class="btn-icon btn-icon-logout" id="btn-logout" onclick="logoutUser()" title="Keluar" style="display:none">⎋</div>
+    <div class="header-actions">
+      <!-- 🔍 Search BEO — kiri (gabungan Scanner + Ketersediaan) -->
+      <div class="btn-icon" onclick="openUnifiedPopup('search')" title="Search BEO &amp; Ketersediaan"
+        style="background:rgba(201,168,76,.08);border-color:rgba(201,168,76,.25);color:var(--gold);">
+        🔍
+        <span id="notif-badge" class="notif-badge hidden">0</span>
       </div>
-
-      <!-- ── BARIS 2: SA Tools (SUPER_ADMIN only, hidden sampai login) ── -->
-      <div class="header-actions-sa" id="header-sa-row">
-        <span class="sa-label">SA</span>
-        <!-- Activity Logs -->
-        <div class="btn-icon btn-icon-blue" id="btn-logs" onclick="openLogsPopup()" title="Activity Logs">📋</div>
-        <!-- Reset BEO Seq -->
-        <div class="btn-icon" id="btn-reset-seq" onclick="openResetSeqModal()" title="Reset Nomor BEO"
-          style="background:rgba(231,76,60,.08);border-color:rgba(231,76,60,.25);color:#e74c3c;font-size:9px;font-weight:800;">#⟳</div>
-        <!-- Purge Cache -->
-        <div class="btn-icon" id="btn-purge-cache" onclick="doPurgeCache()" title="Purge Cache"
-          style="background:rgba(155,89,182,.08);border-color:rgba(155,89,182,.25);color:#c39bd3;font-size:9px;font-weight:800;">⚡</div>
-      </div>
-
+      <div class="btn-icon btn-icon-red"  onclick="resetForm(true)" title="Reset Form">✕</div>
+      <!-- Logs — SUPER_ADMIN only -->
+      <div class="btn-icon btn-icon-blue" id="btn-logs" onclick="openLogsPopup()" title="Activity Logs" style="display:none">📋</div>
+      <!-- Reset BEO — SUPER_ADMIN only -->
+      <div class="btn-icon" id="btn-reset-seq" onclick="openResetSeqModal()" title="Reset Nomor BEO"
+        style="display:none;background:rgba(231,76,60,.08);border-color:rgba(231,76,60,.25);color:#e74c3c;font-size:10px;font-weight:800;">#⟳</div>
+      <!-- Purge Cache — SUPER_ADMIN only -->
+      <div class="btn-icon" id="btn-purge-cache" onclick="doPurgeCache()" title="Purge Server Cache"
+        style="display:none;background:rgba(155,89,182,.08);border-color:rgba(155,89,182,.25);color:#c39bd3;font-size:10px;font-weight:800;">⚡</div>
+      <!-- Role badge -->
+      <span id="role-badge" style="display:none"></span>
+      <div class="btn-icon" id="btn-menu-tpl" onclick="openMenuTemplate()" title="Template Menu"
+        style="background:rgba(243,156,18,.08);border-color:rgba(243,156,18,.25);color:#f39c12;">🍽</div>
+      <!-- 👤 Customer History — kanan -->
+      <div class="btn-icon" id="btn-cust-history" onclick="openCustHistory()" title="Customer History"
+        style="display:none;background:rgba(46,204,113,.08);border-color:rgba(46,204,113,.25);color:#2ecc71;">👤</div>
+      <div class="btn-icon btn-icon-logout" id="btn-logout" onclick="logoutUser()" title="Keluar" style="display:none">⎋</div>
     </div>
   </div>
 
@@ -1397,78 +1355,36 @@
 
 </div>
 
-  <!-- ══ MODAL KIRIM WA — terpadu seperti BEO ══ -->
-  <div id="modal-wa" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;padding:10px;overflow-y:auto;-webkit-overflow-scrolling:touch;">
-    <div style="background:#1a1410;border:1px solid #3d3028;border-radius:18px;max-width:540px;margin:0 auto;padding:20px 16px;">
-
-      <!-- Header -->
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-        <div style="font-size:14px;font-weight:800;color:#d4af5a;letter-spacing:.08em;">📲 KIRIM BEO KE DEPARTEMEN</div>
-        <button onclick="closeModalWA()" style="background:none;border:none;color:#7a6e5a;font-size:20px;cursor:pointer;line-height:1;">✕</button>
+  <!-- MODAL KIRIM WA DEPARTEMEN -->
+  <div id="modal-wa" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;padding:16px;overflow-y:auto;">
+    <div style="background:#1a1410;border:1px solid #3d3028;border-radius:16px;max-width:480px;margin:0 auto;padding:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:800;color:#d4af5a;letter-spacing:.1em;">📲 KIRIM BEO KE DEPARTEMEN</div>
+        <button onclick="closeModalWA()" style="background:none;border:none;color:#7a6e5a;font-size:18px;cursor:pointer;">✕</button>
       </div>
 
       <!-- Booking preview -->
-      <div id="wa-preview" style="background:#0d0b08;border:1px solid #2a2218;border-radius:10px;padding:10px;margin-bottom:14px;font-size:9px;color:#b8962e;line-height:1.6;font-family:monospace;max-height:72px;overflow-y:auto;"></div>
+      <div id="wa-preview" style="background:#0d0b08;border:1px solid #2a2218;border-radius:10px;padding:12px;margin-bottom:14px;font-size:10px;color:#b8962e;line-height:1.7;font-family:monospace;"></div>
 
-      <!-- ══ Fonnte Token ══ -->
-      <div style="margin-bottom:14px;">
-        <label style="font-size:8px;font-weight:700;color:#7a6e5a;letter-spacing:.12em;text-transform:uppercase;display:block;margin-bottom:5px;">🔑 FONNTE TOKEN</label>
-        <input id="wa-token" type="password" placeholder="Token dari dashboard.fonnte.com"
-          oninput="syncFonnteToken()"
-          style="width:100%;background:#0d0b08;border:1px solid #3d3028;border-radius:8px;padding:9px 12px;color:#e8e0c8;font-size:11px;outline:none;box-sizing:border-box;">
+      <!-- Fonnte token -->
+      <div style="margin-bottom:12px;">
+        <label style="font-size:9px;font-weight:700;color:#7a6e5a;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:4px;">🔑 Fonnte Token</label>
+        <input id="wa-token" type="password" placeholder="Token dari dashboard.fonnte.com" style="width:100%;background:#0d0b08;border:1px solid #3d3028;border-radius:8px;padding:8px 10px;color:#e8e0c8;font-size:10px;outline:none;">
         <div style="font-size:8px;color:#4a4035;margin-top:3px;">Daftar gratis di fonnte.com → connect WA → copy token</div>
       </div>
 
-      <!-- ══ SECTION 1: Dept Operasional (Gambar 3) ══ -->
-      <div style="border:1px solid #2a2218;border-radius:12px;padding:12px;margin-bottom:12px;">
-        <div style="font-size:9px;font-weight:700;color:#7a6e5a;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px;">📋 DEPARTEMEN TUJUAN</div>
+      <!-- Dept list -->
+      <div style="margin-bottom:14px;">
+        <div style="font-size:9px;font-weight:700;color:#7a6e5a;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">📋 Departemen Tujuan</div>
         <div id="dept-list-container" style="display:flex;flex-direction:column;gap:8px;"></div>
       </div>
 
-      <!-- ══ SECTION 2: Approval Head (Gambar 2) ══ -->
-      <div style="border:1px solid #2a1a38;border-radius:12px;padding:12px;margin-bottom:14px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-          <div style="font-size:9px;font-weight:700;color:#7a6e5a;letter-spacing:.12em;text-transform:uppercase;">✅ DEPT + NOMOR WA HEAD</div>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <span id="apr-cloud-indicator-entry" style="font-size:8px;"></span>
-            <button onclick="saveApprovalConfigFromEntry()"
-              style="background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.3);color:#c9a84c;font-size:9px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;">
-              💾 Simpan Config
-            </button>
-          </div>
-        </div>
-        <div style="margin-bottom:8px;">
-          <label style="font-size:8px;color:#7a6e5a;display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.08em;">URL Halaman Approve</label>
-          <input id="apr-base-url-entry" type="text" placeholder="https://lotus-garden-hotel.github.io/.../approve.html"
-            style="width:100%;background:#0d0b08;border:1px solid #3d3028;border-radius:7px;padding:7px 10px;color:#e8e0c8;font-size:9px;outline:none;box-sizing:border-box;">
-        </div>
-        <div id="apr-dept-list-entry" style="display:flex;flex-direction:column;gap:6px;"></div>
+      <!-- Action buttons -->
+      <div style="display:flex;gap:8px;">
+        <button onclick="saveWAConfig()" style="flex:1;background:#2a2218;border:1px solid #3d3028;color:#b8962e;font-size:10px;font-weight:700;padding:10px;border-radius:8px;cursor:pointer;">💾 Simpan Config</button>
+        <button onclick="sendWABEO()" id="btn-send-exec" style="flex:2;background:linear-gradient(135deg,#0d3320,#1a5c38);border:1px solid rgba(37,211,102,.4);color:#25d366;font-size:11px;font-weight:800;padding:10px;border-radius:8px;cursor:pointer;">📤 KIRIM SEKARANG</button>
       </div>
-
-      <!-- ══ Action Buttons ══ -->
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button onclick="saveWAConfig()"
-          style="flex:1;min-width:100px;background:#2a2218;border:1px solid #3d3028;color:#b8962e;font-size:10px;font-weight:700;padding:11px 8px;border-radius:10px;cursor:pointer;">
-          💾 Simpan
-        </button>
-        <button onclick="sendWABEO()" id="btn-send-exec"
-          style="flex:2;min-width:130px;background:linear-gradient(135deg,#0d3320,#1a5c38);border:1px solid rgba(37,211,102,.4);color:#25d366;font-size:11px;font-weight:800;padding:11px 8px;border-radius:10px;cursor:pointer;">
-          📤 Kirim ke Dept
-        </button>
-        <button onclick="sendApprovalFromEntry()" id="btn-send-approval-entry"
-          style="flex:2;min-width:130px;background:linear-gradient(135deg,#0d1f3d,#1a3d7a);border:1px solid rgba(52,152,219,.4);color:#5dade2;font-size:11px;font-weight:800;padding:11px 8px;border-radius:10px;cursor:pointer;">
-          ✅ Kirim Approval
-        </button>
-      </div>
-      <button onclick="closeModalWA()"
-        style="width:100%;margin-top:8px;background:transparent;border:1px solid #2a2218;color:#5a4a38;font-size:10px;padding:9px;border-radius:10px;cursor:pointer;">
-        Batal
-      </button>
-
-      <!-- Result -->
-      <div id="wa-send-result"      style="margin-top:10px;font-size:9px;line-height:1.8;"></div>
-      <div id="apr-send-result-entry" style="margin-top:6px;font-size:9px;line-height:1.8;"></div>
-
+      <div id="wa-send-result" style="margin-top:10px;font-size:9px;line-height:1.7;"></div>
     </div>
   </div>
 </div>
@@ -1490,23 +1406,6 @@ const FIREBASE_CONFIG = {
 firebase.initializeApp(FIREBASE_CONFIG);
 const _auth     = firebase.auth();
 const _provider = new firebase.auth.GoogleAuthProvider();
-_provider.setCustomParameters({ prompt: 'select_account' });
-
-// Tangani hasil redirect (mobile) — HARUS ada .then() agar sesi terbaca
-_auth.getRedirectResult().then(result => {
-  if (result && result.user) {
-    console.log('[Auth] redirect OK:', result.user.email);
-    // onAuthStateChanged akan fire otomatis
-  }
-}).catch(e => {
-  if (e.code && e.code !== 'auth/no-auth-event') {
-    console.error('[Auth] redirect error:', e.code);
-    try {
-      const errEl = document.getElementById('login-error');
-      if (errEl) { errEl.textContent = '⚠ Login gagal (' + e.code + '). Coba lagi.'; errEl.classList.add('show'); }
-    } catch(_) {}
-  }
-});
 
 // ── Auth State — identik dengan index.html (simple & reliable) ──────────────
 const GAS_URL_AUTH = 'https://script.google.com/macros/s/AKfycbyQTrvw2WtHV0zpItsVA2hG_02R0gscUrOua2rnOqw750PvT3PODSaO6LaM3HWUTXJi/exec';
@@ -1528,18 +1427,12 @@ _auth.onAuthStateChanged(async user => {
   const errEl     = document.getElementById('login-error');
   const retryBtn  = document.getElementById('login-retry-btn');
 
-  // user=null: mungkin masih loading setelah redirect — tunggu sebentar
   if (!user) {
-    if (_authVerified) return;
-    // Jangan langsung tampilkan gate — tunggu 2.5s dulu
-    // (redirect result butuh waktu diproses browser)
-    setTimeout(() => {
-      if (!_authVerified && !_authInFlight && !_auth.currentUser) {
-        gate.style.display = 'flex';
-        gate.classList.remove('hide');
-        logoutBtn.style.display = 'none';
-      }
-    }, 2500);
+    if (!_authVerified) {
+      gate.style.display = 'flex';
+      gate.classList.remove('hide');
+      logoutBtn.style.display = 'none';
+    }
     return;
   }
 
@@ -1547,35 +1440,19 @@ _auth.onAuthStateChanged(async user => {
   if (_authInFlight) return;
   _authInFlight = true;
 
-  // Tampilkan loading di button area
-  try { errEl.textContent = '⏳ Memverifikasi akses...'; errEl.classList.add('show'); } catch(_){}
-
   try {
-    // getIdToken tanpa forceRefresh dulu (lebih cepat di mobile)
-    // Firebase token valid 1 jam, fresh login pasti masih valid
-    let idToken;
-    try {
-      idToken = await user.getIdToken(false);
-    } catch(_) {
-      idToken = await user.getIdToken(true); // fallback force refresh
-    }
+    const idToken = await user.getIdToken(true);
 
     let res;
     try {
+      // Pakai fetch langsung — sama seperti index.html, tidak pakai _gasRaw dulu
       const ctrl  = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 20000); // 20s — mobile bisa lambat
-      const gasUrl = window._GAS || GAS_URL_AUTH;
-      const checkUrl = gasUrl + '?' + new URLSearchParams({ action:'CHECK_ACCESS', idToken });
-      console.log('[Auth] CHECK_ACCESS →', gasUrl.substring(0,50)+'...');
-      const resp  = await fetch(checkUrl, { redirect:'follow', signal:ctrl.signal });
+      const timer = setTimeout(() => ctrl.abort(), 12000);
+      const resp  = await fetch(window._GAS + '?' + new URLSearchParams({ action:'CHECK_ACCESS', idToken }), { redirect:'follow', signal:ctrl.signal });
       clearTimeout(timer);
       res = await resp.json();
-      console.log('[Auth] response:', res.ok, res.allowed, res.role, res.msg||'');
     } catch(netErr) {
-      const isTimeout = netErr.name === 'AbortError';
-      errEl.textContent = isTimeout
-        ? '⚠ Koneksi lambat. Coba lagi atau refresh halaman.'
-        : '⚠ Tidak dapat terhubung ke server. Periksa internet.';
+      errEl.textContent = '⚠ Tidak dapat terhubung ke server. Periksa internet lalu refresh.';
       errEl.classList.add('show');
       gate.style.display = 'flex';
       gate.classList.remove('hide');
@@ -1599,9 +1476,9 @@ _auth.onAuthStateChanged(async user => {
         canPurge:  res.canPurge  || false,
       };
       gate.classList.add('hide');
-      setTimeout(() => { gate.style.display = 'none'; }, 500);
+      setTimeout(() => { gate.style.display = 'none'; }, 600);
       logoutBtn.style.display = 'flex';
-      try { errEl.textContent = ''; errEl.classList.remove('show'); } catch(_){}
+      errEl.classList.remove('show');
       if (retryBtn) retryBtn.style.display = 'none';
 
       // Tampilkan UI per role
@@ -1612,9 +1489,10 @@ _auth.onAuthStateChanged(async user => {
         if (el) el.style.display = 'flex';
       }
       if (isSA) {
-        // Tampilkan baris 2 (SA tools row)
-        const saRow = document.getElementById('header-sa-row');
-        if (saRow) saRow.classList.add('visible');
+        ['btn-reset-seq','btn-logs','btn-purge-cache'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = 'flex';
+        });
       }
       // Role badge
       const roleBadge = document.getElementById('role-badge');
@@ -1668,52 +1546,42 @@ _auth.onAuthStateChanged(async user => {
   }
 });
 
-function loginWithGoogle() {
-  const errEl = document.getElementById('login-error');
-  try { errEl.textContent = ''; errEl.classList.remove('show'); } catch(_) {}
-
-  const ua       = navigator.userAgent;
-  const isMobile = /Android|iPhone|iPad|iPod|Opera Mini/i.test(ua);
-  console.log('[Auth] loginWithGoogle called, isMobile:', isMobile, 'UA:', ua.substring(0,50));
-
-  if (isMobile) {
-    console.log('[Auth] using signInWithRedirect...');
-    _auth.signInWithRedirect(_provider).catch(e => {
-      console.error('[Auth] redirect error:', e.code, e.message);
-      try { errEl.textContent = '⚠ ' + (e.message||e.code||'Gagal'); errEl.classList.add('show'); } catch(_){}
-    });
-  } else {
-    // Desktop: popup
-    _auth.signInWithPopup(_provider).catch(e => {
-      let msg = '⚠ Gagal login. Coba lagi.';
-      if (e.code === 'auth/popup-blocked')
-        msg = '⚠ Popup diblokir. Klik Allow Popup di address bar.';
-      else if (e.code === 'auth/popup-closed-by-user')
-        msg = '⚠ Login dibatalkan.';
-      else if (e.code === 'auth/network-request-failed')
-        msg = '⚠ Tidak ada koneksi internet.';
-      try { errEl.textContent = msg; errEl.classList.add('show'); } catch(_){}
-      console.error('[Auth] popup:', e.code);
-    });
+async function loginWithGoogle() {
+  try {
+    await _auth.signInWithPopup(_provider);
+  } catch(e) {
+    const errEl = document.getElementById('login-error');
+    if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') {
+      errEl.textContent = '⚠ Login dibatalkan. Klik tombol untuk mencoba lagi.';
+    } else if (e.code === 'auth/popup-blocked') {
+      errEl.textContent = '⚠ Popup diblokir browser. Izinkan popup untuk halaman ini.';
+    } else if (e.code === 'auth/network-request-failed') {
+      errEl.textContent = '⚠ Gagal koneksi. Periksa internet lalu coba lagi.';
+    } else {
+      errEl.textContent = '⚠ Gagal login. Periksa koneksi dan coba lagi.';
+    }
+    errEl.classList.add('show');
+    console.error('[Auth] login error:', e.code, e.message);
   }
 }
 
 function loginRetry() {
+  // Reset semua state auth dan coba login ulang
   _authVerified = false;
   _authInFlight = false;
   window._cachedToken    = null;
   window._tokenFetchedAt = 0;
-  try {
-    document.getElementById('login-error').textContent = '';
-    document.getElementById('login-error').classList.remove('show');
-    document.getElementById('login-retry-btn').style.display = 'none';
-  } catch(_) {}
-  loginWithGoogle(); // non-async, langsung panggil
+  const errEl   = document.getElementById('login-error');
+  const retryBtn = document.getElementById('login-retry-btn');
+  if (errEl)   { errEl.textContent = ''; errEl.classList.remove('show'); }
+  if (retryBtn) retryBtn.style.display = 'none';
+  loginWithGoogle();
 }
 
 // ── Purge Server Cache (SUPER_ADMIN) ─────────────────────────────────────
 async function doPurgeCache() {
-  if (!confirm('Bersihkan semua server cache?\nData akan di-reload dari Sheet saat next request.')) return;
+  if (!confirm('Bersihkan semua server cache?
+Data akan di-reload dari Sheet saat next request.')) return;
   const btn = document.getElementById('btn-purge-cache');
   if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
   try {
@@ -1737,30 +1605,6 @@ function _canDelete() {
 }
 function _canReset() {
   return window._userRole === 'SUPER_ADMIN';
-}
-
-function hardResetLogin() {
-  // Clear semua state — paksa fresh start
-  try {
-    // Hapus config lama yang mungkin punya GAS URL salah
-    localStorage.removeItem('banquet_elite_config');
-    localStorage.removeItem('banquet_master_cfg_v4');
-    // Reset auth state
-    _authVerified  = false;
-    _authInFlight  = false;
-    window._cachedToken    = null;
-    window._tokenFetchedAt = 0;
-    // Paksa GAS URL ke default yang benar
-    window._GAS = 'https://script.google.com/macros/s/AKfycbyQTrvw2WtHV0zpItsVA2hG_02R0gscUrOua2rnOqw750PvT3PODSaO6LaM3HWUTXJi/exec';
-    // Sign out Firebase dulu biar clean
-    _auth.signOut().then(() => {
-      setTimeout(loginWithGoogle, 300);
-    }).catch(() => {
-      loginWithGoogle();
-    });
-  } catch(e) {
-    loginWithGoogle();
-  }
 }
 
 function logoutUser() {
@@ -1824,8 +1668,11 @@ async function doResetBeoSeq() {
   // Konfirmasi extra jika reset semua
   const isAll = !venue && !month;
   const confirmMsg = isAll
-    ? '⚠ RESET SEMUA nomor BEO semua venue semua bulan?\n\nIni tidak bisa dibatalkan!'
-    : 'Reset nomor BEO untuk ' + (venue||'semua venue') + ' bulan ' + (month||'semua') + '?\nBEO berikutnya akan mulai dari ' + String(resetTo+1).padStart(3,'0');
+    ? '⚠ RESET SEMUA nomor BEO semua venue semua bulan?
+
+Ini tidak bisa dibatalkan!'
+    : 'Reset nomor BEO untuk ' + (venue||'semua venue') + ' bulan ' + (month||'semua') + '?
+BEO berikutnya akan mulai dari ' + String(resetTo+1).padStart(3,'0');
 
   if (!confirm(confirmMsg)) return;
 
@@ -2949,6 +2796,7 @@ async function initAppData() {
   loadScanner(activeTab);
 
   // [PERF] Prefetch semua bulan di background setelah login
+  // Saat user buka Customer History, data sudah siap → langsung tampil
   const role = window._userRole || '';
   if (role === 'MANAGER' || role === 'ADMIN') {
     setTimeout(() => {
@@ -2956,90 +2804,13 @@ async function initAppData() {
         console.log('[PERF] Background prefetch customer data...');
         _prefetchCustData();
       }
-    }, 2000);
-  }
-
-  // [FIX-PREFILL] Baca URL params setelah auth + config siap
-  // Dipanggil di sini agar dropdown venue sudah terisi oleh applyConfig()
-  applyUrlPrefill();
-}
-
-// ─── URL PREFILL ────────────────────────────────────────────────────────────
-// Membaca parameter prefill_date, prefill_venue, prefill_month dari URL
-// dan mengisi form secara otomatis + trigger CHECK ke GAS.
-//
-// Format URL dari check_venue.html (goEntry):
-//   entry.html?prefill_date=22&prefill_venue=Ball Room&prefill_month=MARET
-//
-// Format date yang dipakai f-date di form: YYYY-MM-DD
-// prefill_date = nomor hari (mis: "22"), prefill_month = nama bulan (mis: "MARET")
-// → dikonversi ke "2026-03-22"
-function applyUrlPrefill() {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const rawDay   = params.get('prefill_date');
-    const rawVenue = params.get('prefill_venue');
-    const rawMonth = params.get('prefill_month');
-
-    // Tidak ada prefill params → tidak perlu apa-apa
-    if (!rawDay && !rawVenue) return;
-
-    // ── Hitung tanggal lengkap YYYY-MM-DD ──
-    let dateStr = '';
-    if (rawDay) {
-      const day = parseInt(rawDay, 10);
-      if (!isNaN(day) && day >= 1 && day <= 31) {
-        const now    = new Date();
-        let monthIdx = now.getMonth(); // default bulan sekarang
-        if (rawMonth) {
-          const mi = MONTHS.indexOf(rawMonth.toUpperCase().trim());
-          if (mi >= 0) monthIdx = mi;
-        }
-        const year = now.getFullYear();
-        dateStr = year + '-'
-          + String(monthIdx + 1).padStart(2, '0') + '-'
-          + String(day).padStart(2, '0');
-      }
-    }
-
-    // ── Set field tanggal ──
-    if (dateStr) set('f-date', dateStr);
-
-    // ── Set field venue ──
-    if (rawVenue) {
-      const venueEl = document.getElementById('f-venue');
-      // Cari option yang cocok (case-insensitive, trim)
-      const normalVenue = rawVenue.trim();
-      let matched = false;
-      for (const opt of venueEl.options) {
-        if (opt.value.trim().toLowerCase() === normalVenue.toLowerCase()) {
-          venueEl.value = opt.value;
-          matched = true;
-          break;
-        }
-      }
-      // Fallback: set langsung jika tidak ditemukan di dropdown
-      if (!matched) set('f-venue', normalVenue);
-    }
-
-    // ── Trigger check jika kedua field sudah terisi ──
-    const fDate  = document.getElementById('f-date').value;
-    const fVenue = document.getElementById('f-venue').value;
-    if (fDate && fVenue) {
-      // Kecil delay agar UI sudah render sempurna sebelum request CHECK
-      setTimeout(() => onDateVenueChange(), 100);
-    }
-
-    console.log('[PREFILL] date=' + dateStr + ' venue=' + rawVenue + ' month=' + rawMonth);
-  } catch(e) {
-    console.warn('[PREFILL] Error:', e);
+    }, 2000); // tunda 2 detik agar tidak bentrok dengan scanner load
   }
 }
 
 window.addEventListener('load', () => {
   applyConfig(); // ✅ Setup config — tidak fetch data di sini
   // Data di-load oleh initAppData() setelah auth berhasil
-  // applyUrlPrefill() dipanggil dari initAppData() setelah auth + config selesai
 });
 
 // ─── RANGE AVAILABILITY ────────────────────────────────────────────────────
@@ -3428,258 +3199,6 @@ function saveWAConfig() {
   toast('✅ Konfigurasi WA tersimpan', 'ok');
 }
 
-// ─── APPROVAL dari ENTRY ─────────────────────────────────────────────────────
-// Dept untuk approval — label & key sesuai beo.html
-const APR_DEPTS_ENTRY = [
-  { key:'sm',       label:'Sales Manager',    phone:'' },
-  { key:'fb',       label:'F&B Ast.',         phone:'' },
-  { key:'chef',     label:'Sous Chef',        phone:'' },
-  { key:'eng',      label:'Engineering Spv',  phone:'' },
-  { key:'hk',       label:'HK Manager',       phone:'' },
-  { key:'security', label:'Leader Security',  phone:'' },
-  { key:'hr',       label:'HRD Manager',      phone:'' },
-  { key:'ca',       label:'Chief Accounting', phone:'' },
-  { key:'gm',       label:'General Manager',  phone:'' },
-];
-const APR_CONFIG_KEY = 'beo_approval_phones';
-const GAS_URL_ENTRY  = 'https://script.google.com/macros/s/AKfycbyQTrvw2WtHV0zpItsVA2hG_02R0gscUrOua2rnOqw750PvT3PODSaO6LaM3HWUTXJi/exec';
-
-function syncFonnteToken() {
-  // Token di kedua tab selalu sama
-  const tok = document.getElementById('wa-token').value;
-  const aprTok = document.getElementById('apr-token-entry');
-  if (aprTok) aprTok.value = tok;
-}
-
-// ── Tab switching ─────────────────────────────────────────────────────────────
-// switchWATab removed
-
-
-// ── Load approval config dari cloud ─────────────────────────────────────────
-async function loadAprConfigEntry() {
-  const indEl = document.getElementById('apr-cloud-indicator-entry');
-  if (indEl) indEl.textContent = '⏳';
-  try {
-    const gasUrl = window._GAS || GAS_URL_ENTRY;
-    const res = await fetch(gasUrl + '?action=GET_APPROVAL_CONFIG');
-    const data = await res.json();
-    if (data.ok && data.config) {
-      const cfg = data.config;
-      // Isi nomor WA dari cloud
-      if (cfg.depts) {
-        cfg.depts.forEach(d => {
-          const el = document.getElementById('apr-phone-entry-' + d.key);
-          if (el && d.phone) el.value = d.phone;
-        });
-      }
-      // Isi base URL
-      const urlEl = document.getElementById('apr-base-url-entry');
-      if (urlEl && cfg.approveBaseUrl) urlEl.value = cfg.approveBaseUrl;
-      // Update localStorage
-      try {
-        const local = JSON.parse(localStorage.getItem(APR_CONFIG_KEY)||'{}');
-        localStorage.setItem(APR_CONFIG_KEY, JSON.stringify({...local, ...cfg}));
-      } catch(_) {}
-      if (indEl) indEl.textContent = '☁ Cloud';
-    }
-  } catch(e) {
-    if (indEl) indEl.textContent = '';
-    console.warn('[APR] cloud load error:', e.message);
-  }
-}
-
-// ── Render dept list untuk approval ─────────────────────────────────────────
-function renderAprDeptListEntry() {
-  const container = document.getElementById('apr-dept-list-entry');
-  if (!container) return;
-  // Load dari localStorage dulu
-  let saved = {};
-  try { saved = JSON.parse(localStorage.getItem(APR_CONFIG_KEY)||'{}'); } catch(_){}
-  const savedDepts = {};
-  if (saved.depts) saved.depts.forEach(d => savedDepts[d.key] = d);
-
-  container.innerHTML = APR_DEPTS_ENTRY.map(d => {
-    const savedPhone = (savedDepts[d.key]||{}).phone || '';
-    return `<div style="display:flex;align-items:center;gap:8px;background:#0d0b08;border:1px solid #2a2218;border-radius:8px;padding:8px 10px;">
-      <input type="checkbox" id="apr-en-entry-${d.key}" checked
-        style="accent-color:#5dade2;width:14px;height:14px;flex-shrink:0;">
-      <span style="font-size:10px;font-weight:700;color:#d4af5a;width:120px;flex-shrink:0;">${d.label}</span>
-      <input id="apr-phone-entry-${d.key}" type="text" value="${savedPhone}"
-        placeholder="628xxx..."
-        style="flex:1;background:#1a1410;border:1px solid #3d3028;border-radius:6px;padding:6px 8px;color:#e8e0c8;font-size:9px;outline:none;min-width:0;">
-    </div>`;
-  }).join('');
-}
-
-// ── Simpan config approval ke cloud ─────────────────────────────────────────
-async function saveApprovalConfigFromEntry() {
-  const btn = document.querySelector('#wa-panel-approval button[onclick="saveApprovalConfigFromEntry()"]');
-  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
-  const token   = document.getElementById('wa-token').value.trim();
-  const baseUrl = (document.getElementById('apr-base-url-entry')||{}).value?.trim() || '';
-  const depts   = APR_DEPTS_ENTRY.map(d => ({
-    key:   d.key,
-    label: d.label,
-    phone: (document.getElementById('apr-phone-entry-' + d.key)||{}).value?.trim() || '',
-  }));
-  const config = { fonnteToken: token, approveBaseUrl: baseUrl, depts };
-  try {
-    localStorage.setItem(APR_CONFIG_KEY, JSON.stringify(config));
-  } catch(_) {}
-  try {
-    const gasUrl = window._GAS || GAS_URL_ENTRY;
-    const res  = await fetch(gasUrl + '?' + new URLSearchParams({ action:'SAVE_APPROVAL_CONFIG', configJson:JSON.stringify(config) }));
-    const data = await res.json();
-    toast(data.ok ? '✅ Config approval tersimpan' : ('✗ ' + (data.msg||'Gagal')), data.ok ? 'ok' : 'error');
-  } catch(e) {
-    toast('✗ Error: ' + e.message, 'error');
-  } finally {
-    if (btn) { btn.textContent = '💾 Simpan Config'; btn.disabled = false; }
-  }
-}
-
-// ── Kirim Approval Link via WA ───────────────────────────────────────────────
-async function sendApprovalFromEntry() {
-  const token = document.getElementById('wa-token').value.trim();
-  if (!token) { toast('⚠ Fonnte token wajib diisi', 'error'); return; }
-  const baseUrl = (document.getElementById('apr-base-url-entry')||{}).value?.trim()
-    || 'https://lotus-garden-hotel.github.io/BEO-Lotus-Garden-Hotel/approve.html';
-
-  // Ambil data booking dari form
-  const beoData = {
-    customer:   val('f-customer'),
-    eventTitle: val('f-event-title') || val('f-customer'),
-    venue:      val('f-venue'),
-    date:       val('f-date'),
-    time:       val('f-time'),
-    pax:        val('f-pax'),
-    sales:      val('f-sales'),
-    status:     val('f-status'),
-  };
-  if (!beoData.customer || !beoData.date) {
-    toast('⚠ Isi data booking dulu (customer & tanggal)', 'error'); return;
-  }
-
-  // Kumpulkan dept yang enabled dan ada nomornya
-  const activeDepts = APR_DEPTS_ENTRY.filter(d => {
-    const enEl    = document.getElementById('apr-en-entry-'    + d.key);
-    const phoneEl = document.getElementById('apr-phone-entry-' + d.key);
-    return enEl?.checked && phoneEl?.value.trim();
-  }).map(d => ({
-    key:   d.key,
-    label: d.label,
-    phone: document.getElementById('apr-phone-entry-' + d.key).value.trim(),
-  }));
-
-  if (activeDepts.length === 0) {
-    toast('⚠ Centang minimal 1 dept dan isi nomor WA-nya', 'error'); return;
-  }
-
-  const btn = document.getElementById('btn-send-approval-entry');
-  const resultEl = document.getElementById('apr-send-result-entry');
-  btn.textContent = '⏳ Membuat link...'; btn.disabled = true;
-  resultEl.innerHTML = '';
-
-  const gasUrl = window._GAS || GAS_URL_ENTRY;
-
-  try {
-    // 1. Generate approval tokens di GAS
-    const beoId   = beoData.date.replace(/-/g,'') + '-' + beoData.venue.replace(/\s/g,'').substring(0,3).toUpperCase();
-    const genRes  = await fetch(gasUrl + '?' + new URLSearchParams({
-      action:      'GENERATE_APPROVAL',
-      beoId,
-      depts:       JSON.stringify(activeDepts.map(d => d.key)),
-      bookingJson: JSON.stringify(beoData),
-      baseUrl,
-    }));
-    const genData = await genRes.json();
-    if (!genData.ok) throw new Error(genData.msg || 'Gagal generate token');
-
-    const links = genData.links || {};
-    btn.textContent = '⏳ Mengirim WA...';
-
-    // 2. Format preview BEO untuk pesan
-    const DAYS = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
-    const MONTHS_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-    let dateDisplay = beoData.date;
-    if (beoData.date) {
-      const dt = new Date(beoData.date + 'T00:00:00');
-      dateDisplay = DAYS[dt.getDay()] + ', ' + dt.getDate() + ' ' + MONTHS_ID[dt.getMonth()] + ' ' + dt.getFullYear();
-    }
-
-    // Buat shortlink BEO
-    let beoLink = '';
-    try {
-      const slRes  = await fetch(gasUrl + '?' + new URLSearchParams({
-        action:  'CREATE_SHORT_LINK',
-        data:    JSON.stringify({...beoData, beoNo: beoId}),
-        beoId,
-        baseUrl: baseUrl.replace(/approve\.html.*$/, 'beo.html'),
-      }));
-      const slData = await slRes.json();
-      beoLink = slData.ok ? slData.shortUrl : '';
-    } catch(_) {}
-
-    // 3. Kirim via Fonnte per dept
-    let sent = 0, failed = 0;
-    const results = [];
-    for (const dept of activeDepts) {
-      const approveLink = links[dept.key] || '';
-      const msg = [
-        '📋 *BANQUET EVENT ORDER — APPROVAL REQUEST*',
-        'Kepada Yth. *' + dept.label + '*',
-        'Lotus Garden by WH — Kediri', '',
-        'BEO No  : *' + beoId + '*',
-        '🎪 Event : *' + (beoData.eventTitle||beoData.customer) + '*',
-        '📅 Tgl   : ' + dateDisplay,
-        '🏛 Venue : ' + beoData.venue,
-        '👥 Pax   : ' + beoData.pax,
-        '',
-        '━━━━━━━━━━━━━━━━━━━━━',
-        beoLink ? ('📄 *Lihat BEO:*\n' + beoLink) : '',
-        '━━━━━━━━━━━━━━━━━━━━━',
-        '✅ *Link Approval (' + dept.label + '):*',
-        approveLink,
-        '',
-        '_Tekan SETUJU & APPROVE untuk mengkonfirmasi._',
-      ].filter(l => l !== '').join('\n');
-
-      try {
-        const fd = new FormData();
-        fd.append('target', dept.phone);
-        fd.append('message', msg);
-        fd.append('delay', '2');
-        fd.append('countryCode', '62');
-        const res  = await fetch('https://api.fonnte.com/send', {
-          method:'POST', headers:{ Authorization: token }, body: fd
-        });
-        const data = await res.json();
-        if (data.status === true) {
-          sent++; results.push({ label:dept.label, ok:true });
-        } else {
-          failed++; results.push({ label:dept.label, ok:false, msg:data.reason||data.detail||'Gagal' });
-        }
-      } catch(e) {
-        failed++; results.push({ label:dept.label, ok:false, msg:e.message });
-      }
-    }
-
-    // Tampilkan hasil
-    resultEl.innerHTML = results.map(r =>
-      `<div style="color:${r.ok?'#25d366':'#ef4444'};">${r.ok?'✅':'❌'} ${r.label}${r.ok?'':': '+r.msg}</div>`
-    ).join('') + `<div style="margin-top:6px;color:${failed===0?'#25d366':'#f39c12'};font-weight:700;">
-      ${sent}/${activeDepts.length} terkirim</div>`;
-
-    if (sent > 0) toast('✅ ' + sent + ' approval link terkirim', 'ok', 3000);
-
-  } catch(e) {
-    resultEl.innerHTML = '<div style="color:#ef4444;">✗ Error: ' + e.message + '</div>';
-    toast('✗ Gagal: ' + e.message, 'error');
-  } finally {
-    btn.textContent = '✅ Kirim Approval Link'; btn.disabled = false;
-  }
-}
-
 function renderDeptList(cfg) {
   const container = document.getElementById('dept-list-container');
   container.innerHTML = '';
@@ -3743,21 +3262,15 @@ function buildWAPreview() {
 }
 
 function openSendWA() {
+  // Cek ada data
   if (!val('f-date') || !val('f-venue')) {
     toast('⚠ Pilih tanggal dan venue dulu', 'error'); return;
   }
-  // Load WA config
   const cfg = loadWAConfig();
   document.getElementById('wa-token').value = cfg.token || '';
   renderDeptList(cfg);
   document.getElementById('wa-preview').textContent = buildWAPreview();
   document.getElementById('wa-send-result').innerHTML = '';
-  document.getElementById('apr-send-result-entry').innerHTML = '';
-  // Set default approval URL
-  const urlEl = document.getElementById('apr-base-url-entry');
-  if (urlEl && !urlEl.value) {
-    urlEl.value = 'https://lotus-garden-hotel.github.io/BEO-Lotus-Garden-Hotel/approve.html';
-  }
   document.getElementById('modal-wa').style.display = 'block';
 }
 
