@@ -68,7 +68,7 @@ self.addEventListener('fetch', event => {
         .catch(() => {
           // Offline fallback — sajikan dari cache
           return caches.match(event.request)
-            || caches.match('/BEO-Lotus-Garden-Hotel/venue');
+            || caches.match('/BEO/venue');
         })
     );
     return;
