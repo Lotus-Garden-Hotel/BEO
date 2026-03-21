@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Check Venue — Lotus Garden by WH</title>
+<!-- PWA -->
+<meta name="application-name" content="Check Venue">
+<meta name="theme-color" content="#07070a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Check Venue">
+<link rel="manifest" href="manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -14,7 +22,7 @@
   --text:#ede9e0;--muted:#7a7570;--dim:#42404e;
   --gold:#c9a84c;--gold2:#e8c96a;
   --green:#10b981;--red:#ef4444;--amber:#f59e0b;--teal:#14b8a6;
-  --topbar-h:44px;
+  --topbar-h:48px;
 }
 body.light-mode{
   --black:#f4f3ef;--dark:#eceae4;--surface:#f8f7f4;--card:#fff;
@@ -98,7 +106,7 @@ body.light-mode #ctrl-bar{background:rgba(244,243,239,.97);}
   position:fixed;
   top:calc(var(--topbar-h) + 38px);
   left:0;right:0;
-  bottom:46px;
+  bottom:50px;
   overflow:auto;
   -webkit-overflow-scrolling:touch;
   padding:0;margin:0;
@@ -140,7 +148,7 @@ table.vtbl{
 .th-date{
   position:sticky;left:0;z-index:90;
   background:var(--dark);
-  width:52px;min-width:52px;
+  width:60px;min-width:60px;
   padding:6px 5px;
   font-size:9px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;
   color:#c0c0d0;border-bottom:2px solid var(--border);border-right:2px solid var(--border);
@@ -155,15 +163,15 @@ body.light-mode .th-date{color:#1f2937;}
   border-right:1px solid var(--border);
   width:100px;min-width:90px;
 }
-.th-vn{font-size:11px;font-weight:800;color:var(--text);
+.th-vn{font-size:12px;font-weight:800;color:var(--text);
   display:flex;align-items:center;justify-content:center;gap:3px;margin-bottom:3px;
   flex-wrap:wrap;line-height:1.3;}
 .th-stats{display:flex;gap:3px;justify-content:center;flex-wrap:wrap;}
-.th-st{font-size:9px;font-weight:800;padding:2px 5px;border-radius:3px;}
+.th-st{font-size:10px;font-weight:800;padding:2px 6px;border-radius:4px;}
 .th-st.c{background:rgba(99,102,241,.25);color:#c7d2fe;}
 .th-st.t{background:rgba(245,158,11,.22);color:#fde68a;}
 .th-st.d{background:rgba(107,114,128,.18);color:#d1d5db;}
-.th-occ{font-size:9px;font-weight:700;color:var(--muted);font-family:'DM Mono',monospace;margin-top:3px;}
+.th-occ{font-size:10px;font-weight:700;color:var(--muted);font-family:'DM Mono',monospace;margin-top:3px;}
 body.light-mode .th-st.c{background:rgba(99,102,241,.15);color:#3730a3;}
 body.light-mode .th-st.t{background:rgba(245,158,11,.15);color:#78350f;}
 body.light-mode .th-st.d{background:rgba(107,114,128,.12);color:#374151;}
@@ -172,7 +180,7 @@ body.light-mode .th-st.d{background:rgba(107,114,128,.12);color:#374151;}
 td.td-date{
   position:sticky;left:0;z-index:10;
   background:var(--card);
-  width:52px;min-width:52px;max-width:52px;
+  width:60px;min-width:60px;max-width:52px;
   border-bottom:1px solid var(--border);
   border-right:2px solid var(--border);
   vertical-align:middle;
@@ -181,11 +189,11 @@ td.td-date{
 }
 body.light-mode td.td-date{background:var(--card);}
 .date-inner{padding:5px 4px;text-align:center;}
-.date-num{font-family:'DM Sans',sans-serif;font-size:22px;font-weight:900;
+.date-num{font-family:'DM Sans',sans-serif;font-size:24px;font-weight:900;
   color:#ffffff;line-height:1;letter-spacing:-.03em;}
-.date-wd{font-size:10px;font-weight:800;color:#c0c0d0;text-transform:uppercase;
+.date-wd{font-size:11px;font-weight:800;color:#c0c0d0;text-transform:uppercase;
   letter-spacing:.02em;margin-top:1px;}
-.date-mo{font-size:9px;font-weight:700;color:#8888a0;margin-top:1px;}
+.date-mo{font-size:10px;font-weight:700;color:#8888a0;margin-top:1px;}
 body.light-mode .date-num{color:#0a0a14;}
 body.light-mode .date-wd{color:#1f2937;}
 body.light-mode .date-mo{color:#4b5563;}
@@ -206,7 +214,7 @@ td.td-cell{
 }
 .vcell{
   border-radius:8px;padding:5px 3px;
-  min-height:66px;height:66px;
+  min-height:80px;height:80px;
   cursor:pointer;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:2px;text-align:center;position:relative;
@@ -219,9 +227,9 @@ td.td-cell{
 
 /* VACANT */
 .vc-v{background:rgba(16,185,129,.13);border:1.5px solid rgba(16,185,129,.3);}
-.vc-v .vi{font-size:14px;color:var(--green);font-weight:800;}
-.vc-v .vl{font-size:11px;font-weight:900;color:var(--green);letter-spacing:.04em;}
-.vc-v .vs{font-size:9px;font-weight:700;color:rgba(16,185,129,.65);}
+.vc-v .vi{font-size:16px;color:var(--green);font-weight:800;}
+.vc-v .vl{font-size:13px;font-weight:900;color:var(--green);letter-spacing:.04em;}
+.vc-v .vs{font-size:11px;font-weight:700;color:rgba(16,185,129,.75);}
 body.light-mode .vc-v .vl{color:#065f46;}
 body.light-mode .vc-v .vs{color:#047857;}
 body.light-mode .vc-v .vi{color:#065f46;}
@@ -235,12 +243,12 @@ body.light-mode .vc-v-past .vi,body.light-mode .vc-v-past .vl{color:#c0bdb8;}
 body.light-mode .vc-v-past .vs{color:#d5d2ce;}
 /* CONFIRM */
 .vc-c{background:rgba(99,102,241,.28);border:1.5px solid rgba(99,102,241,.5);}
-.vc-c .vst{font-size:10px;font-weight:900;color:#e0e7ff;letter-spacing:.04em;text-shadow:0 1px 3px rgba(0,0,0,.4);}
-.vc-c .vnm{font-size:9px;font-weight:800;color:#f0f0ff;line-height:1.2;
+.vc-c .vst{font-size:11px;font-weight:900;color:#e0e7ff;letter-spacing:.04em;text-shadow:0 1px 3px rgba(0,0,0,.4);}
+.vc-c .vnm{font-size:11px;font-weight:800;color:#f0f0ff;line-height:1.2;
   text-shadow:0 1px 2px rgba(0,0,0,.3);
   overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;
   max-height:3.6em;word-break:break-word;text-align:center;width:100%;}
-.vc-c .vtm{font-size:10px;font-weight:800;color:#ddd6fe;font-family:'DM Mono',monospace;
+.vc-c .vtm{font-size:11px;font-weight:800;color:#ddd6fe;font-family:'DM Mono',monospace;
   letter-spacing:.02em;}
 body.light-mode .vc-c{background:rgba(99,102,241,.22);border:1.5px solid rgba(99,102,241,.5);}
 body.light-mode .vc-c .vst{color:#3730a3;}
@@ -248,12 +256,12 @@ body.light-mode .vc-c .vnm{color:#1e1b4b;text-shadow:none;}
 body.light-mode .vc-c .vtm{color:#3730a3;font-weight:800;}
 /* TENTATIVE */
 .vc-t{background:rgba(245,158,11,.25);border:1.5px solid rgba(245,158,11,.5);}
-.vc-t .vst{font-size:10px;font-weight:900;color:#fffbeb;letter-spacing:.04em;text-shadow:0 1px 3px rgba(0,0,0,.35);}
-.vc-t .vnm{font-size:9px;font-weight:800;color:#fff7ed;line-height:1.2;
+.vc-t .vst{font-size:11px;font-weight:900;color:#fffbeb;letter-spacing:.04em;text-shadow:0 1px 3px rgba(0,0,0,.35);}
+.vc-t .vnm{font-size:11px;font-weight:800;color:#fff7ed;line-height:1.2;
   text-shadow:0 1px 2px rgba(0,0,0,.25);
   overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;
   max-height:3.6em;word-break:break-word;text-align:center;width:100%;}
-.vc-t .vtm{font-size:10px;font-weight:800;color:#fef08a;font-family:'DM Mono',monospace;
+.vc-t .vtm{font-size:11px;font-weight:800;color:#fef08a;font-family:'DM Mono',monospace;
   letter-spacing:.02em;}
 body.light-mode .vc-t{background:rgba(245,158,11,.2);border:1.5px solid rgba(245,158,11,.5);}
 body.light-mode .vc-t .vst{color:#78350f;}
@@ -261,23 +269,23 @@ body.light-mode .vc-t .vnm{color:#451a03;text-shadow:none;}
 body.light-mode .vc-t .vtm{color:#78350f;font-weight:800;}
 /* DONE */
 .vc-d{background:rgba(107,114,128,.18);border:1.5px solid rgba(107,114,128,.35);}
-.vc-d .vst{font-size:9px;font-weight:800;color:#d1d5db;}
-.vc-d .vnm{font-size:8px;font-weight:700;color:#9ca3af;line-height:1.2;
+.vc-d .vst{font-size:11px;font-weight:800;color:#e1e5eb;}
+.vc-d .vnm{font-size:10px;font-weight:700;color:#b0b8c4;line-height:1.2;
   overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;
   max-height:3.6em;word-break:break-word;text-align:center;width:100%;}
 body.light-mode .vc-d .vst{color:#374151;}
 body.light-mode .vc-d .vnm{color:#6b7280;}
 /* N/S — No Status */
 .vc-ns{background:rgba(100,100,120,.1);border:1.5px dashed rgba(150,150,180,.3);}
-.vc-ns .vst{font-size:9px;font-weight:800;color:#6b7280;}
-.vc-ns .vnm{font-size:8px;font-weight:600;color:#4b5563;line-height:1.3;}
+.vc-ns .vst{font-size:10px;font-weight:800;color:#8b92a0;}
+.vc-ns .vnm{font-size:10px;font-weight:600;color:#636b7a;line-height:1.3;}
 body.light-mode .vc-ns .vst{color:#9ca3af;}
 body.light-mode .vc-ns .vnm{color:#6b7280;}
 /* MIXED */
 .vc-m{background:linear-gradient(135deg,rgba(99,102,241,.28) 50%,rgba(245,158,11,.25) 50%);
   border:1.5px solid rgba(201,168,76,.4);}
-.vc-m .vcnt{font-family:'DM Mono',monospace;font-size:16px;font-weight:900;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.4);}
-.vc-m .vlb{font-size:8px;font-weight:700;color:rgba(255,255,255,.7);}
+.vc-m .vcnt{font-family:'DM Mono',monospace;font-size:20px;font-weight:900;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.4);}
+.vc-m .vlb{font-size:10px;font-weight:700;color:rgba(255,255,255,.8);}
 body.light-mode .vc-m .vcnt{color:#1a1814;text-shadow:none;}
 body.light-mode .vc-m .vlb{color:rgba(0,0,0,.55);}
 /* CONFLICT */
@@ -289,7 +297,7 @@ body.light-mode .vc-m .vlb{color:rgba(0,0,0,.55);}
 /* ── BOTTOM BAR ── */
 .bottom-bar{
   position:fixed;bottom:0;left:0;right:0;z-index:150;
-  height:46px;
+  height:50px;
   background:rgba(7,7,10,.97);backdrop-filter:blur(14px);
   border-top:1px solid var(--border);
   display:none;align-items:center;justify-content:space-around;padding:0 8px;
@@ -298,13 +306,13 @@ body.light-mode .bottom-bar{background:rgba(244,243,239,.97);}
 .bottom-bar.show{display:flex;}
 .bb{display:flex;flex-direction:column;align-items:center;gap:1px;}
 .bb-v{font-family:'DM Mono',monospace;font-size:16px;font-weight:800;line-height:1;}
-.bb-l{font-size:7px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;}
-.bb.ko .bb-v{color:var(--green);} .bb.ko .bb-l{color:rgba(16,185,129,.5);}
-.bb.te .bb-v{color:var(--amber);} .bb.te .bb-l{color:rgba(245,158,11,.5);}
-.bb.co .bb-v{color:#a5b4fc;}     .bb.co .bb-l{color:rgba(99,102,241,.5);}
+.bb-l{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;}
+.bb.ko .bb-v{color:var(--green);} .bb.ko .bb-l{color:rgba(16,185,129,.6);}
+.bb.te .bb-v{color:var(--amber);} .bb.te .bb-l{color:rgba(245,158,11,.6);}
+.bb.co .bb-v{color:#a5b4fc;}     .bb.co .bb-l{color:rgba(99,102,241,.6);}
 .bb.dn .bb-v{color:var(--muted);}.bb.dn .bb-l{color:var(--dim);}
-.bb.cf .bb-v{color:var(--red);}  .bb.cf .bb-l{color:rgba(239,68,68,.5);}
-.bb.dy .bb-v{color:var(--gold);} .bb.dy .bb-l{color:rgba(201,168,76,.5);}
+.bb.cf .bb-v{color:var(--red);}  .bb.cf .bb-l{color:rgba(239,68,68,.6);}
+.bb.dy .bb-v{color:var(--gold);} .bb.dy .bb-l{color:rgba(201,168,76,.6);}
 .bb-sep{width:1px;height:24px;background:var(--border);}
 
 /* ── POPUP ── */
@@ -347,7 +355,7 @@ body.light-mode .bottom-bar{background:rgba(244,243,239,.97);}
 .btn-add:active{opacity:.75;}
 
 /* TOAST */
-#toast{position:fixed;bottom:56px;left:50%;transform:translateX(-50%);
+#toast{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);
   background:var(--card);border:1px solid var(--border2);
   padding:8px 18px;border-radius:10px;font-size:11px;font-weight:600;
   z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;
@@ -382,6 +390,7 @@ body.light-mode .bottom-bar{background:rgba(244,243,239,.97);}
     <button class="tb-btn" onclick="loadData()">↺</button>
     <button class="tb-btn" onclick="window.print()">🖨</button>
     <button class="tb-btn" id="btn-theme" onclick="toggleTheme()">🌙</button>
+    <button class="tb-btn" id="btn-install-pwa" onclick="installPWA()" title="Install App" style="display:none;background:rgba(201,168,76,.12);border-color:rgba(201,168,76,.4);color:var(--gold);font-size:13px;padding:4px 8px;">📲</button>
     <button class="tb-btn red" onclick="logoutUser()">⎋</button>
   </div>
 </div>
@@ -463,7 +472,8 @@ const MI={JANUARI:0,FEBRUARI:1,MARET:2,APRIL:3,MEI:4,JUNI:5,JULI:6,AGUSTUS:7,SEP
 const DS=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
 
 // ══ STATE ══
-let _auth,_prov,_tok='',_av=false,_af=false;
+let _auth,_prov,_av=false,_af=false;
+let _tok='',_tokExp=0; // token cache
 let _rows={};    // {MARET:[{day,venue,status,customer,time,pax,package,sales},...]}
 let _venues=[];
 let _vm='month',_at=null;
@@ -481,26 +491,35 @@ _auth.onAuthStateChanged(async u=>{
   if(_av||_af)return;
   _af=true;
   try{
-    _tok=await u.getIdToken(true);
-    // CHECK_ACCESS
-    let r=null;
-    try{const c=new AbortController();const t=setTimeout(()=>c.abort(),10000);
-      r=await(await fetch(GAS+'?'+new URLSearchParams({action:'CHECK_ACCESS',idToken:_tok,from:'venue'}),{redirect:'follow',signal:c.signal})).json();
-      clearTimeout(t);}catch(e){r=null;}
-    if(r&&!r.ok&&r.msg&&r.msg.includes('tidak terdaftar')){
-      _auth.signOut();err.textContent='⚠ Akun tidak diizinkan.';_av=false;_af=false;return;}
+    // PERF: app tampil LANGSUNG, CHECK_ACCESS background paralel
     _av=true;
     gate.classList.add('hide');
     document.getElementById('app').classList.add('show');
     applyTheme();initDefaults();
-    await loadData();
-    startAutoRefresh();
-    initScrollHide();
+    await getToken(true);
+    const[,accessOk]=await Promise.all([loadData(),checkAccessBg()]);
+    if(accessOk===false){
+      _auth.signOut();_av=false;_af=false;
+      gate.classList.remove('hide');document.getElementById('app').classList.remove('show');
+      err.textContent='⚠ Akun tidak diizinkan.';return;
+    }
+    startAutoRefresh();initScrollHide();
   }catch(e){
     if(_auth.currentUser){_av=true;document.getElementById('login-gate').classList.add('hide');document.getElementById('app').classList.add('show');initDefaults();await loadData();}
     else err.textContent='⚠ Gagal verifikasi.';
   }finally{_af=false;}
 });
+
+async function checkAccessBg(){
+  try{
+    const tok=await getToken();
+    const c=new AbortController();const t=setTimeout(()=>c.abort(),10000);
+    const r=await(await fetch(GAS+'?'+new URLSearchParams({action:'CHECK_ACCESS',idToken:tok,from:'venue'}),{redirect:'follow',signal:c.signal})).json();
+    clearTimeout(t);
+    if(r&&!r.ok&&r.msg&&r.msg.includes('tidak terdaftar'))return false;
+    return true;
+  }catch(e){return true;}
+}
 
 function doLogin(){
   document.getElementById('login-err').textContent='';
@@ -510,7 +529,7 @@ function doLogin(){
       e.code==='auth/popup-closed-by-user'?'':'⚠ '+e.message;
   });
 }
-function logoutUser(){_auth.signOut();_av=false;_af=false;_rows={};_venues=[];clearInterval(_at);}
+function logoutUser(){_auth.signOut();_av=false;_af=false;_rows={};_venues=[];_tok='';_tokExp=0;clearInterval(_at);}
 
 // ══ INIT ══
 function initDefaults(){
@@ -521,53 +540,60 @@ function initDefaults(){
   document.getElementById('dt').value=new Date(y,m+1,0).toISOString().slice(0,10);
 }
 
-// ══ GAS CALL ══
+// ══ GAS CALL (token cache — tidak force refresh tiap loadData) ══
+async function getToken(forceRefresh=false){
+  const now=Date.now();
+  if(!forceRefresh&&_tok&&now<_tokExp-60000)return _tok;
+  _tok=await _auth.currentUser.getIdToken(forceRefresh);
+  _tokExp=now+55*60*1000;
+  return _tok;
+}
 async function gas(params){
-  const url=GAS+'?'+new URLSearchParams({...params,idToken:_tok,_t:Date.now()});
+  const tok=await getToken();
+  const url=GAS+'?'+new URLSearchParams({...params,idToken:tok,_t:Date.now()});
   const r=await fetch(url,{redirect:'follow',cache:'no-store'});
   return r.json();
 }
 
-// ══ LOAD DATA — READ_MONTH per bulan ══
+// ══ LOAD DATA — Priority: bulan aktif dulu, sisanya background ══
 async function loadData(){
   showLoad();
+  const now=new Date();const curMi=now.getMonth();
+  const priority=[-1,0,1].map(d=>(curMi+d+12)%12);
+  const background=[0,1,2,3,4,5,6,7,8,9,10,11].filter(mi=>!priority.includes(mi));
   try{
-    _tok=await _auth.currentUser.getIdToken(true);
-    // Load ALL 12 months to capture all venues across the year
-    const now=new Date();
-    const curMi=now.getMonth();
-    const toLoad=[0,1,2,3,4,5,6,7,8,9,10,11]; // all months
-    _rows={};
-    await Promise.all(toLoad.map(async mi=>{
-      const sheetName=MONTHS[mi];
-      try{
-        const res=await gas({action:'READ_MONTH',sheetName});
-        if(res.ok&&res.rows){
-          _rows[sheetName]=res.rows.filter(r=>r.customer&&r.customer.trim());
-        }
-      }catch(e){console.warn('Failed to load',sheetName,e);}
-    }));
-    // Build venue list from all loaded data
-    const allVenues=new Set();
-    Object.values(_rows).forEach(rows=>rows.forEach(r=>{
-      if(r.venue&&r.venue.trim()) allVenues.add(r.venue.trim());
-    }));
-    _venues=[...allVenues].sort();
-    // Update sync time
+    // Tahap 1: 3 bulan prioritas → render segera
+    await Promise.all(priority.map(mi=>_fetchMonth(mi)));
+    _buildVenues();_updateVenueDd();renderTable();
+    hideLoad();
+    // Tahap 2: sisa bulan background batch 3
+    for(let i=0;i<background.length;i+=3){
+      await Promise.all(background.slice(i,i+3).map(mi=>_fetchMonth(mi)));
+    }
+    _buildVenues();_updateVenueDd();renderTable();
     const now2=new Date();
     document.getElementById('sync-lbl').textContent=now2.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
     flashDot();
-    // Update venue filter dropdown
-    const vSel=document.getElementById('sel-venue');
-    if(vSel){
-      const cur=vSel.value;
-      vSel.innerHTML='<option value="ALL">Semua Venue</option>';
-      _venues.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;vSel.appendChild(o);});
-      if([..._venues,'ALL'].includes(cur)) vSel.value=cur;
-    }
-    renderTable();
   }catch(e){toast('⚠ '+e.message);console.error(e);}
   hideLoad();
+}
+async function _fetchMonth(mi){
+  const sheetName=MONTHS[mi];
+  try{const res=await gas({action:'READ_MONTH',sheetName});
+    if(res.ok&&res.rows)_rows[sheetName]=res.rows.filter(r=>r.customer&&r.customer.trim());
+  }catch(e){console.warn('Failed:',sheetName,e);}
+}
+function _buildVenues(){
+  const all=new Set();
+  Object.values(_rows).forEach(rows=>rows.forEach(r=>{if(r.venue&&r.venue.trim())all.add(r.venue.trim());}));
+  _venues=[...all].sort();
+}
+function _updateVenueDd(){
+  const vSel=document.getElementById('sel-venue');if(!vSel)return;
+  const cur=vSel.value;
+  vSel.innerHTML='<option value="ALL">Semua Venue</option>';
+  _venues.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;vSel.appendChild(o);});
+  if([..._venues,'ALL'].includes(cur))vSel.value=cur;
 }
 function startAutoRefresh(){clearInterval(_at);_at=setInterval(loadData,5*60*1000);}
 function flashDot(){const d=document.getElementById('live-dot');d.style.background='var(--gold)';setTimeout(()=>d.style.background='var(--green)',600);}
@@ -695,7 +721,7 @@ function renderTable(){
   // Target: all venues visible without horizontal scroll
   // Use clientWidth for accurate measurement (excludes scrollbar)
   const vw=document.documentElement.clientWidth||window.innerWidth||390;
-  const dateColW=52; // exact date column width
+  const dateColW=60; // exact date column width
   const borderTotal=(visVenues.length+1)*1; // ~1px borders
   const avail=vw-dateColW-borderTotal-2; // 2px safety margin
   const perVenue=Math.max(Math.floor(avail/visVenues.length),58);
@@ -811,17 +837,18 @@ function updateHeights(){
 // ══ SCROLL HIDE CTRL ══
 function initScrollHide(){
   const tc=document.getElementById('tbl-container');
-  let lastY=0;
+  let lastY=0,ticking=false;
+  // PERF: throttle via rAF — updateHeights hanya dipanggil jika ada perubahan nyata
   tc.addEventListener('scroll',()=>{
-    const y=tc.scrollTop;
-    const cb=document.getElementById('ctrl-bar');
-    if(y>lastY&&y>30){
-      cb.classList.add('hidden');
-    } else if(y<lastY){
-      cb.classList.remove('hidden');
-    }
-    lastY=y;
-    updateHeights();
+    if(ticking)return;ticking=true;
+    requestAnimationFrame(()=>{
+      const y=tc.scrollTop;
+      const cb=document.getElementById('ctrl-bar');
+      const wasHidden=cb.classList.contains('hidden');
+      if(y>lastY&&y>30){if(!wasHidden){cb.classList.add('hidden');updateHeights();}}
+      else if(y<lastY){if(wasHidden){cb.classList.remove('hidden');updateHeights();}}
+      lastY=y;ticking=false;
+    });
   },{passive:true});
 }
 
@@ -888,6 +915,32 @@ function applyTheme(){
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closePopup();});
 applyTheme();
+
+// ══ PWA ══════════════════════════════════════════════════════════════
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('/BEO-Lotus-Garden-Hotel/sw.js',{scope:'/BEO-Lotus-Garden-Hotel/'})
+      .then(reg=>{console.log('[SW] OK',reg.scope);setInterval(()=>reg.update(),60*60*1000);})
+      .catch(e=>console.warn('[SW] fail:',e));
+  });
+}
+let _deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();_deferredPrompt=e;
+  const btn=document.getElementById('btn-install-pwa');if(btn)btn.style.display='flex';
+});
+async function installPWA(){
+  if(!_deferredPrompt)return;
+  _deferredPrompt.prompt();
+  const{outcome}=await _deferredPrompt.userChoice;
+  _deferredPrompt=null;
+  const btn=document.getElementById('btn-install-pwa');if(btn)btn.style.display='none';
+}
+window.addEventListener('appinstalled',()=>{
+  _deferredPrompt=null;
+  const btn=document.getElementById('btn-install-pwa');if(btn)btn.style.display='none';
+  toast('✅ Check Venue berhasil diinstall!');
+});
 </script>
 </body>
 </html>
