@@ -6,7 +6,7 @@ const CACHE_NAME = 'check-venue-v1';
 
 // File yang di-cache saat install (app shell)
 const PRECACHE = [
-  '/BEO-Lotus-Garden-Hotel/venue',
+  '/BEO/venue',
   'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap',
 ];
 
