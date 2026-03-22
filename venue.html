@@ -288,10 +288,10 @@ body.light-mode .vc-ns .vnm{color:#6b7280;}
 .vc-m .vlb{font-size:10px;font-weight:700;color:rgba(255,255,255,.8);}
 body.light-mode .vc-m .vcnt{color:#1a1814;text-shadow:none;}
 body.light-mode .vc-m .vlb{color:rgba(0,0,0,.55);}
-/* CONFLICT */
-.vc-conflict{outline:2px solid var(--red);outline-offset:-1px;
-  animation:cg 1.2s infinite;}
-@keyframes cg{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4)}50%{box-shadow:0 0 6px 2px rgba(239,68,68,.25)}}
+/* DOUBLE BOOKING */
+.vc-conflict{outline:2px solid var(--amber);outline-offset:-1px;
+  animation:dbl 1.4s infinite;}
+@keyframes dbl{0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,.45)}50%{box-shadow:0 0 8px 3px rgba(245,158,11,.2)}}
 .ci{position:absolute;top:-3px;right:-3px;font-size:10px;}
 
 /* ── BOTTOM BAR ── */
@@ -311,7 +311,7 @@ body.light-mode .bottom-bar{background:rgba(244,243,239,.97);}
 .bb.te .bb-v{color:var(--amber);} .bb.te .bb-l{color:rgba(245,158,11,.6);}
 .bb.co .bb-v{color:#a5b4fc;}     .bb.co .bb-l{color:rgba(99,102,241,.6);}
 .bb.dn .bb-v{color:var(--muted);}.bb.dn .bb-l{color:var(--dim);}
-.bb.cf .bb-v{color:var(--red);}  .bb.cf .bb-l{color:rgba(239,68,68,.6);}
+.bb.cf .bb-v{color:var(--amber);} .bb.cf .bb-l{color:rgba(245,158,11,.6);}
 .bb.dy .bb-v{color:var(--gold);} .bb.dy .bb-l{color:rgba(201,168,76,.6);}
 .bb-sep{width:1px;height:24px;background:var(--border);}
 
@@ -393,6 +393,7 @@ body.light-mode .bottom-bar{background:rgba(244,243,239,.97);}
 .sdev-badge.tent{background:rgba(245,158,11,.2);color:#fde68a;}
 .sdev-badge.done{background:rgba(107,114,128,.18);color:#d1d5db;}
 .sdev-badge.ns{background:rgba(100,100,120,.12);color:#8b92a0;}
+.sdev-badge.dbl{background:rgba(245,158,11,.18);color:#fbbf24;border:1px solid rgba(245,158,11,.35);}
 .sdev-meta{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
 .sdev-meta span{display:flex;align-items:center;gap:3px;}
 .sdev-arrow{font-size:11px;color:var(--dim);margin-top:2px;text-align:right;}
@@ -400,8 +401,8 @@ body.light-mode .bottom-bar{background:rgba(244,243,239,.97);}
 .sdev-vac{border-color:rgba(16,185,129,.2);background:rgba(16,185,129,.04);}
 .sdev-vac .sdev-name{color:var(--green);}
 /* Conflict card */
-.sdev-cfl{border-color:rgba(239,68,68,.25);background:rgba(239,68,68,.04);}
-.sdev-cfl .sdev-name{color:var(--red);}
+.sdev-cfl{border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.05);}
+.sdev-cfl .sdev-name{color:var(--amber);}
 /* Footer tab clickable */
 .bb{cursor:pointer;border-radius:8px;padding:4px 6px;transition:background .15s;}
 .bb:active{background:rgba(255,255,255,.07);}
@@ -494,7 +495,7 @@ body.light-mode .bottom-bar{background:rgba(244,243,239,.97);}
   <div class="bb-sep"></div>
   <div class="bb dn" onclick="openStatDrawer('DONE')" title="Lihat Done"><div class="bb-v" id="bb-d">0</div><div class="bb-l">Done</div></div>
   <div class="bb-sep"></div>
-  <div class="bb cf" onclick="openStatDrawer('CONFLICT')" title="Lihat Conflict"><div class="bb-v" id="bb-cf">0</div><div class="bb-l">⚠Conflict</div></div>
+  <div class="bb cf" onclick="openStatDrawer('CONFLICT')" title="Lihat Double Booking"><div class="bb-v" id="bb-cf">0</div><div class="bb-l">⚡Double</div></div>
   <div class="bb-sep"></div>
   <div class="bb dy"><div class="bb-v" id="bb-dy">0</div><div class="bb-l">Hari</div></div>
 </div>
@@ -828,7 +829,7 @@ function renderTable(){
       const evs=(evMap[v]?.[iso]||[]).filter(e=>e.status!=='CANCEL');
       const conflict=evs.length>1&&hasOverlap(evs);
       const mKey=MONTHS[day.getMonth()];
-      const ci=conflict?`<span class="ci">⚠</span>`:'';
+      const ci=conflict?`<span class="ci">⚡</span>`:'';
       if(!evs.length){
         // Tanggal sudah lewat → tampil disabled, tidak bisa buat booking baru
         if(isPast){
@@ -876,7 +877,7 @@ function renderTable(){
   const label=_vm==='month'?MNAMES[MI[document.getElementById('sel-month').value]]+' '+new Date().getFullYear():document.getElementById('df').value+' – '+document.getElementById('dt').value;
   sum.innerHTML=`<strong style="color:var(--text)">${label}</strong>
     <span style="color:var(--green);font-weight:700">✓ ${tK} kosong</span>
-    ${tCF?`<span style="color:var(--red);font-weight:700;animation:cg 1.2s infinite">⚠ ${tCF} konflik</span>`:''}
+    ${tCF?`<span style="color:var(--amber);font-weight:700;animation:dbl 1.4s infinite">⚡ ${tCF} double booking</span>`:''}
     <span style="margin-left:auto;font-size:9px;color:var(--dim)">${days.length}hr · ${_venues.length}venue · ${tC+tT+tD}evt</span>`;
 
   // Bottom bar
@@ -1010,7 +1011,7 @@ function openStatDrawer(type){
     TENTATIVE:{title:'Tentative',      color:'var(--amber)',  icon:'~'},
     CONFIRM:  {title:'Confirm',        color:'#a5b4fc',       icon:'✓'},
     DONE:     {title:'Done',           color:'var(--muted)',  icon:'✓'},
-    CONFLICT: {title:'Konflik Waktu',  color:'var(--red)',    icon:'⚠'},
+    CONFLICT: {title:'Double Booking', color:'var(--amber)',  icon:'⚡'},
   };
   const lb=LABELS[type]||{title:type,color:'var(--text)',icon:'•'};
 
@@ -1101,11 +1102,16 @@ function openStatDrawer(type){
     const nm=ev.customer||'—';
     const tm=ev.time||'';
     const mKey=ev._month||MONTHS[d.getMonth()];
+    const dblBadge=c.type==='CONFLICT'
+      ?`<span class="sdev-badge dbl">⚡ DOUBLE</span>`:'';
 
     return`<div class="sdev ${cflExtra}" onclick="goEntryEdit('${dn}','${esc(c.venue)}','${mKey}');closeStatDrawer()">
       <div class="sdev-top">
         <div class="sdev-name">${esc(nm)}</div>
-        <span class="sdev-badge ${badgeCls}">${badgeLbl}</span>
+        <div style="display:flex;gap:4px;align-items:center;flex-shrink:0;">
+          ${dblBadge}
+          <span class="sdev-badge ${badgeCls}">${badgeLbl}</span>
+        </div>
       </div>
       <div class="sdev-meta">
         <span>📅 ${dateLabel}</span>
