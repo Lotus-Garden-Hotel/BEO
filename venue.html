@@ -470,12 +470,14 @@ const MONTHS=['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS'
 const MNAMES=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 const MI={JANUARI:0,FEBRUARI:1,MARET:2,APRIL:3,MEI:4,JUNI:5,JULI:6,AGUSTUS:7,SEPTEMBER:8,OKTOBER:9,NOVEMBER:10,DESEMBER:11};
 const DS=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+// Venue default — kolom selalu tampil meski belum ada booking (tidak bergantung data)
+const VENUES_DEFAULT=['Ball Room','Fox Steak House','Teratai Room','VIP Room'];
 
 // ══ STATE ══
 let _auth,_prov,_av=false,_af=false;
 let _tok='',_tokExp=0; // token cache
 let _rows={};    // {MARET:[{day,venue,status,customer,time,pax,package,sales},...]}
-let _venues=[];
+let _venues=[...VENUES_DEFAULT]; // inisialisasi langsung dari default
 let _vm='month',_at=null;
 
 // ══ FIREBASE ══
@@ -562,18 +564,23 @@ async function loadData(){
   const priority=[-1,0,1].map(d=>(curMi+d+12)%12);
   const background=[0,1,2,3,4,5,6,7,8,9,10,11].filter(mi=>!priority.includes(mi));
   try{
-    // Tahap 1: 3 bulan prioritas → render segera
+    // Tahap 1: 3 bulan prioritas → render segera + tampilkan jam
     await Promise.all(priority.map(mi=>_fetchMonth(mi)));
     _buildVenues();_updateVenueDd();renderTable();
+    // Jam langsung muncul setelah tahap 1 (tidak perlu tunggu background)
+    const _setSync=()=>{
+      const n=new Date();
+      document.getElementById('sync-lbl').textContent=n.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+      flashDot();
+    };
+    _setSync();
     hideLoad();
     // Tahap 2: sisa bulan background batch 3
     for(let i=0;i<background.length;i+=3){
       await Promise.all(background.slice(i,i+3).map(mi=>_fetchMonth(mi)));
     }
     _buildVenues();_updateVenueDd();renderTable();
-    const now2=new Date();
-    document.getElementById('sync-lbl').textContent=now2.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
-    flashDot();
+    _setSync(); // update jam lagi setelah semua selesai
   }catch(e){toast('⚠ '+e.message);console.error(e);}
   hideLoad();
 }
@@ -584,7 +591,9 @@ async function _fetchMonth(mi){
   }catch(e){console.warn('Failed:',sheetName,e);}
 }
 function _buildVenues(){
-  const all=new Set();
+  // Mulai dari VENUES_DEFAULT agar venue 0% booking tetap tampil dari awal
+  const all=new Set(VENUES_DEFAULT);
+  // Tambahkan venue lain yang ditemukan di data (venue baru yang belum di-default)
   Object.values(_rows).forEach(rows=>rows.forEach(r=>{if(r.venue&&r.venue.trim())all.add(r.venue.trim());}));
   _venues=[...all].sort();
 }
