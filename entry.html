@@ -1027,6 +1027,7 @@
         id="btn-do-reset">
         🔄 Reset Sekarang
       </button>
+      <button onclick="doCleanupBeoMap(this)" style="width:100%;padding:8px;margin-top:6px;background:#0d1a0d;border:1px solid #2ecc71;color:#2ecc71;border-radius:6px;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.05em;">🧹 Cleanup Duplikat BEO Map</button>
     </div>
     <div class="reset-seq-result" id="rst-result"></div>
   </div>
@@ -1854,6 +1855,24 @@ async function doResetBeoSeq() {
   } finally {
     btn.textContent = '🔄 Reset Sekarang'; btn.disabled = false;
   }
+}
+
+async function doCleanupBeoMap(btn) {
+  const result = document.getElementById('rst-result');
+  if (!confirm('Bersihkan duplikat di BEO_NUMBER_MAP?
+Hanya baris pertama per customer+venue+tanggal yang dipertahankan.')) return;
+  btn.textContent = '⏳...'; btn.disabled = true;
+  result.textContent = '';
+  try {
+    const idToken = await getIdToken();
+    const res = await gas({ action:'CLEANUP_BEO_MAP', idToken });
+    result.style.color = res.ok ? 'var(--green)' : '#e74c3c';
+    result.textContent = res.ok ? ('✓ ' + res.msg) : ('✗ ' + (res.msg||'Gagal.'));
+    if (res.ok) toast('✓ ' + res.msg, 'success', 3000);
+  } catch(e) {
+    result.style.color = '#e74c3c';
+    result.textContent = '✗ ' + e.message;
+  } finally { btn.textContent = '🧹 Cleanup BEO Map'; btn.disabled = false; }
 }
 
 // ─── CONFIG (dari Master Config) ───────────────────────────────────────────

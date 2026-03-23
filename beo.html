@@ -1351,22 +1351,45 @@ function addBillingRow() {
   // A1. Isi info booking — SELALU dari d, dipanggil setiap render
   function _fillBookingInfo() {
     const today = new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
-    // Nomor BEO: dari share link → dari cloud draft → dari GAS sequential
+    // [FIX 2] Nomor BEO: d._beoNo → localStorage draft → GAS (terakhir)
     if (d._beoNo) {
-      // Share link sudah bawa No. BEO dari pengirim — langsung pakai
       set('i-beo-no', d._beoNo);
-    } else if (_gasUrl && d.venue && d.date) {
-      set('i-beo-no', '···/BEO-···/···/···');
-      // [FIX-IDEM] Kirim customer agar GAS bisa lookup nomor existing
-      const _beoCustomer = (d.customer||'').trim();
-      fetch(_gasUrl + '?action=GET_BEO_NUMBER&venue=' +
-        encodeURIComponent(d.venue) + '&date=' + encodeURIComponent(d.date) +
-        (_beoCustomer ? '&customer=' + encodeURIComponent(_beoCustomer) : ''))
-        .then(r => r.json())
-        .then(res => { set('i-beo-no', res.ok && res.beoNumber ? res.beoNumber : genBeoNo(d.venue, d.date)); })
-        .catch(()  => { set('i-beo-no', genBeoNo(d.venue, d.date)); });
     } else {
-      set('i-beo-no', genBeoNo(d.venue, d.date));
+      // Cek localStorage draft dulu — hindari generate baru jika sudah ada
+      let _savedBeoNo = '';
+      if (_draftKey) {
+        try {
+          const _raw = localStorage.getItem(_draftKey);
+          if (_raw) {
+            const _ls = JSON.parse(_raw);
+            if (_ls._beoNo && _ls._beoNo.trim() &&
+                _ls._beoNo !== '—' && !_ls._beoNo.includes('···')) {
+              _savedBeoNo = _ls._beoNo;
+            }
+          }
+        } catch(_e) {}
+      }
+      if (_savedBeoNo) {
+        d._beoNo = _savedBeoNo;
+        set('i-beo-no', _savedBeoNo);
+        console.log('[BEO] beoNo from localStorage:', _savedBeoNo);
+      } else if (_gasUrl && d.venue && d.date) {
+        set('i-beo-no', '···/BEO-···/···/···');
+        const _beoCustomer = (d.customer||'').trim();
+        fetch(_gasUrl + '?action=GET_BEO_NUMBER&venue=' +
+          encodeURIComponent(d.venue) + '&date=' + encodeURIComponent(d.date) +
+          (_beoCustomer ? '&customer=' + encodeURIComponent(_beoCustomer) : ''))
+          .then(r => r.json())
+          .then(res => {
+            const bno = res.ok && res.beoNumber ? res.beoNumber : genBeoNo(d.venue, d.date);
+            d._beoNo = bno;
+            set('i-beo-no', bno);
+            console.log('[BEO] beoNo from GAS:', bno);
+          })
+          .catch(() => { set('i-beo-no', genBeoNo(d.venue, d.date)); });
+      } else {
+        set('i-beo-no', genBeoNo(d.venue, d.date));
+      }
     }
     set('i-issued-date', today);
     set('i-customer',    d.customer   || '');
