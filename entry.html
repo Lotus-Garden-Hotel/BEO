@@ -1027,6 +1027,7 @@
         id="btn-do-reset">
         🔄 Reset Sekarang
       </button>
+      <button onclick="doCleanupBeoMap(this)" style="width:100%;padding:8px;margin-top:6px;background:#0d1a0d;border:1px solid #2ecc71;color:#2ecc71;border-radius:6px;cursor:pointer;font-size:10px;font-weight:700;">🧹 Cleanup Duplikat BEO Map</button>
     </div>
     <div class="reset-seq-result" id="rst-result"></div>
   </div>
@@ -1814,6 +1815,21 @@ function _updateResetPreview() {
   if (el) el.addEventListener('input', _updateResetPreview);
 });
 
+async function doCleanupBeoMap(btn) {
+  const result = document.getElementById('rst-result');
+  const msg = 'Bersihkan duplikat BEO_NUMBER_MAP? Hanya baris pertama per customer+venue+tanggal yang dipertahankan.';
+  if (!confirm(msg)) return;
+  btn.textContent = '...'; btn.disabled = true; result.textContent = '';
+  try {
+    const idToken = await getIdToken();
+    const res = await gas({ action:'CLEANUP_BEO_MAP', idToken });
+    result.style.color = res.ok ? 'var(--green)' : '#e74c3c';
+    result.textContent = res.ok ? ('\u2713 ' + res.msg) : ('\u2717 ' + (res.msg||'Gagal.'));
+    if (res.ok) toast('\u2713 ' + res.msg, 'success', 3000);
+  } catch(e) {
+    result.style.color='#e74c3c'; result.textContent='\u2717 '+e.message;
+  } finally { btn.textContent='\U0001f9f9 Cleanup BEO Map'; btn.disabled=false; }
+}
 async function doResetBeoSeq() {
   const venue  = (document.getElementById('rst-venue').value||'').trim().toUpperCase();
   const month  = (document.getElementById('rst-month').value||'').trim();
@@ -2092,7 +2108,7 @@ function resolveConfirm(val) {
 
 // ─── VALIDASI ──────────────────────────────────────────────────────────────
 function validate() {
-  const isConfirm = (val('f-status') || '').toUpperCase() === 'CONFIRM';
+  const isConfirm = (val('f-status')||'').toUpperCase()==='CONFIRM';
   const rules = [
     { id:'f-date',     msg:'Tanggal wajib diisi' },
     { id:'f-venue',    msg:'Venue wajib dipilih' },
@@ -2102,28 +2118,18 @@ function validate() {
     { id:'f-sales',    msg:'PIC Sales wajib dipilih' },
     { id:'f-time',     msg:'Waktu wajib diisi' },
     { id:'f-setup',    msg:'Set Up / Layout wajib diisi' },
-    // [CONFIRM-REQUIRED] PAX & PRICE wajib saat status CONFIRM
     ...(isConfirm ? [
-      { id:'f-pax',   msg:'⚠ Jumlah Pax wajib diisi saat status CONFIRM',   minVal:1 },
-      { id:'f-price', msg:'⚠ Harga / Pax wajib diisi saat status CONFIRM', minVal:1 },
+      { id:'f-pax',   msg:'Jumlah Pax wajib diisi saat CONFIRM', minVal:1 },
+      { id:'f-price', msg:'Harga / Pax wajib diisi saat CONFIRM', minVal:1 },
     ] : []),
   ];
-  rules.forEach(r => { const el = document.getElementById(r.id); if (el) el.classList.remove('error'); });
+  rules.forEach(r => { const el=document.getElementById(r.id); if(el) el.classList.remove('error'); });
   for (const r of rules) {
-    const el  = document.getElementById(r.id);
-    const raw = el ? el.value.trim() : '';
-    const isEmpty  = !raw || raw === '0';
-    const belowMin = r.minVal !== undefined && (parseFloat(raw.replace(/[^0-9.]/g,'')) || 0) < r.minVal;
-    if (isEmpty || belowMin) {
-      if (el) {
-        el.classList.add('error');
-        el.style.outline = '2px solid #e74c3c';
-        el.style.outlineOffset = '2px';
-        setTimeout(() => { el.style.outline = ''; el.style.outlineOffset = ''; }, 2500);
-        el.scrollIntoView({ behavior:'smooth', block:'center' });
-        el.focus();
-      }
-      toast('⚠ ' + r.msg, 'error', 4000); return false;
+    const el=document.getElementById(r.id), raw=el?el.value.trim():'';
+    const bad = !raw||raw==='0'||(r.minVal&&(parseFloat(raw.replace(/[^0-9.]/g,''))||0)<r.minVal);
+    if (bad) {
+      if(el){el.classList.add('error');el.style.outline='2px solid #e74c3c';setTimeout(()=>{el.style.outline='';},2500);el.focus();}
+      toast('\u26a0 '+r.msg,'error',4000); return false;
     }
   }
   return true;
@@ -2388,9 +2394,7 @@ async function submitData() {
       else if (isMove && isMoveDate)  { logAction = 'CHANGE_DATE';  detail = `Tanggal: ${origDate} → ${d}`; }
       else if (isMove)                { logAction = 'MOVE';         detail = `Move: ${origDate}/${origVenue} → ${d}/${v}`; }
       writeActivityLog(logAction, { date:d, venue:v }, detail);
-      invalidateMonthCache(monthName(d));
-      // [SYNC] Signal ke venue.html agar refresh instan tanpa tunggu 5 menit
-      try { new BroadcastChannel('lg_data_update').postMessage({ action:'REFRESH', month:monthName(d), ts:Date.now() }); } catch(_) {}
+      invalidateMonthCache(monthName(d)); try{new BroadcastChannel('lg_data_update').postMessage({action:'REFRESH',month:monthName(d),ts:Date.now()});}catch(_){}
       toast('✦ ' + res.msg, 'success'); resetForm(true);
     }
     else if (res.full) {
@@ -2420,7 +2424,7 @@ async function deleteData() {
     if (res.ok) {
       writeActivityLog('DELETE', { date:d, venue:v, customer:name }, `Hapus booking: ${name}`);
       invalidateMonthCache(monthName(d)); // [PERF-01] buang cache setelah delete
-      try { new BroadcastChannel('lg_data_update').postMessage({ action:'REFRESH', month:monthName(d), ts:Date.now() }); } catch(_) {}
+      try{new BroadcastChannel('lg_data_update').postMessage({action:'REFRESH',month:monthName(d),ts:Date.now()});}catch(_){}
       toast('🗑 ' + res.msg, 'success'); resetForm(true);
     }
     else { toast('✗ ' + res.msg, 'error', 5000); }
