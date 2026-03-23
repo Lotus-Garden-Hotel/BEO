@@ -1048,7 +1048,7 @@ function addHkRow() {
 // MENU LIST — editable
 // ══════════════════════════════════════════════════════════════════════════
 const DEFAULT_MENU = [
-  { type:'time',   text:'PAKET MENU' },
+  { type:'time',   text:'BUBER JAM 17:00 WIB' },
   { type:'item',   text:'MENDOAN' },
   { type:'item',   text:'PISANG GORENG' },
   { type:'item',   text:'KURMA' },
@@ -1560,6 +1560,13 @@ function addBillingRow() {
       Object.entries(state.deptVis).forEach(([k,v]) => { deptOn[k]=v; });
     }
 
+    // [FIX] Restore nomor BEO dari draft — hindari generate ulang
+    if (state._beoNo && state._beoNo.trim()) {
+      d._beoNo = state._beoNo;           // set ke data object
+      set('i-beo-no', state._beoNo);    // tampilkan langsung di DOM
+      console.log('[BEO] beoNo restored from draft:', state._beoNo);
+    }
+
     buildChips(); applyDeptVis();
   }
 
@@ -1613,8 +1620,14 @@ function addBillingRow() {
     const deptVis={};
     Object.keys(deptOn).forEach(k=>{deptVis[k]=deptOn[k];});
 
+    // [FIX] Ambil nomor BEO dari DOM sebelum return
+    const _curBeoNo = (document.getElementById('i-beo-no')||{}).textContent||'';
+    const _beoNoSave = (_curBeoNo && _curBeoNo !== '—' &&
+                        !_curBeoNo.includes('···') && !_curBeoNo.includes('—/BEO'))
+                       ? _curBeoNo : (d._beoNo || '');
     return {
       _savedAt:Date.now(), _customer:d.customer,
+      _beoNo: _beoNoSave,
       lbp, setRows, engRows, hkRows, menuItems,
       depts, hrdInputs, hrdRatio, billingRows, sigs, deptVis
     };
