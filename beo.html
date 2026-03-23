@@ -1357,8 +1357,11 @@ function addBillingRow() {
       set('i-beo-no', d._beoNo);
     } else if (_gasUrl && d.venue && d.date) {
       set('i-beo-no', '···/BEO-···/···/···');
+      // [FIX-IDEM] Kirim customer agar GAS bisa lookup nomor existing
+      const _beoCustomer = (d.customer||'').trim();
       fetch(_gasUrl + '?action=GET_BEO_NUMBER&venue=' +
-        encodeURIComponent(d.venue) + '&date=' + encodeURIComponent(d.date))
+        encodeURIComponent(d.venue) + '&date=' + encodeURIComponent(d.date) +
+        (_beoCustomer ? '&customer=' + encodeURIComponent(_beoCustomer) : ''))
         .then(r => r.json())
         .then(res => { set('i-beo-no', res.ok && res.beoNumber ? res.beoNumber : genBeoNo(d.venue, d.date)); })
         .catch(()  => { set('i-beo-no', genBeoNo(d.venue, d.date)); });
