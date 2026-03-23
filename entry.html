@@ -2092,6 +2092,7 @@ function resolveConfirm(val) {
 
 // ─── VALIDASI ──────────────────────────────────────────────────────────────
 function validate() {
+  const isConfirm = (val('f-status') || '').toUpperCase() === 'CONFIRM';
   const rules = [
     { id:'f-date',     msg:'Tanggal wajib diisi' },
     { id:'f-venue',    msg:'Venue wajib dipilih' },
@@ -2101,12 +2102,28 @@ function validate() {
     { id:'f-sales',    msg:'PIC Sales wajib dipilih' },
     { id:'f-time',     msg:'Waktu wajib diisi' },
     { id:'f-setup',    msg:'Set Up / Layout wajib diisi' },
+    // [CONFIRM-REQUIRED] PAX & PRICE wajib saat status CONFIRM
+    ...(isConfirm ? [
+      { id:'f-pax',   msg:'⚠ Jumlah Pax wajib diisi saat status CONFIRM',   minVal:1 },
+      { id:'f-price', msg:'⚠ Harga / Pax wajib diisi saat status CONFIRM', minVal:1 },
+    ] : []),
   ];
-  rules.forEach(r => document.getElementById(r.id).classList.remove('error'));
+  rules.forEach(r => { const el = document.getElementById(r.id); if (el) el.classList.remove('error'); });
   for (const r of rules) {
-    if (!document.getElementById(r.id).value.trim()) {
-      document.getElementById(r.id).classList.add('error');
-      toast('⚠ ' + r.msg, 'error'); return false;
+    const el  = document.getElementById(r.id);
+    const raw = el ? el.value.trim() : '';
+    const isEmpty  = !raw || raw === '0';
+    const belowMin = r.minVal !== undefined && (parseFloat(raw.replace(/[^0-9.]/g,'')) || 0) < r.minVal;
+    if (isEmpty || belowMin) {
+      if (el) {
+        el.classList.add('error');
+        el.style.outline = '2px solid #e74c3c';
+        el.style.outlineOffset = '2px';
+        setTimeout(() => { el.style.outline = ''; el.style.outlineOffset = ''; }, 2500);
+        el.scrollIntoView({ behavior:'smooth', block:'center' });
+        el.focus();
+      }
+      toast('⚠ ' + r.msg, 'error', 4000); return false;
     }
   }
   return true;
@@ -2372,6 +2389,8 @@ async function submitData() {
       else if (isMove)                { logAction = 'MOVE';         detail = `Move: ${origDate}/${origVenue} → ${d}/${v}`; }
       writeActivityLog(logAction, { date:d, venue:v }, detail);
       invalidateMonthCache(monthName(d));
+      // [SYNC] Signal ke venue.html agar refresh instan tanpa tunggu 5 menit
+      try { new BroadcastChannel('lg_data_update').postMessage({ action:'REFRESH', month:monthName(d), ts:Date.now() }); } catch(_) {}
       toast('✦ ' + res.msg, 'success'); resetForm(true);
     }
     else if (res.full) {
@@ -2401,6 +2420,7 @@ async function deleteData() {
     if (res.ok) {
       writeActivityLog('DELETE', { date:d, venue:v, customer:name }, `Hapus booking: ${name}`);
       invalidateMonthCache(monthName(d)); // [PERF-01] buang cache setelah delete
+      try { new BroadcastChannel('lg_data_update').postMessage({ action:'REFRESH', month:monthName(d), ts:Date.now() }); } catch(_) {}
       toast('🗑 ' + res.msg, 'success'); resetForm(true);
     }
     else { toast('✗ ' + res.msg, 'error', 5000); }

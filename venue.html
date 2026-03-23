@@ -533,7 +533,7 @@ body.light-mode .bottom-bar{background:rgba(244,243,239,.97);}
 // ══ CONFIG ══
 const FB={apiKey:'AIzaSyCX0--DGM_tp_2y7hBbrGiMfeVyToVD4zM',authDomain:'banquet-dashboard-kediri.firebaseapp.com',projectId:'banquet-dashboard-kediri',storageBucket:'banquet-dashboard-kediri.firebasestorage.app',messagingSenderId:'716626784276',appId:'1:716626784276:web:4f7d4d51dace341d21b701'};
 // Use ENTRY GAS URL (has READ_MONTH action with live data)
-const GAS='https://script.google.com/macros/s/AKfycbx-yE5bs_ZgNeDvEKnXzUmqjV9ScUjQ0vgShnPGLDkSpOqUQlab9RI5nI8mRoeTZ9N0/exec';
+const GAS='https://script.google.com/macros/s/AKfycbyQTrvw2WtHV0zpItsVA2hG_02R0gscUrOua2rnOqw750PvT3PODSaO6LaM3HWUTXJi/exec';
 const MONTHS=['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'];
 const MNAMES=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 const MI={JANUARI:0,FEBRUARI:1,MARET:2,APRIL:3,MEI:4,JUNI:5,JULI:6,AGUSTUS:7,SEPTEMBER:8,OKTOBER:9,NOVEMBER:10,DESEMBER:11};
@@ -672,7 +672,30 @@ function _updateVenueDd(){
   _venues.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;vSel.appendChild(o);});
   if([..._venues,'ALL'].includes(cur))vSel.value=cur;
 }
-function startAutoRefresh(){clearInterval(_at);_at=setInterval(loadData,5*60*1000);}
+function startAutoRefresh(){
+  clearInterval(_at);
+  _at=setInterval(loadData, 5*60*1000);  // Auto-refresh tiap 5 menit
+
+  // [SYNC] Listen signal dari entry_live_secure — refresh langsung tanpa tunggu 5 menit
+  try {
+    const _bc = new BroadcastChannel('lg_data_update');
+    _bc.onmessage = function(e) {
+      if (e.data && e.data.action === 'REFRESH') {
+        console.log('[venue] BroadcastChannel refresh:', e.data.month);
+        // Debounce: tidak refresh jika baru saja refresh (< 2 detik)
+        const now = Date.now();
+        if (!window._lastBcRefresh || now - window._lastBcRefresh > 2000) {
+          window._lastBcRefresh = now;
+          loadData();  // Reload data venue
+          flashDot();  // Animasi dot
+        }
+      }
+    };
+    console.log('[venue] BroadcastChannel listener aktif');
+  } catch(e) {
+    console.warn('[venue] BroadcastChannel tidak didukung:', e.message);
+  }
+}
 function flashDot(){const d=document.getElementById('live-dot');d.style.background='var(--gold)';setTimeout(()=>d.style.background='var(--green)',600);}
 
 // ══ VIEW MODE ══
