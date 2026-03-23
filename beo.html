@@ -2119,8 +2119,8 @@ async function sendApprovalLinks() {
   try {
     // Kumpulkan data booking dari BEO untuk disisipkan ke pesan WA
     const bookingData = {
-      customer:   (document.getElementById('i-customer')   ||{}).textContent || '',
-      eventTitle: (document.getElementById('i-event-title')||{}).textContent || '',
+      customer:   (document.getElementById('i-customer')   ||{}).textContent?.replace(/^—$/,'').trim() || '',
+      eventTitle: ((document.getElementById('i-event-title')||{}).textContent?.trim()||'').replace(/^—$/,'') || '',
       date:       (document.getElementById('i-date')       ||{}).textContent || '',
       venue:      (document.getElementById('i-venue')      ||{}).textContent || '',
       time:       (document.getElementById('i-time')       ||{}).textContent || '',
@@ -2150,7 +2150,9 @@ async function sendApprovalLinks() {
 
     // Ambil data event dari BEO untuk isi pesan
     const custName   = (document.getElementById('i-customer')   ||{}).textContent?.replace(/^—$/,'').trim() || '';
-    const eventTitle = (document.getElementById('i-event-title')||{}).textContent?.replace(/^—$/,'').trim() || '';
+    // [FIX] strip "—" default dari contenteditable
+    const rawEventTitle = (document.getElementById('i-event-title')||{}).textContent?.trim() || '';
+    const eventTitle = (rawEventTitle === '—' || rawEventTitle === '') ? '' : rawEventTitle;
     const eventLine  = eventTitle && eventTitle !== custName ? eventTitle + ' / ' + custName : custName;
     const dateText   = (document.getElementById('i-date')       ||{}).textContent?.replace(/^—$/,'').trim() || '';
     const venueText  = (document.getElementById('i-venue')      ||{}).textContent?.replace(/^—$/,'').trim() || '';
