@@ -94,7 +94,7 @@
 </div>
 
 <script>
-const DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbyQTrvw2WtHV0zpItsVA2hG_02R0gscUrOua2rnOqw750PvT3PODSaO6LaM3HWUTXJi/exec';
+const DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbx-yE5bs_ZgNeDvEKnXzUmqjV9ScUjQ0vgShnPGLDkSpOqUQlab9RI5nI8mRoeTZ9N0/exec';
 function getGasUrl() {
   try { const c=JSON.parse(localStorage.getItem('banquet_elite_config')||'{}'); return c.gasUrl||DEFAULT_GAS; }
   catch(_){ return DEFAULT_GAS; }

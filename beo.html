@@ -1261,7 +1261,7 @@ function addBillingRow() {
   if (!d.customer && params.get('r')) {
     const _r = params.get('r').trim().toUpperCase();
     const _gasUrl2 = (function() {
-      const DEFAULT = 'https://script.google.com/macros/s/AKfycbyQTrvw2WtHV0zpItsVA2hG_02R0gscUrOua2rnOqw750PvT3PODSaO6LaM3HWUTXJi/exec';
+      const DEFAULT = 'https://script.google.com/macros/s/AKfycbx-yE5bs_ZgNeDvEKnXzUmqjV9ScUjQ0vgShnPGLDkSpOqUQlab9RI5nI8mRoeTZ9N0/exec';
       try { const c2=JSON.parse(localStorage.getItem('banquet_elite_config')||'{}'); return c2.gasUrl||DEFAULT; } catch(_) { return DEFAULT; }
     })();
     // [FIX] AWAIT — tunggu data dari GAS sebelum lanjut ke _custKey, _fillBilling, dll
@@ -1879,7 +1879,7 @@ const APR_DEPTS = [
 ];
 
 function _getGasUrl() {
-  const DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbyQTrvw2WtHV0zpItsVA2hG_02R0gscUrOua2rnOqw750PvT3PODSaO6LaM3HWUTXJi/exec';
+  const DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbx-yE5bs_ZgNeDvEKnXzUmqjV9ScUjQ0vgShnPGLDkSpOqUQlab9RI5nI8mRoeTZ9N0/exec';
   try {
     const c = JSON.parse(localStorage.getItem('banquet_master_cfg_v4') ||
                          localStorage.getItem('banquet_elite_config') || '{}');

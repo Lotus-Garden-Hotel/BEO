@@ -1509,7 +1509,7 @@ _auth.getRedirectResult().then(result => {
 });
 
 // ── Auth State — identik dengan index.html (simple & reliable) ──────────────
-const GAS_URL_AUTH = 'https://script.google.com/macros/s/AKfycbyQTrvw2WtHV0zpItsVA2hG_02R0gscUrOua2rnOqw750PvT3PODSaO6LaM3HWUTXJi/exec';
+const GAS_URL_AUTH = 'https://script.google.com/macros/s/AKfycbx-yE5bs_ZgNeDvEKnXzUmqjV9ScUjQ0vgShnPGLDkSpOqUQlab9RI5nI8mRoeTZ9N0/exec';
 
 let _authVerified = false;
 let _authInFlight = false;
@@ -1751,7 +1751,7 @@ function hardResetLogin() {
     window._cachedToken    = null;
     window._tokenFetchedAt = 0;
     // Paksa GAS URL ke default yang benar
-    window._GAS = 'https://script.google.com/macros/s/AKfycbyQTrvw2WtHV0zpItsVA2hG_02R0gscUrOua2rnOqw750PvT3PODSaO6LaM3HWUTXJi/exec';
+    window._GAS = 'https://script.google.com/macros/s/AKfycbx-yE5bs_ZgNeDvEKnXzUmqjV9ScUjQ0vgShnPGLDkSpOqUQlab9RI5nI8mRoeTZ9N0/exec';
     // Sign out Firebase dulu biar clean
     _auth.signOut().then(() => {
       setTimeout(loginWithGoogle, 300);
@@ -1859,7 +1859,7 @@ async function doResetBeoSeq() {
 // ─── CONFIG (dari Master Config) ───────────────────────────────────────────
 const CONFIG_KEY = 'banquet_elite_config';
 const DEFAULT_CFG = {
-  "gasUrl": "https://script.google.com/macros/s/AKfycbyQTrvw2WtHV0zpItsVA2hG_02R0gscUrOua2rnOqw750PvT3PODSaO6LaM3HWUTXJi/exec",
+  "gasUrl": "https://script.google.com/macros/s/AKfycbx-yE5bs_ZgNeDvEKnXzUmqjV9ScUjQ0vgShnPGLDkSpOqUQlab9RI5nI8mRoeTZ9N0/exec",
   "venues": [
     "Ball Room",
     "VIP Room",
@@ -3442,7 +3442,7 @@ const APR_DEPTS_ENTRY = [
   { key:'gm',       label:'General Manager',  phone:'' },
 ];
 const APR_CONFIG_KEY = 'beo_approval_phones';
-const GAS_URL_ENTRY  = 'https://script.google.com/macros/s/AKfycbyQTrvw2WtHV0zpItsVA2hG_02R0gscUrOua2rnOqw750PvT3PODSaO6LaM3HWUTXJi/exec';
+const GAS_URL_ENTRY  = 'https://script.google.com/macros/s/AKfycbx-yE5bs_ZgNeDvEKnXzUmqjV9ScUjQ0vgShnPGLDkSpOqUQlab9RI5nI8mRoeTZ9N0/exec';
 
 function syncFonnteToken() {
   // Token di kedua tab selalu sama
