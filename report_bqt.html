@@ -1,0 +1,2426 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Banquet Report — Lotus Garden by WH</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<style>
+:root {
+  --black:   #0a0a0c;
+  --dark:    #111114;
+  --surface: #17171b;
+  --card:    #1e1e24;
+  --border:  rgba(255,255,255,.07);
+  --border2: rgba(255,255,255,.12);
+  --text:    #e8e4dc;
+  --muted:   #8a8580;
+  --dim:     #555050;
+  --gold:    #c9a84c;
+  --gold2:   #e8c96a;
+  --gold3:   #f0dfa0;
+  --red:     #e74c3c;
+  --green:   #2ecc71;
+  --blue:    #5dade2;
+  --amber:   #f39c12;
+  --purple:  #9b59b6;
+  --confirm:   #6366f1;
+  --tentative: #f59e0b;
+  --done:      #10b981;
+  --cancel:    #ef4444;
+}
+
+/* ── LIGHT MODE ── */
+body.light-mode {
+  --black:   #f5f4f0;
+  --dark:    #eceae4;
+  --surface: #f9f8f5;
+  --card:    #ffffff;
+  --border:  rgba(0,0,0,.1);
+  --border2: rgba(0,0,0,.18);
+  --text:    #1a1814;
+  --muted:   #5a5650;
+  --dim:     #9a9890;
+  --gold:    #a07830;
+  --gold2:   #c89840;
+  --gold3:   #8a6020;
+  --confirm:   #4f46e5;
+  --tentative: #d97706;
+  --done:      #059669;
+  --cancel:    #dc2626;
+}
+body.light-mode .topbar {
+  background:rgba(245,244,240,.95);
+  border-bottom-color:rgba(0,0,0,.1);
+}
+body.light-mode .kpi-card,
+body.light-mode .chart-card,
+body.light-mode .onhand-card,
+body.light-mode .budget-editor,
+body.light-mode .lb-row,
+body.light-mode .budget-row {
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+}
+body.light-mode .detail-tbl thead tr { background:#f0ede6; }
+body.light-mode .detail-tbl td { border-bottom-color:rgba(0,0,0,.06); }
+body.light-mode .detail-tbl tbody tr:hover { background:rgba(0,0,0,.02); }
+body.light-mode .badge.CONFIRM   { background:rgba(99,102,241,.12); }
+body.light-mode .badge.TENTATIVE { background:rgba(217,119,6,.12); }
+body.light-mode .badge.DONE      { background:rgba(5,150,105,.12); }
+body.light-mode .badge.CANCEL    { background:rgba(220,38,38,.12); }
+body.light-mode #login-gate {
+  background:radial-gradient(ellipse at 60% 20%, rgba(160,120,48,.12) 0%, var(--black) 70%);
+}
+body.light-mode .occ-pct.hi  { background:rgba(5,150,105,.15); }
+body.light-mode .occ-pct.mid { background:rgba(217,119,6,.15); }
+body.light-mode .occ-pct.lo  { background:rgba(0,0,0,.06); }
+body.light-mode .hm-cell { background:rgba(0,0,0,.04); border-color:rgba(0,0,0,.06); }
+body.light-mode .hm-cell.lv1 { background:rgba(160,120,48,.12); }
+body.light-mode .hm-cell.lv2 { background:rgba(160,120,48,.28); }
+body.light-mode .hm-cell.lv3 { background:rgba(160,120,48,.50); }
+body.light-mode .hm-cell.lv4 { background:rgba(160,120,48,.72); }
+body.light-mode .hm-cell.lv5 { background:rgba(160,120,48,.92); color:#fff; }
+/* Theme toggle button */
+.btn-theme {
+  background:var(--card); border:1px solid var(--border2);
+  color:var(--muted); border-radius:8px; padding:6px 12px;
+  font-size:13px; cursor:pointer; transition:all .2s; flex-shrink:0;
+}
+.btn-theme:hover { border-color:var(--gold); color:var(--gold); }
+* { box-sizing:border-box; margin:0; padding:0; }
+body {
+  font-family:'DM Sans',sans-serif;
+  background:var(--black); color:var(--text);
+  min-height:100vh; font-size:13px;
+}
+
+/* ── LOGIN GATE ── */
+#login-gate {
+  position:fixed; inset:0; z-index:900;
+  background:radial-gradient(ellipse at 60% 20%, rgba(201,168,76,.08) 0%, var(--black) 70%);
+  display:flex; align-items:center; justify-content:center; padding:24px;
+}
+#login-gate.hide { display:none; }
+.login-card {
+  background:var(--card); border:1px solid rgba(201,168,76,.2);
+  border-radius:20px; padding:36px 32px; max-width:360px; width:100%; text-align:center;
+}
+.login-logo {
+  font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:700;
+  background:linear-gradient(135deg,var(--gold),var(--gold3));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:4px;
+}
+.login-sub { font-size:10px; color:var(--muted); letter-spacing:.2em; text-transform:uppercase; margin-bottom:28px; }
+.login-btn {
+  width:100%; padding:14px; border-radius:12px; font-size:13px; font-weight:700;
+  background:linear-gradient(135deg,rgba(201,168,76,.2),rgba(201,168,76,.1));
+  border:1px solid rgba(201,168,76,.4); color:var(--gold); cursor:pointer;
+  letter-spacing:.05em; transition:all .2s;
+}
+.login-btn:hover { background:rgba(201,168,76,.25); }
+.login-err { margin-top:14px; font-size:11px; color:var(--red); min-height:16px; }
+
+/* ── APP SHELL ── */
+#app { display:none; min-height:100vh; }
+#app.show { display:block; }
+
+/* ── TOPBAR ── */
+.topbar {
+  position:sticky; top:0; z-index:100;
+  background:rgba(10,10,12,.92); backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  padding:0 20px; height:54px;
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+}
+.topbar-brand {
+  font-family:'Cormorant Garamond',serif; font-size:16px; font-weight:700;
+  color:var(--gold); white-space:nowrap; letter-spacing:.05em;
+}
+.topbar-brand span { font-size:10px; color:var(--muted); font-family:'DM Sans',sans-serif; margin-left:8px; letter-spacing:.1em; text-transform:uppercase; }
+.topbar-controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+/* Year selector — gold accent */
+#sel-year {
+  background:rgba(201,168,76,.1);
+  border-color:rgba(201,168,76,.4);
+  color:var(--gold);
+  font-weight:800;
+  letter-spacing:.04em;
+  min-width:70px;
+}
+#sel-year:focus { border-color:var(--gold2); }
+.ctrl-select {
+  background:var(--card); border:1px solid var(--border2); color:var(--text);
+  border-radius:8px; padding:6px 10px; font-size:11px; font-family:'DM Sans',sans-serif;
+  cursor:pointer; outline:none;
+}
+.ctrl-select:focus { border-color:var(--gold); }
+.ctrl-btn {
+  background:var(--card); border:1px solid var(--border2); color:var(--muted);
+  border-radius:8px; padding:6px 12px; font-size:11px; font-weight:600;
+  cursor:pointer; transition:all .2s; white-space:nowrap;
+}
+.ctrl-btn:hover { border-color:var(--gold); color:var(--gold); }
+.ctrl-btn.primary { background:rgba(201,168,76,.1); border-color:rgba(201,168,76,.3); color:var(--gold); }
+.ctrl-btn.onhand-off { background:var(--card); border:1.5px solid var(--border2); color:var(--muted); font-weight:700; }
+.ctrl-btn.onhand-on  { background:rgba(245,158,11,.18); border:1.5px solid #f59e0b; color:#fbbf24; font-weight:700; box-shadow:0 0 8px rgba(245,158,11,.25); animation:onhandPulse 2s ease-in-out infinite; }
+@keyframes onhandPulse { 0%,100%{box-shadow:0 0 6px rgba(245,158,11,.2)} 50%{box-shadow:0 0 14px rgba(245,158,11,.5)} }
+.topbar-user { font-size:10px; color:var(--dim); white-space:nowrap; }
+
+/* ── MAIN CONTENT ── */
+.main { padding:20px; max-width:1400px; margin:0 auto; }
+
+/* ── LOADING ── */
+.loading-overlay {
+  position:fixed; inset:0; background:rgba(10,10,12,.85); z-index:200;
+  display:flex; align-items:center; justify-content:center; flex-direction:column; gap:14px;
+}
+.loading-overlay.hide { display:none; }
+.spin { width:32px; height:32px; border:3px solid rgba(201,168,76,.2); border-top-color:var(--gold); border-radius:50%; animation:spin .7s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.loading-txt { font-size:11px; color:var(--muted); letter-spacing:.1em; }
+
+/* ── SECTION HEADER ── */
+.section-hdr {
+  display:flex; align-items:baseline; gap:10px; margin-bottom:14px; margin-top:28px;
+}
+.section-hdr:first-child { margin-top:0; }
+.section-title {
+  font-family:'Cormorant Garamond',serif; font-size:18px; font-weight:700; color:var(--gold);
+}
+.section-sub { font-size:10px; color:var(--dim); letter-spacing:.15em; text-transform:uppercase; }
+
+/* ── KPI CARDS ── */
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin-bottom:8px; }
+.kpi-card {
+  background:var(--card); border:1px solid var(--border); border-radius:14px;
+  padding:16px 14px; position:relative; overflow:hidden;
+}
+.kpi-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+}
+.kpi-card.gold::before  { background:linear-gradient(90deg,var(--gold),var(--gold2)); }
+.kpi-card.green::before { background:linear-gradient(90deg,var(--green),#82e0aa); }
+.kpi-card.blue::before  { background:linear-gradient(90deg,var(--blue),#85c1e9); }
+.kpi-card.amber::before { background:linear-gradient(90deg,var(--amber),#f8c471); }
+.kpi-card.purple::before{ background:linear-gradient(90deg,var(--purple),#c39bd3); }
+.kpi-card.red::before   { background:linear-gradient(90deg,var(--red),#f1948a); }
+.kpi-lbl { font-size:9px; color:var(--dim); letter-spacing:.12em; text-transform:uppercase; margin-bottom:8px; }
+.kpi-val { font-size:22px; font-weight:700; color:var(--text); line-height:1; }
+.kpi-val.sm { font-size:17px; }
+.kpi-sub { font-size:9px; color:var(--muted); margin-top:5px; }
+.kpi-delta { font-size:10px; font-weight:600; margin-top:4px; }
+.kpi-delta.up   { color:var(--green); }
+.kpi-delta.down { color:var(--red); }
+
+/* ── CHART CONTAINERS ── */
+.chart-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+@media(max-width:700px) { .chart-row { grid-template-columns:1fr; } }
+.chart-card {
+  background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px;
+}
+.chart-card.full { grid-column:1/-1; }
+.chart-title { font-size:11px; font-weight:700; color:var(--text); letter-spacing:.05em; margin-bottom:14px; }
+.chart-sub { font-size:9px; color:var(--dim); margin-top:2px; }
+
+/* ── BAR CHART ── */
+.bar-chart { display:flex; align-items:flex-end; gap:4px; height:120px; }
+.bar-group { display:flex; flex-direction:column; align-items:center; gap:3px; flex:1; }
+.bar-wrap { display:flex; gap:2px; align-items:flex-end; height:100px; width:100%; justify-content:center; }
+.bar {
+  border-radius:3px 3px 0 0; min-width:8px; transition:opacity .2s;
+  position:relative; cursor:pointer;
+}
+.bar:hover { opacity:.8; }
+.bar-lbl { font-size:7px; color:var(--dim); text-align:center; white-space:nowrap; }
+.bar-val { position:absolute; top:-14px; left:50%; transform:translateX(-50%); font-size:7px; color:var(--muted); white-space:nowrap; }
+
+/* ── PROGRESS BAR ── */
+.progress-section { display:flex; flex-direction:column; gap:10px; }
+.progress-item {}
+.progress-hdr { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; }
+.progress-name { font-size:11px; font-weight:600; color:var(--text); }
+.progress-vals { font-size:10px; color:var(--muted); }
+.progress-track { height:8px; background:rgba(255,255,255,.06); border-radius:4px; overflow:hidden; }
+.progress-fill { height:100%; border-radius:4px; transition:width .6s cubic-bezier(.4,0,.2,1); }
+.progress-pct { font-size:9px; color:var(--dim); margin-top:3px; text-align:right; }
+
+/* ── DONUT CHART ── */
+.donut-wrap { display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+.donut-svg { flex-shrink:0; }
+.donut-legend { flex:1; min-width:100px; display:flex; flex-direction:column; gap:6px; }
+.legend-item { display:flex; align-items:center; gap:6px; }
+.legend-dot { width:8px; height:8px; border-radius:2px; flex-shrink:0; }
+.legend-name { font-size:10px; color:var(--muted); flex:1; }
+.legend-val { font-size:10px; font-weight:700; color:var(--text); }
+.legend-pct { font-size:9px; color:var(--dim); }
+
+/* ── STATUS BADGES ── */
+.badge {
+  display:inline-block; padding:2px 8px; border-radius:4px;
+  font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+}
+.badge.CONFIRM   { background:rgba(99,102,241,.15); color:#818cf8; border:1px solid rgba(99,102,241,.2); }
+.badge.TENTATIVE { background:rgba(245,158,11,.15); color:#fbbf24; border:1px solid rgba(245,158,11,.2); }
+.badge.DONE      { background:rgba(16,185,129,.12); color:#34d399; border:1px solid rgba(16,185,129,.2); }
+.badge.CANCEL    { background:rgba(239,68,68,.12);  color:#f87171; border:1px solid rgba(239,68,68,.2); }
+
+/* ── LEADERBOARD ── */
+.leaderboard { display:flex; flex-direction:column; gap:8px; }
+.lb-row {
+  display:flex; align-items:center; gap:10px;
+  background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 12px;
+}
+.lb-rank { font-size:14px; font-weight:800; color:var(--dim); width:20px; text-align:center; }
+.lb-rank.r1 { color:var(--gold); }
+.lb-rank.r2 { color:var(--muted); }
+.lb-rank.r3 { color:#cd7f32; }
+.lb-name { font-size:12px; font-weight:700; flex:1; }
+.lb-stats { display:flex; gap:14px; }
+.lb-stat { text-align:right; }
+.lb-stat-val { font-size:12px; font-weight:700; color:var(--text); }
+.lb-stat-lbl { font-size:8px; color:var(--dim); letter-spacing:.08em; text-transform:uppercase; }
+.lb-bar-wrap { width:80px; }
+.lb-bar-track { height:4px; background:rgba(255,255,255,.06); border-radius:2px; overflow:hidden; }
+.lb-bar-fill { height:100%; border-radius:2px; background:linear-gradient(90deg,var(--gold),var(--gold2)); }
+
+/* ── DETAIL TABLE ── */
+.tbl-controls { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; align-items:center; }
+.tbl-search {
+  flex:1; min-width:140px; background:var(--surface); border:1px solid var(--border);
+  border-radius:8px; padding:7px 10px; color:var(--text); font-size:11px;
+  font-family:'DM Sans',sans-serif; outline:none;
+}
+.tbl-search:focus { border-color:var(--gold); }
+.tbl-filter {
+  background:var(--surface); border:1px solid var(--border); color:var(--text);
+  border-radius:8px; padding:7px 10px; font-size:11px; cursor:pointer; outline:none;
+  font-family:'DM Sans',sans-serif;
+}
+.tbl-filter:focus { border-color:var(--gold); }
+.tbl-wrap { overflow-x:auto; border-radius:12px; border:1px solid var(--border); }
+table.detail-tbl { width:100%; border-collapse:collapse; font-size:11px; }
+.detail-tbl thead tr { background:var(--surface); }
+.detail-tbl th {
+  padding:10px 12px; text-align:left; font-size:9px; font-weight:700;
+  letter-spacing:.1em; text-transform:uppercase; color:var(--dim);
+  border-bottom:1px solid var(--border); white-space:nowrap;
+}
+.detail-tbl td {
+  padding:9px 12px; border-bottom:1px solid rgba(255,255,255,.03);
+  color:var(--text); white-space:nowrap;
+}
+.detail-tbl tbody tr:hover { background:rgba(255,255,255,.02); }
+.detail-tbl tbody tr:last-child td { border-bottom:none; }
+.tbl-revenue { font-weight:700; color:var(--gold); font-family:'DM Mono',monospace; }
+.tbl-pax { color:var(--muted); }
+.tbl-empty { text-align:center; padding:30px; color:var(--dim); font-size:12px; }
+.tbl-count { font-size:10px; color:var(--dim); }
+
+/* ── ONHAND SECTION ── */
+.onhand-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; }
+.onhand-card {
+  background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px 16px;
+}
+.onhand-label { font-size:9px; color:var(--dim); letter-spacing:.12em; text-transform:uppercase; margin-bottom:8px; }
+.onhand-val { font-size:20px; font-weight:700; }
+.onhand-val.gold { color:var(--gold); }
+.onhand-val.green { color:var(--green); }
+.onhand-val.amber { color:var(--amber); }
+.onhand-budget { font-size:10px; color:var(--muted); margin-top:4px; }
+.onhand-pct-big { font-size:28px; font-weight:800; }
+
+/* ── BUDGET EDITOR ── */
+.budget-editor { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px; }
+.budget-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:8px; margin-top:12px; }
+.budget-row { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 12px; }
+.budget-month { font-size:10px; font-weight:700; color:var(--gold); margin-bottom:6px; letter-spacing:.08em; }
+.budget-inp-wrap { display:flex; flex-direction:column; gap:4px; }
+.budget-inp-lbl { font-size:8px; color:var(--dim); letter-spacing:.1em; text-transform:uppercase; }
+.budget-inp {
+  background:var(--card); border:1px solid var(--border); color:var(--text);
+  border-radius:6px; padding:6px 8px; font-size:11px; outline:none; width:100%;
+  font-family:'DM Sans',sans-serif;
+}
+.budget-inp:focus { border-color:var(--gold); }
+.budget-save-btn {
+  margin-top:12px; padding:10px 20px; border-radius:10px; font-size:11px; font-weight:700;
+  background:rgba(201,168,76,.15); border:1px solid rgba(201,168,76,.3); color:var(--gold);
+  cursor:pointer; transition:all .2s;
+}
+.budget-save-btn:hover { background:rgba(201,168,76,.25); }
+.budget-status { font-size:10px; color:var(--green); margin-top:8px; min-height:16px; }
+
+/* ── CANVAS CHARTS ── */
+.canvas-wrap { position:relative; width:100%; }
+canvas { width:100% !important; }
+
+/* ── HEATMAP CALENDAR ── */
+.heatmap-wrap { overflow-x:auto; padding-bottom:8px; }
+.heatmap-grid { display:grid; grid-template-columns:repeat(13,1fr); gap:6px; min-width:600px; }
+.hm-header { font-size:8px; color:var(--dim); text-align:center; padding:2px 0; letter-spacing:.05em; }
+.hm-cell {
+  aspect-ratio:1; border-radius:6px; cursor:pointer;
+  background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06);
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; font-weight:800; color:rgba(255,255,255,.25);
+  transition:all .2s; font-family:'DM Mono',monospace;
+}
+.hm-cell:hover { border-color:var(--gold); transform:scale(1.05); z-index:2; }
+.hm-cell.lv0 { color:rgba(255,255,255,.15); }
+.hm-cell.lv1 { background:rgba(201,168,76,.18); color:rgba(201,168,76,.7); }
+.hm-cell.lv2 { background:rgba(201,168,76,.35); color:rgba(201,168,76,.85); }
+.hm-cell.lv3 { background:rgba(201,168,76,.55); color:#fff; }
+.hm-cell.lv4 { background:rgba(201,168,76,.78); color:#fff; }
+.hm-cell.lv5 { background:rgba(201,168,76,1);   color:#1a1000; }
+/* Light mode heatmap */
+body.light-mode .hm-cell         { background:rgba(0,0,0,.04); border-color:rgba(0,0,0,.08); color:rgba(0,0,0,.2); }
+body.light-mode .hm-cell.lv0     { color:rgba(0,0,0,.15); }
+body.light-mode .hm-cell.lv1     { background:rgba(160,120,48,.15); color:rgba(140,100,30,.8); }
+body.light-mode .hm-cell.lv2     { background:rgba(160,120,48,.32); color:rgba(100,70,10,.9); }
+body.light-mode .hm-cell.lv3     { background:rgba(160,120,48,.55); color:#fff; }
+body.light-mode .hm-cell.lv4     { background:rgba(160,120,48,.78); color:#fff; }
+body.light-mode .hm-cell.lv5     { background:rgba(140,100,20,1);   color:#fff; }
+.hm-venue-lbl { font-size:11px; font-weight:600; color:var(--text); padding:4px 6px; white-space:nowrap; }
+.hm-header    { font-size:10px; font-weight:700; color:var(--dim); text-align:center; padding:4px 2px; letter-spacing:.05em; }
+
+/* ── OCCUPANCY TABLE ── */
+.occ-table { width:100%; border-collapse:collapse; font-size:10px; }
+.occ-table th { padding:6px 8px; text-align:center; font-size:8px; font-weight:700; letter-spacing:.1em; color:var(--dim); border-bottom:1px solid var(--border); }
+.occ-table th:first-child { text-align:left; }
+.occ-table td { padding:6px 8px; border-bottom:1px solid rgba(255,255,255,.03); text-align:center; }
+.occ-table td:first-child { text-align:left; font-weight:600; color:var(--text); }
+.occ-pct { display:inline-block; padding:2px 6px; border-radius:4px; font-weight:700; font-size:9px; }
+.occ-pct.hi  { background:rgba(16,185,129,.15); color:#34d399; }
+.occ-pct.mid { background:rgba(245,158,11,.15);  color:#fbbf24; }
+.occ-pct.lo  { background:rgba(255,255,255,.06); color:var(--dim); }
+
+/* ── PRINT ── */
+@media print {
+  .topbar, #login-gate, .tbl-controls, .budget-editor, .ctrl-btn { display:none !important; }
+  body { background:#fff; color:#000; }
+  .main { padding:0; }
+  .card, .kpi-card, .chart-card, .onhand-card { border-color:#ddd; background:#fff; }
+}
+
+/* ── BOOKING DETAIL MODAL ── */
+.bk-modal-overlay {
+  position:fixed; inset:0; z-index:500;
+  background:rgba(0,0,0,.7); backdrop-filter:blur(6px);
+  display:flex; align-items:center; justify-content:center; padding:16px;
+  animation:fadeIn .15s ease;
+}
+.bk-modal-overlay.hide { display:none; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.bk-modal {
+  background:var(--card); border:1px solid var(--border2);
+  border-radius:20px; width:100%; max-width:480px;
+  max-height:90vh; overflow-y:auto;
+  animation:modalUp .2s cubic-bezier(.175,.885,.32,1.275) both;
+}
+@keyframes modalUp { from{opacity:0;transform:translateY(16px) scale(.97)} to{opacity:1;transform:none} }
+.bk-modal-head {
+  padding:20px 22px 14px; border-bottom:1px solid var(--border);
+  display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+}
+.bk-modal-title { font-family:'Cormorant Garamond',serif; font-size:18px; font-weight:700; color:var(--gold); }
+.bk-modal-sub { font-size:10px; color:var(--dim); margin-top:2px; letter-spacing:.05em; }
+.bk-modal-close {
+  background:none; border:none; color:var(--dim); font-size:18px;
+  cursor:pointer; padding:2px 6px; border-radius:6px; transition:color .15s; flex-shrink:0;
+}
+.bk-modal-close:hover { color:var(--text); }
+.bk-modal-body { padding:16px 22px 20px; }
+.bk-status-row { display:flex; align-items:center; gap:8px; margin-bottom:16px; }
+.bk-status-badge {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:4px 12px; border-radius:20px; font-size:10px; font-weight:800;
+  letter-spacing:.08em; text-transform:uppercase;
+}
+.bk-status-badge.CONFIRM   { background:rgba(99,102,241,.2);  color:#818cf8; border:1px solid rgba(99,102,241,.3); }
+.bk-status-badge.TENTATIVE { background:rgba(245,158,11,.2);  color:#fbbf24; border:1px solid rgba(245,158,11,.3); }
+.bk-status-badge.DONE      { background:rgba(16,185,129,.15); color:#34d399; border:1px solid rgba(16,185,129,.25);}
+.bk-status-badge.CANCEL    { background:rgba(239,68,68,.15);  color:#f87171; border:1px solid rgba(239,68,68,.25); }
+.bk-date-chip {
+  font-size:10px; color:var(--muted); background:var(--surface);
+  border:1px solid var(--border); border-radius:8px; padding:4px 10px;
+}
+.bk-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+.bk-grid.full { grid-template-columns:1fr; }
+.bk-field { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 12px; }
+.bk-field-lbl { font-size:8px; color:var(--dim); letter-spacing:.12em; text-transform:uppercase; margin-bottom:4px; }
+.bk-field-val { font-size:12px; color:var(--text); font-weight:600; word-break:break-word; }
+.bk-field-val.gold { color:var(--gold); font-family:'DM Mono',monospace; }
+.bk-field-val.muted { color:var(--muted); font-weight:400; }
+.bk-divider { border:none; border-top:1px solid var(--border); margin:14px 0; }
+.bk-modal-foot { padding:0 22px 20px; display:flex; gap:8px; flex-wrap:wrap; }
+.bk-btn {
+  flex:1; min-width:120px; padding:12px; border-radius:12px; font-size:12px;
+  font-weight:700; cursor:pointer; border:none; transition:all .2s; letter-spacing:.04em;
+}
+.bk-btn-edit {
+  background:linear-gradient(135deg,rgba(201,168,76,.2),rgba(201,168,76,.1));
+  border:1px solid rgba(201,168,76,.4); color:var(--gold);
+}
+.bk-btn-edit:hover { background:rgba(201,168,76,.3); transform:translateY(-1px); }
+.bk-btn-close {
+  background:var(--surface); border:1px solid var(--border); color:var(--muted);
+}
+.bk-btn-close:hover { border-color:var(--border2); color:var(--text); }
+.bk-loading-row { text-align:center; padding:24px; color:var(--dim); font-size:12px; }
+.bk-spinner { width:24px; height:24px; border:2px solid var(--border); border-top-color:var(--gold); border-radius:50%; animation:spin .7s linear infinite; display:inline-block; margin-bottom:8px; }
+/* Row hover cursor */
+.detail-tbl tbody tr.clickable-row { cursor:pointer; }
+.detail-tbl tbody tr.clickable-row:hover td { background:rgba(201,168,76,.04); }
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+.fade-up { animation:fadeUp .4s ease both; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN GATE -->
+<div id="login-gate">
+  <div class="login-card">
+    <div class="login-logo">◆ Lotus Garden</div>
+    <div class="login-sub">Banquet Report · Restricted Access</div>
+    <button class="login-btn" onclick="doLogin()">🔐 Login dengan Google</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-overlay hide" id="loading">
+  <div class="spin"></div>
+  <div class="loading-txt" id="loading-txt">Memuat data...</div>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-brand">◆ Banquet Report <span>Lotus Garden by WH</span></div>
+    <div class="topbar-controls">
+      <div style="display:flex;gap:2px;background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:2px;">
+        <button id="btn-nett"  onclick="setRevenueMode('nett')"  style="padding:5px 12px;border-radius:6px;font-size:11px;font-weight:700;border:none;cursor:pointer;background:var(--gold);color:#000;transition:all .2s;">Nett</button>
+        <button id="btn-gross" onclick="setRevenueMode('gross')" style="padding:5px 12px;border-radius:6px;font-size:11px;font-weight:700;border:none;cursor:pointer;background:transparent;color:var(--muted);transition:all .2s;">Gross</button>
+      </div>
+      <select class="ctrl-select" id="sel-year" onchange="onYearChange()" title="Pilih Tahun">
+        <option value="2026">2026</option>
+        <option value="2027">2027</option>
+      </select>
+      <select class="ctrl-select" id="sel-month" onchange="onFilterChange()">
+        <option value="ALL">Semua Bulan</option>
+        <option value="JANUARI">Januari</option>
+        <option value="FEBRUARI">Februari</option>
+        <option value="MARET">Maret</option>
+        <option value="APRIL">April</option>
+        <option value="MEI">Mei</option>
+        <option value="JUNI">Juni</option>
+        <option value="JULI">Juli</option>
+        <option value="AGUSTUS">Agustus</option>
+        <option value="SEPTEMBER">September</option>
+        <option value="OKTOBER">Oktober</option>
+        <option value="NOVEMBER">November</option>
+        <option value="DESEMBER">Desember</option>
+      </select>
+      <button class="ctrl-btn onhand-off" id="btn-onhand" onclick="toggleOnhand()" title="Filter hanya Confirm & Tentative (belum Done/Cancel)">⏳ ONHAND</button>
+      <button class="ctrl-btn" onclick="loadAll()">↺ Refresh</button>
+      <button class="ctrl-btn" onclick="window.print()">🖨 Print</button>
+      <button class="ctrl-btn primary" onclick="exportExcel()">📊 Export Excel</button>
+      <button class="ctrl-btn" id="btn-export-bnq"
+        onclick="exportBanquetJSON()"
+        title="Export data onhand banquet untuk Estimasi Revenue di hotel_revenue.html"
+        style="background:rgba(20,184,166,.1);border-color:rgba(20,184,166,.3);color:var(--teal);">
+        📋 Export Estimasi
+      </button>
+      <button class="btn-theme" id="btn-theme" onclick="toggleTheme()" title="Mode Terang/Gelap">🌙</button>
+      <button class="ctrl-btn" onclick="logoutUser()">⎋ Keluar</button>
+    </div>
+    <div class="topbar-user" id="topbar-user"></div>
+  </div>
+
+  <div class="main" id="main-content">
+    <div style="text-align:center;padding:60px;color:var(--dim);">Memuat report...</div>
+  </div>
+
+  <!-- BOOKING DETAIL MODAL -->
+  <div class="bk-modal-overlay hide" id="bk-modal-overlay" onclick="closeBkModal(event)">
+    <div class="bk-modal" id="bk-modal">
+      <div class="bk-modal-head">
+        <div>
+          <div class="bk-modal-title" id="bk-m-customer">—</div>
+          <div class="bk-modal-sub" id="bk-m-sub">—</div>
+        </div>
+        <button class="bk-modal-close" onclick="hideBkModal()">✕</button>
+      </div>
+      <div class="bk-modal-body" id="bk-modal-body">
+        <div class="bk-loading-row"><div class="bk-spinner"></div><br>Memuat detail...</div>
+      </div>
+      <div class="bk-modal-foot" id="bk-modal-foot"></div>
+    </div>
+  </div>
+
+</div><!-- /#app -->
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyCX0--DGM_tp_2y7hBbrGiMfeVyToVD4zM",
+  authDomain:        "banquet-dashboard-kediri.firebaseapp.com",
+  projectId:         "banquet-dashboard-kediri",
+  storageBucket:     "banquet-dashboard-kediri.firebasestorage.app",
+  messagingSenderId: "716626784276",
+  appId:             "1:716626784276:web:4f7d4d51dace341d21b701"
+};
+// GAS URL — pakai URL yang sama dengan Code.gs V6.3
+// Tidak perlu deploy terpisah
+const DEFAULT_REPORT_GAS = 'https://script.google.com/macros/s/AKfycbx-yE5bs_ZgNeDvEKnXzUmqjV9ScUjQ0vgShnPGLDkSpOqUQlab9RI5nI8mRoeTZ9N0/exec';
+const GAS_URL = (function() {
+  try {
+    const cfg = JSON.parse(localStorage.getItem('banquet_master_cfg_v4') ||
+                           localStorage.getItem('banquet_elite_config') || '{}');
+    return cfg.gasUrl_entry || cfg.gasUrl || DEFAULT_REPORT_GAS;
+  } catch(_) { return DEFAULT_REPORT_GAS; }
+})();
+
+const MONTHS = ["JANUARI","FEBRUARI","MARET","APRIL","MEI","JUNI",
+                "JULI","AGUSTUS","SEPTEMBER","OKTOBER","NOVEMBER","DESEMBER"];
+const MONTH_SHORT = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agt","Sep","Okt","Nov","Des"];
+// Multi-year: tambah tahun baru di sini jika perlu
+const REPORT_YEARS = [2026, 2027];
+
+// ── State ──
+let _idToken   = '';
+let _reportData = null;   // { JANUARI:{events,revenue,pax,count,...}, ... }
+let _budgetData = null;   // [{ bulan, targetRevenue, targetEvents, targetPax }, ...]
+let _selMonth  = 'ALL';
+let _selYear   = new Date().getFullYear(); // default tahun sekarang
+let _revenueMode = 'nett'; // 'nett' atau 'gross'
+let _onhandMode  = false;  // true = tampilkan hanya CONFIRM & TENTATIVE
+const VAT = 1.21; // PPN 11% → sebenarnya 1.11, tapi pakai 1.21 sesuai request
+
+function getRevenue(grossValue) {
+  // grossValue = pax * price dari spreadsheet (diasumsikan GROSS)
+  return _revenueMode === 'nett' ? grossValue / VAT : grossValue;
+}
+function getBudgetDisplay(targetRevenue) {
+  // budget di sheet = NETT, jika mode gross kalikan 1.21
+  return _revenueMode === 'gross' ? targetRevenue * VAT : targetRevenue;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// FIREBASE AUTH
+// ══════════════════════════════════════════════════════════════════
+firebase.initializeApp(FIREBASE_CONFIG);
+const _auth     = firebase.auth();
+const _provider = new firebase.auth.GoogleAuthProvider();
+
+// [FIX-B2] Set persistence LOCAL secara eksplisit agar session survive hard refresh
+_auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
+
+// [FIX-B2] Sembunyikan login gate selama Firebase restore session (~300-800ms)
+// Hindari flicker "minta login" padahal session masih valid
+const _gate = document.getElementById('login-gate');
+_gate.classList.add('hide'); // sembunyikan dulu
+let _sessionRestoreTimeout = setTimeout(() => {
+  // Jika 3 detik belum ada user → tampilkan login gate
+  if (!_authVerified) _gate.classList.remove('hide');
+}, 3000);
+
+// Race condition guard — sama dengan entry_live_secure.html
+let _authVerified = false;
+let _authInFlight = false;
+
+_auth.onAuthStateChanged(async user => {
+  const gate   = document.getElementById('login-gate');
+  const errEl  = document.getElementById('login-err');
+
+  if (!user) {
+    clearTimeout(_sessionRestoreTimeout);
+    if (!_authVerified) {
+      gate.classList.remove('hide');
+      document.getElementById('app').classList.remove('show');
+    }
+    return;
+  }
+
+  if (_authVerified) return;
+  if (_authInFlight) return;
+  _authInFlight = true;
+
+  try {
+    const idToken = await user.getIdToken(true);
+    _idToken = idToken;
+
+    // Validasi ke GAS
+    let res = null;
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 10000); // 10s timeout
+      const url  = GAS_URL + '?' + new URLSearchParams({ action:'CHECK_ACCESS', idToken, from:'report' });
+      const resp = await fetch(url, { redirect:'follow', signal: ctrl.signal });
+      clearTimeout(timer);
+      res = await resp.json();
+    } catch(netErr) {
+      // Timeout / offline — tetap izinkan jika Firebase auth berhasil
+      console.warn('[Report] CHECK_ACCESS failed:', netErr.message);
+      res = null;
+    }
+
+    // Jika GAS menolak karena email tidak terdaftar — blokir
+    if (res && !res.ok && res.msg && res.msg.includes('tidak terdaftar')) {
+      _auth.signOut();
+      errEl.textContent = '⚠ Akun tidak diizinkan akses sistem ini.';
+      _authVerified = false;
+      _authInFlight = false;
+      return;
+    }
+
+    // Jika GAS OK dan role STAFF — blokir
+    if (res && res.ok && res.allowed && res.role === 'STAFF') {
+      _auth.signOut();
+      errEl.textContent = '⚠ Akses ditolak. Report hanya untuk Manager & Admin.';
+      _authVerified = false;
+      _authInFlight = false;
+      return;
+    }
+
+    // Semua kondisi lain (GAS OK, GAS timeout, error lain) — izinkan masuk
+    _authVerified = true;
+    window._userRole = (res && res.role) ? res.role : 'MANAGER';
+    gate.classList.add('hide');
+    document.getElementById('app').classList.add('show');
+    document.getElementById('topbar-user').textContent = user.email || '';
+    errEl.textContent = '';
+    applyStoredTheme();
+    // Set year selector to current year
+    const ySel2 = document.getElementById('sel-year');
+    if (ySel2) {
+      _selYear = new Date().getFullYear();
+      // Add current year option if not exists
+      if (![...ySel2.options].some(o => parseInt(o.value) === _selYear)) {
+        const opt = document.createElement('option');
+        opt.value = _selYear; opt.textContent = _selYear;
+        ySel2.insertBefore(opt, ySel2.firstChild);
+      }
+      ySel2.value = _selYear;
+    }
+    await loadAll();
+  } catch(e) {
+    if (_auth.currentUser) {
+      _authVerified = true;
+      gate.classList.add('hide');
+      document.getElementById('app').classList.add('show');
+      await loadAll();
+    } else {
+      errEl.textContent = '⚠ Gagal verifikasi sesi. Coba refresh halaman.';
+    }
+  } finally {
+    _authInFlight = false;
+  }
+});
+
+function doLogin() {
+  const errEl = document.getElementById('login-err');
+  errEl.textContent = '';
+  errEl.style.color = '#e74c3c';
+  _auth.signInWithPopup(_provider).catch(e => {
+    console.error('[Login Error]', e.code, e.message);
+    const msg =
+      e.code === 'auth/popup-blocked'
+        ? '⚠ Popup diblokir. Izinkan popup di browser lalu coba lagi.'
+      : e.code === 'auth/popup-closed-by-user'
+        ? ''
+      : e.code === 'auth/unauthorized-domain'
+        ? '⚠ Domain belum diizinkan. Tambahkan domain ini di Firebase Console → Authentication → Settings → Authorized domains.'
+      : e.code === 'auth/operation-not-allowed'
+        ? '⚠ Google Sign-In belum diaktifkan di Firebase Console.'
+      : e.code === 'auth/network-request-failed'
+        ? '⚠ Gagal koneksi. Periksa internet lalu coba lagi.'
+      : e.code === 'auth/cancelled-popup-request'
+        ? ''
+      : '⚠ [' + (e.code||'error') + '] ' + (e.message || 'Login gagal.');
+    document.getElementById('login-err').textContent = msg;
+  });
+}
+function logoutUser() {
+  _authVerified = false;
+  _auth.signOut();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// DATA LOADING
+// ══════════════════════════════════════════════════════════════════
+function showLoading(txt) {
+  const el = document.getElementById('loading');
+  el.classList.remove('hide');
+  document.getElementById('loading-txt').textContent = txt || 'Memuat...';
+}
+function hideLoading() { document.getElementById('loading').classList.add('hide'); }
+
+async function gas(params) {
+  // Auto-inject year ke semua request kecuali CHECK_ACCESS
+  const inject = params.action === 'CHECK_ACCESS' ? {} : { year: _selYear };
+  const url = GAS_URL + '?' + new URLSearchParams({ ...params, ...inject, idToken: _idToken });
+  const res = await fetch(url, { redirect:'follow' });
+  return res.json();
+}
+
+async function loadAll() {
+  showLoading('Memuat report ' + _selYear + '...');
+  try {
+    _idToken = await _auth.currentUser.getIdToken(true);
+    const [repRes, budRes] = await Promise.all([
+      gas({ action:'READ_REPORT' }),
+      gas({ action:'READ_BUDGET' })
+    ]);
+    if (!repRes.ok) { alert('Error: ' + repRes.msg); hideLoading(); return; }
+    _reportData = repRes.report;
+    _budgetData = budRes.ok ? budRes.budget : [];
+    _selMonth = document.getElementById('sel-month').value;
+    renderAll();
+  } catch(e) {
+    document.getElementById('main-content').innerHTML =
+      `<div style="text-align:center;padding:60px;color:var(--red);">✗ ${e.message}</div>`;
+  } finally { hideLoading(); }
+}
+
+function onFilterChange() {
+  _selMonth = document.getElementById('sel-month').value;
+  if (_reportData) renderAll();
+}
+
+// Ganti tahun → clear data lama → reload dari spreadsheet baru
+async function onYearChange() {
+  const ySel = document.getElementById('sel-year');
+  _selYear = parseInt(ySel.value) || new Date().getFullYear();
+  _reportData = null;
+  _budgetData = null;
+  await loadAll();
+}
+
+// ── ONHAND TOGGLE ────────────────────────────────────────────────
+function toggleOnhand() {
+  _onhandMode = !_onhandMode;
+  const btn = document.getElementById('btn-onhand');
+  if (btn) {
+    btn.className = 'ctrl-btn ' + (_onhandMode ? 'onhand-on' : 'onhand-off');
+    btn.textContent = _onhandMode ? '⏳ ONHAND ✓' : '⏳ ONHAND';
+  }
+  // Saat ONHAND aktif, reset tbl-status-filter agar tidak bentrok
+  const stFil = document.getElementById('tbl-status-filter');
+  if (stFil && _onhandMode) stFil.value = '';
+  if (_reportData) renderAll();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════════════
+function fmtRp(n) {
+  if (!n || n < 1000) return 'Rp ' + Math.round(n||0).toLocaleString('id-ID');
+  if (n >= 1e9)  return 'Rp ' + (n/1e9).toFixed(1).replace('.',',') + ' M';
+  if (n >= 1e6)  return 'Rp ' + (n/1e6).toFixed(1).replace('.',',') + ' jt';
+  if (n >= 1e3)  return 'Rp ' + (n/1e3).toFixed(0) + ' rb';
+  return 'Rp ' + Math.round(n).toLocaleString('id-ID');
+}
+function fmtRpFull(n) {
+  return 'Rp ' + Math.round(n||0).toLocaleString('id-ID');
+}
+function pct(a, b) { return b > 0 ? Math.round(a / b * 100) : 0; }
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function getFilteredEvents() {
+  if (!_reportData) return [];
+  let evts;
+  if (_selMonth === 'ALL') {
+    evts = MONTHS.flatMap(m => (_reportData[m]?.events || []).map(e => ({...e, bulan:m})));
+  } else {
+    evts = (_reportData[_selMonth]?.events || []).map(e => ({...e, bulan:_selMonth}));
+  }
+  // ONHAND mode: hanya CONFIRM & TENTATIVE
+  if (_onhandMode) evts = evts.filter(e => e.status === 'CONFIRM' || e.status === 'TENTATIVE');
+  return evts;
+}
+
+function getBudgetFor(month) {
+  if (!_budgetData) return { targetRevenue:0, targetEvents:0, targetPax:0 };
+  return _budgetData.find(b => b.bulan === month) || { targetRevenue:0, targetEvents:0, targetPax:0 };
+}
+
+// ══════════════════════════════════════════════════════════════════
+// RENDER MAIN
+// ══════════════════════════════════════════════════════════════════
+function renderAll() {
+  const container = document.getElementById('main-content');
+  container.innerHTML = '';
+  container.appendChild(renderKPI());
+  container.appendChild(renderOnHand());
+  container.appendChild(renderPerformanceChart());      // Bar chart + line trend
+  container.appendChild(renderPackageEventCharts());    // Donut Package & Type of Event
+  container.appendChild(renderOccupancySection());      // Occupancy per venue per bulan
+  container.appendChild(renderBreakdowns());
+  container.appendChild(renderSalesLeaderboard());
+  container.appendChild(renderDetailTable());
+  container.appendChild(renderBudgetEditor());
+}
+
+// ── SECTION 1: KPI ──────────────────────────────────────────────
+function renderKPI() {
+  const events = getFilteredEvents();
+  const activeEvents = events.filter(e => e.status !== 'CANCEL');
+  const revenue  = activeEvents.reduce((s,e) => s + getRevenue(e.revenue), 0);
+  const pax      = activeEvents.reduce((s,e) => s + e.pax, 0);
+  const count    = activeEvents.length;
+  const avgPax   = count > 0 ? Math.round(pax/count) : 0;
+  const avgRev   = count > 0 ? revenue/count : 0;
+  const confirm  = events.filter(e=>e.status==='CONFIRM').length;
+  const tentative= events.filter(e=>e.status==='TENTATIVE').length;
+  const done     = events.filter(e=>e.status==='DONE').length;
+  const cancel   = events.filter(e=>e.status==='CANCEL').length;
+
+  // Budget comparison
+  let budgetRev = 0, budgetEvt = 0;
+  if (_selMonth === 'ALL') {
+    MONTHS.forEach(m => { const b = getBudgetFor(m); budgetRev += getBudgetDisplay(b.targetRevenue); budgetEvt += b.targetEvents; });
+  } else {
+    const b = getBudgetFor(_selMonth); budgetRev = getBudgetDisplay(b.targetRevenue); budgetEvt = b.targetEvents;
+  }
+  const revPct = pct(revenue, budgetRev);
+  const evtPct = pct(count, budgetEvt);
+
+  const sec = document.createElement('div');
+  sec.innerHTML = `
+    <div class="section-hdr">
+      <div class="section-title">◆ KPI Summary</div>
+      <div class="section-sub">${_selMonth === 'ALL' ? 'Semua Bulan 2026' : _selMonth + ' 2026'}</div>
+    </div>
+    <div class="kpi-grid fade-up">
+      <div class="kpi-card gold">
+        <div class="kpi-lbl">Total Revenue</div>
+        <div class="kpi-val sm">${fmtRp(revenue)}</div>
+        ${budgetRev > 0 ? `<div class="kpi-delta ${revPct>=100?'up':'down'}">${revPct}% dari target</div>` : ''}
+        <div class="kpi-sub">${fmtRpFull(revenue)}</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-lbl">Total Events</div>
+        <div class="kpi-val">${count}</div>
+        ${budgetEvt > 0 ? `<div class="kpi-delta ${evtPct>=100?'up':'down'}">${evtPct}% dari target</div>` : ''}
+        <div class="kpi-sub">${confirm} Confirm · ${tentative} Tentative · ${done} Done</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-lbl">Total Pax</div>
+        <div class="kpi-val">${pax.toLocaleString('id-ID')}</div>
+        <div class="kpi-sub">Avg ${avgPax} pax / event</div>
+      </div>
+      <div class="kpi-card amber">
+        <div class="kpi-lbl">Avg Revenue / Event</div>
+        <div class="kpi-val sm">${fmtRp(avgRev)}</div>
+        <div class="kpi-sub">Per booking aktif</div>
+      </div>
+      <div class="kpi-card purple">
+        <div class="kpi-lbl">On-Hand (Belum Done)</div>
+        <div class="kpi-val">${confirm + tentative}</div>
+        <div class="kpi-sub">${confirm} Confirm · ${tentative} Tentative</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-lbl">Cancel</div>
+        <div class="kpi-val">${cancel}</div>
+        <div class="kpi-sub">${count + cancel > 0 ? Math.round(cancel/(count+cancel)*100) : 0}% cancellation rate</div>
+      </div>
+    </div>`;
+  return sec;
+}
+
+// ── SECTION 2: ON-HAND vs BUDGET ────────────────────────────────
+function renderOnHand() {
+  const now = new Date();
+  const curMonthName = MONTHS[now.getMonth()];
+  const curMonth = _selMonth === 'ALL' ? curMonthName : _selMonth;
+  const monthData = _reportData?.[curMonth] || { events:[] };
+  const budget = getBudgetFor(curMonth);
+
+  const activeEvts = (monthData.events||[]).filter(e => e.status !== 'CANCEL');
+  const onHandEvts = (monthData.events||[]).filter(e => e.status === 'CONFIRM' || e.status === 'TENTATIVE');
+  const doneEvts   = (monthData.events||[]).filter(e => e.status === 'DONE');
+
+  const totalRev   = activeEvts.reduce((s,e)=>s+getRevenue(e.revenue),0);
+  const onHandRev  = onHandEvts.reduce((s,e)=>s+getRevenue(e.revenue),0);
+  const doneRev    = doneEvts.reduce((s,e)=>s+getRevenue(e.revenue),0);
+  const confirmRev = (monthData.events||[]).filter(e=>e.status==='CONFIRM').reduce((s,e)=>s+getRevenue(e.revenue),0);
+  const tentRev    = (monthData.events||[]).filter(e=>e.status==='TENTATIVE').reduce((s,e)=>s+getRevenue(e.revenue),0);
+
+  const budRev  = getBudgetDisplay(budget.targetRevenue);
+  const achPct  = pct(totalRev, budRev);
+  const ohPct   = pct(onHandRev, budRev);
+  const donePct = pct(doneRev, budRev);
+
+  const sec = document.createElement('div');
+  sec.innerHTML = `
+    <div class="section-hdr" style="margin-top:28px;">
+      <div class="section-title">◆ On-Hand vs Budget</div>
+      <div class="section-sub">${curMonth} 2026</div>
+    </div>
+    <div class="chart-row fade-up">
+      <div class="chart-card">
+        <div class="chart-title">Revenue Achievement</div>
+        <div class="onhand-grid" style="margin-bottom:16px;">
+          <div class="onhand-card">
+            <div class="onhand-label">Budget Target</div>
+            <div class="onhand-val gold">${fmtRp(budRev)}</div>
+            <div class="onhand-budget">${budRev > 0 ? fmtRpFull(budRev) : '— belum diset'}</div>
+          </div>
+          <div class="onhand-card">
+            <div class="onhand-label">Total Actual</div>
+            <div class="onhand-val ${achPct>=100?'green':'amber'}">${fmtRp(totalRev)}</div>
+            <div class="onhand-budget">${achPct}% dari budget</div>
+          </div>
+          <div class="onhand-card">
+            <div class="onhand-label">On-Hand Revenue</div>
+            <div class="onhand-val amber">${fmtRp(onHandRev)}</div>
+            <div class="onhand-budget">Confirm + Tentative</div>
+          </div>
+        </div>
+        <div class="progress-section">
+          ${budRev > 0 ? `
+          <div class="progress-item">
+            <div class="progress-hdr">
+              <span class="progress-name">Done</span>
+              <span class="progress-vals">${fmtRp(doneRev)} / ${fmtRp(budRev)}</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width:${Math.min(donePct,100)}%;background:var(--done);"></div>
+            </div>
+            <div class="progress-pct">${donePct}%</div>
+          </div>
+          <div class="progress-item">
+            <div class="progress-hdr">
+              <span class="progress-name">Confirm (On-Hand)</span>
+              <span class="progress-vals">${fmtRp(confirmRev)}</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width:${Math.min(pct(confirmRev,budRev),100)}%;background:var(--confirm);"></div>
+            </div>
+          </div>
+          <div class="progress-item">
+            <div class="progress-hdr">
+              <span class="progress-name">Tentative (On-Hand)</span>
+              <span class="progress-vals">${fmtRp(tentRev)}</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width:${Math.min(pct(tentRev,budRev),100)}%;background:var(--tentative);"></div>
+            </div>
+          </div>` : '<div style="color:var(--dim);font-size:11px;text-align:center;padding:20px;">Budget belum diset untuk bulan ini.<br>Isi di section Budget Target di bawah.</div>'}
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Status Breakdown — ${curMonth}</div>
+        ${renderDonutSVG(monthData.events||[])}
+      </div>
+    </div>`;
+  return sec;
+}
+
+function renderDonutSVG(events) {
+  const counts = { CONFIRM:0, TENTATIVE:0, DONE:0, CANCEL:0 };
+  const revs   = { CONFIRM:0, TENTATIVE:0, DONE:0, CANCEL:0 };
+  events.forEach(e => {
+    const st = e.status;
+    if (counts[st] !== undefined) { counts[st]++; revs[st] += e.revenue; }
+  });
+  const total = Object.values(counts).reduce((a,b)=>a+b,0);
+  if (total === 0) return '<div style="text-align:center;padding:30px;color:var(--dim);">Tidak ada data</div>';
+
+  const colors = { CONFIRM:'#6366f1', TENTATIVE:'#f59e0b', DONE:'#10b981', CANCEL:'#ef4444' };
+  const labels = { CONFIRM:'Confirm', TENTATIVE:'Tentative', DONE:'Done', CANCEL:'Cancel' };
+  const R = 50, cx = 60, cy = 60, stroke = 16;
+  const circ = 2 * Math.PI * R;
+
+  let offset = 0;
+  const segments = Object.entries(counts).map(([st, cnt]) => {
+    const frac = cnt / total;
+    const seg = { st, cnt, frac, offset, dash: frac * circ };
+    offset += frac * circ;
+    return seg;
+  }).filter(s => s.cnt > 0);
+
+  const svgSegs = segments.map(s =>
+    `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${colors[s.st]}"
+      stroke-width="${stroke}" stroke-dasharray="${s.dash} ${circ - s.dash}"
+      stroke-dashoffset="${circ - s.offset + circ * 0.25}"
+      style="transition:stroke-dasharray .6s ease;"/>`
+  ).join('');
+
+  const legend = Object.entries(counts).filter(([,v])=>v>0).map(([st,cnt]) =>
+    `<div class="legend-item">
+      <div class="legend-dot" style="background:${colors[st]};"></div>
+      <div class="legend-name">${labels[st]}</div>
+      <div class="legend-val">${cnt}</div>
+      <div class="legend-pct">${pct(cnt,total)}%</div>
+    </div>`
+  ).join('');
+
+  return `<div class="donut-wrap">
+    <svg class="donut-svg" width="120" height="120" viewBox="0 0 120 120">
+      <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="${stroke}"/>
+      ${svgSegs}
+      <text x="${cx}" y="${cy-4}" text-anchor="middle" fill="#e8e4dc" font-size="18" font-weight="700" font-family="DM Sans">${total}</text>
+      <text x="${cx}" y="${cy+10}" text-anchor="middle" fill="#8a8580" font-size="8" font-family="DM Sans">events</text>
+    </svg>
+    <div class="donut-legend">${legend}</div>
+  </div>`;
+}
+
+// ── SECTION 3: PERFORMANCE CHART 12 BULAN ───────────────────────
+function renderPerformanceChart() {
+  // Helper: revenue per bulan dengan Nett/Gross filter
+  function monthRev(m) {
+    return (_reportData?.[m]?.events||[])
+      .filter(e=>e.status!=='CANCEL')
+      .reduce((s,e)=>s+getRevenue(e.revenue||0),0);
+  }
+
+  const maxRev = Math.max(...MONTHS.map(m => monthRev(m)), 1);
+  const maxBud = Math.max(...MONTHS.map(m => getBudgetDisplay(getBudgetFor(m).targetRevenue)), maxRev, 1);
+  const absMax = Math.max(maxRev, maxBud);
+
+  const bars = MONTHS.map((m, i) => {
+    const rev    = monthRev(m);
+    const bud    = getBudgetDisplay(getBudgetFor(m).targetRevenue);
+    const cnt    = _reportData?.[m]?.count   || 0;
+    const h_rev  = Math.round(rev / absMax * 90);
+    const h_bud  = bud > 0 ? Math.round(bud / absMax * 90) : 0;
+    const isActive = _selMonth === m || _selMonth === 'ALL';
+    const opacity = isActive ? '1' : '0.3';
+    return `
+      <div class="bar-group" style="opacity:${opacity}" title="${m}: ${fmtRpFull(rev)}">
+        <div class="bar-wrap">
+          ${h_bud > 0 ? `<div class="bar" style="height:${h_bud}px;width:8px;background:rgba(201,168,76,.2);border:1px solid rgba(201,168,76,.3);" title="Budget: ${fmtRp(bud)}"></div>` : ''}
+          <div class="bar" style="height:${h_rev}px;width:10px;background:${rev >= bud && bud>0 ? 'var(--done)' : 'var(--gold)'};">
+            ${rev > 0 ? `<span class="bar-val">${fmtRp(rev)}</span>` : ''}
+          </div>
+        </div>
+        <div class="bar-lbl">${MONTH_SHORT[i]}</div>
+        <div class="bar-lbl" style="color:var(--gold)">${cnt>0?cnt:''}</div>
+      </div>`;
+  }).join('');
+
+  const sec = document.createElement('div');
+  sec.innerHTML = `
+    <div class="section-hdr" style="margin-top:28px;">
+      <div class="section-title">◆ Performance vs Budget</div>
+      <div class="section-sub">Revenue Bulanan 2026</div>
+    </div>
+    <div class="chart-card full fade-up">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div class="chart-title">Revenue Actual vs Budget — 2026</div>
+        <div style="display:flex;gap:12px;font-size:9px;color:var(--muted);">
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:var(--gold);border-radius:2px;display:inline-block;"></span>Actual</span>
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:rgba(201,168,76,.2);border:1px solid rgba(201,168,76,.3);border-radius:2px;display:inline-block;"></span>Budget</span>
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:var(--done);border-radius:2px;display:inline-block;"></span>Achieve ≥100%</span>
+        </div>
+      </div>
+      <div class="bar-chart" style="height:140px;">${bars}</div>
+    </div>
+    ${renderMonthlyTable()}`;
+  return sec;
+}
+
+function renderMonthlyTable() {
+  const rows = MONTHS.map((m, i) => {
+    const d = _reportData?.[m];
+    const b = getBudgetFor(m);
+    const rev = d ? (d.events||[]).filter(e=>e.status!=='CANCEL').reduce((s,e)=>s+getRevenue(e.revenue),0) : 0;
+    const cnt = d?.count   || 0;
+    const pax = d?.pax     || 0;
+    const budDisplay = getBudgetDisplay(b.targetRevenue);
+    const ach = pct(rev, budDisplay);
+    const isActive = _selMonth === m || _selMonth === 'ALL';
+    return `<tr style="opacity:${isActive?1:.4}">
+      <td style="font-weight:700;color:var(--gold)">${MONTH_SHORT[i]}</td>
+      <td>${cnt}</td>
+      <td><span class="badge CONFIRM">${d?.countConfirm||0}</span></td>
+      <td><span class="badge TENTATIVE">${d?.countTentative||0}</span></td>
+      <td><span class="badge DONE">${d?.countDone||0}</span></td>
+      <td><span class="badge CANCEL">${d?.countCancel||0}</span></td>
+      <td>${pax.toLocaleString('id-ID')}</td>
+      <td class="tbl-revenue">${fmtRp(rev)}</td>
+      <td style="color:var(--muted)">${budDisplay > 0 ? fmtRp(budDisplay) : '—'}</td>
+      <td style="font-weight:700;color:${ach>=100?'var(--done)':ach>=70?'var(--amber)':'var(--red)'}">${budDisplay>0?ach+'%':'—'}</td>
+    </tr>`;
+  }).join('');
+
+  return `
+    <div class="tbl-wrap" style="margin-top:10px;">
+      <table class="detail-tbl">
+        <thead><tr>
+          <th>Bulan</th><th>Events</th><th>Confirm</th><th>Tentative</th><th>Done</th><th>Cancel</th>
+          <th>Pax</th><th>Revenue</th><th>Budget</th><th>Achieve</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+// ── SECTION 4: BREAKDOWNS ───────────────────────────────────────
+function renderBreakdowns() {
+  const events = getFilteredEvents().filter(e => e.status !== 'CANCEL');
+
+  // Per venue
+  const venueMap = {};
+  events.forEach(e => {
+    if (!venueMap[e.venue]) venueMap[e.venue] = { rev:0, cnt:0, pax:0 };
+    venueMap[e.venue].rev += getRevenue(e.revenue);
+    venueMap[e.venue].cnt++;
+    venueMap[e.venue].pax += e.pax;
+  });
+  // Per package
+  const pkgMap = {};
+  events.forEach(e => {
+    const k = e.package || 'OTHER';
+    if (!pkgMap[k]) pkgMap[k] = { rev:0, cnt:0 };
+    pkgMap[k].rev += getRevenue(e.revenue); pkgMap[k].cnt++;
+  });
+
+  const maxVenueRev = Math.max(...Object.values(venueMap).map(v=>v.rev), 1);
+  const maxPkgRev   = Math.max(...Object.values(pkgMap).map(v=>v.rev), 1);
+
+  const VENUE_COLORS = ['#c9a84c','#6366f1','#10b981','#f59e0b','#5dade2'];
+  const PKG_COLORS   = ['#10b981','#6366f1','#f59e0b','#c9a84c','#9b59b6','#5dade2','#e74c3c','#f39c12','#2ecc71','#e74c3c'];
+
+  const venueBars = Object.entries(venueMap)
+    .sort((a,b)=>b[1].rev-a[1].rev)
+    .map(([name,d],i) => `
+      <div style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span style="font-size:11px;font-weight:600;">${esc(name)}</span>
+          <span style="font-size:10px;color:var(--muted)">${d.cnt} events · ${fmtRp(d.rev)}</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" style="width:${pct(d.rev,maxVenueRev)}%;background:${VENUE_COLORS[i%VENUE_COLORS.length]};"></div>
+        </div>
+      </div>`).join('');
+
+  const pkgBars = Object.entries(pkgMap)
+    .sort((a,b)=>b[1].rev-a[1].rev)
+    .map(([name,d],i) => `
+      <div style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+          <span style="font-size:10px;font-weight:600;">${esc(name)}</span>
+          <span style="font-size:10px;color:var(--muted)">${d.cnt}× · ${fmtRp(d.rev)}</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" style="width:${pct(d.rev,maxPkgRev)}%;background:${PKG_COLORS[i%PKG_COLORS.length]};"></div>
+        </div>
+      </div>`).join('');
+
+  const sec = document.createElement('div');
+  sec.innerHTML = `
+    <div class="section-hdr" style="margin-top:28px;">
+      <div class="section-title">◆ Breakdown</div>
+      <div class="section-sub">Venue · Package</div>
+    </div>
+    <div class="chart-row fade-up">
+      <div class="chart-card">
+        <div class="chart-title">Revenue per Venue</div>
+        ${venueBars || '<div style="color:var(--dim);font-size:11px;text-align:center;padding:20px;">Tidak ada data</div>'}
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Revenue per Package</div>
+        ${pkgBars || '<div style="color:var(--dim);font-size:11px;text-align:center;padding:20px;">Tidak ada data</div>'}
+      </div>
+    </div>`;
+  return sec;
+}
+
+// ── SECTION 5: SALES LEADERBOARD ────────────────────────────────
+function renderSalesLeaderboard() {
+  const events = getFilteredEvents().filter(e => e.status !== 'CANCEL');
+  const salesMap = {};
+  events.forEach(e => {
+    const s = e.sales || 'Unknown';
+    if (!salesMap[s]) salesMap[s] = { rev:0, cnt:0, pax:0, done:0 };
+    salesMap[s].rev += getRevenue(e.revenue); salesMap[s].cnt++;
+    salesMap[s].pax += e.pax;
+    if (e.status === 'DONE') salesMap[s].done++;
+  });
+  const sorted = Object.entries(salesMap).sort((a,b)=>b[1].rev-a[1].rev);
+  const maxRev = sorted[0]?.[1]?.rev || 1;
+
+  const rows = sorted.map(([name,d],i) => `
+    <div class="lb-row">
+      <div class="lb-rank ${i===0?'r1':i===1?'r2':i===2?'r3':''}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</div>
+      <div class="lb-name">${esc(name)}</div>
+      <div class="lb-bar-wrap">
+        <div class="lb-bar-track"><div class="lb-bar-fill" style="width:${pct(d.rev,maxRev)}%"></div></div>
+      </div>
+      <div class="lb-stats">
+        <div class="lb-stat"><div class="lb-stat-val">${d.cnt}</div><div class="lb-stat-lbl">Events</div></div>
+        <div class="lb-stat"><div class="lb-stat-val" style="color:var(--gold)">${fmtRp(d.rev)}</div><div class="lb-stat-lbl">Revenue</div></div>
+        <div class="lb-stat"><div class="lb-stat-val">${d.pax}</div><div class="lb-stat-lbl">Pax</div></div>
+      </div>
+    </div>`).join('');
+
+  const sec = document.createElement('div');
+  sec.innerHTML = `
+    <div class="section-hdr" style="margin-top:28px;">
+      <div class="section-title">◆ Sales Leaderboard</div>
+      <div class="section-sub">Performance per Sales</div>
+    </div>
+    <div class="chart-card fade-up">
+      <div class="leaderboard">${rows || '<div style="color:var(--dim);text-align:center;padding:20px;">Tidak ada data</div>'}</div>
+    </div>`;
+  return sec;
+}
+
+// ── SECTION 6: DETAIL TABLE ─────────────────────────────────────
+function renderDetailTable() {
+  const onhandBadge = _onhandMode
+    ? `<span style="background:rgba(245,158,11,.2);border:1px solid #f59e0b;color:#fbbf24;font-size:9px;font-weight:800;padding:3px 10px;border-radius:20px;letter-spacing:.08em;margin-left:8px;">⏳ ONHAND AKTIF</span>`
+    : '';
+  const sec = document.createElement('div');
+  sec.innerHTML = `
+    <div class="section-hdr" style="margin-top:28px;">
+      <div class="section-title">◆ Detail Booking${onhandBadge}</div>
+      <div class="section-sub">${_onhandMode ? 'Hanya Confirm & Tentative' : 'Semua Transaksi'}</div>
+    </div>
+    <div class="chart-card full fade-up">
+      <div class="tbl-controls">
+        <input class="tbl-search" id="tbl-search" placeholder="🔍 Cari customer, venue, package..." oninput="filterDetailTable()">
+        <select class="tbl-filter" id="tbl-status-filter" onchange="filterDetailTable()" ${_onhandMode ? 'disabled title="Nonaktifkan ONHAND untuk filter status"' : ''}>
+          <option value="">Semua Status</option>
+          <option>CONFIRM</option><option>TENTATIVE</option><option>DONE</option><option>CANCEL</option>
+        </select>
+        <select class="tbl-filter" id="tbl-venue-filter" onchange="filterDetailTable()">
+          <option value="">Semua Venue</option>
+          <option>Ball Room</option><option>VIP Room</option><option>Teratai Room</option><option>Fox Steak House</option>
+        </select>
+        <button class="ctrl-btn" onclick="copyTableText()" title="Copy semua data sebagai teks">📋 Copy</button>
+        <button class="ctrl-btn primary" onclick="exportTableExcel()" title="Export tabel ini ke Excel">📥 Excel</button>
+        <span class="tbl-count" id="tbl-count"></span>
+      </div>
+      <div class="tbl-wrap">
+        <table class="detail-tbl" id="detail-tbl">
+          <thead><tr>
+            <th>Bulan</th><th>Tgl</th><th>Customer</th><th>Venue</th>
+            <th>Package</th><th>Status</th><th>Pax</th><th>Harga/Pax</th>
+            <th>Revenue</th><th>Sales</th><th>Waktu</th>
+          </tr></thead>
+          <tbody id="detail-tbody"></tbody>
+        </table>
+      </div>
+    </div>`;
+
+  // Populate after insert
+  setTimeout(() => filterDetailTable(), 0);
+  return sec;
+}
+
+function filterDetailTable() {
+  const q      = (document.getElementById('tbl-search')?.value || '').toLowerCase();
+  const stFil  = document.getElementById('tbl-status-filter')?.value || '';
+  const vnFil  = document.getElementById('tbl-venue-filter')?.value  || '';
+  const tbody  = document.getElementById('detail-tbody');
+  if (!tbody) return;
+
+  const events = getFilteredEvents(); // sudah terfilter ONHAND jika aktif
+  const filtered = events.filter(e => {
+    const txt = [e.customer,e.venue,e.package,e.sales,e.eventType].join(' ').toLowerCase();
+    // Jika ONHAND aktif, abaikan status filter (sudah dihandle di getFilteredEvents)
+    const statusMatch = _onhandMode ? true : (!stFil || e.status === stFil);
+    return (!q || txt.includes(q)) &&
+           statusMatch &&
+           (!vnFil || e.venue.toUpperCase().includes(vnFil.toUpperCase()));
+  });
+
+  const activeFiltered = filtered.filter(e => e.status !== 'CANCEL');
+  const grandPax = activeFiltered.reduce((s,e) => s + (e.pax||0), 0);
+  const grandRev = activeFiltered.reduce((s,e) => s + getRevenue(e.revenue||0), 0);
+  document.getElementById('tbl-count').textContent =
+    `${filtered.length} data · ${grandPax.toLocaleString('id-ID')} pax · ${fmtRp(grandRev)}`;
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="11" class="tbl-empty">Tidak ada data sesuai filter</td></tr>`;
+    return;
+  }
+
+  // Data rows — simpan event obj ke cache global, row pakai index
+  if (!window._bkRowCache) window._bkRowCache = {};
+  window._bkRowCache = {}; // reset tiap render
+
+  let html = filtered.map((e, idx) => {
+    const revDisplay   = e.revenue > 0 ? getRevenue(e.revenue) : 0;
+    const priceDisplay = e.price   > 0 ? getRevenue(e.price)   : 0;
+    // Simpan ke cache — aman dari karakter spesial
+    window._bkRowCache[idx] = {
+      day: e.day, bulan: e.bulan, venue: e.venue, customer: e.customer,
+      status: e.status, package: e.package, eventType: e.eventType,
+      sales: e.sales, time: e.time, pax: e.pax, price: e.price, revenue: e.revenue
+    };
+    return `<tr class="clickable-row" onclick="openBkModal(window._bkRowCache[${idx}])">
+      <td style="color:var(--dim);font-size:10px;">${e.bulan||'—'}</td>
+      <td style="color:var(--muted)">${e.day||'—'}</td>
+      <td style="font-weight:600;">${esc(e.customer)}</td>
+      <td style="color:var(--muted)">${esc(e.venue)}</td>
+      <td>${esc(e.package)}</td>
+      <td><span class="badge ${e.status}">${e.status}</span></td>
+      <td class="tbl-pax">${e.pax||'—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:10px;">${priceDisplay > 0 ? fmtRpFull(priceDisplay) : '—'}</td>
+      <td class="tbl-revenue">${revDisplay > 0 ? fmtRp(revDisplay) : '—'}</td>
+      <td style="color:var(--muted)">${esc(e.sales)}</td>
+      <td style="color:var(--dim);font-size:10px;">${esc(e.time)}</td>
+    </tr>`;
+  }).join('');
+
+  // GRAND TOTAL row
+  html += `<tr style="background:rgba(201,168,76,.12);border-top:2px solid rgba(201,168,76,.4);">
+    <td colspan="2" style="font-weight:800;color:var(--gold);font-size:11px;letter-spacing:.05em;padding:8px 12px;">TOTAL</td>
+    <td colspan="4" style="font-size:10px;color:var(--dim);">${filtered.length} event · ${activeFiltered.length} aktif</td>
+    <td style="font-weight:800;color:var(--gold);font-size:12px;">${grandPax.toLocaleString('id-ID')}</td>
+    <td></td>
+    <td style="font-weight:800;color:var(--gold);font-size:12px;font-family:'DM Mono',monospace;">${fmtRp(grandRev)}</td>
+    <td colspan="2"></td>
+  </tr>`;
+
+  tbody.innerHTML = html;
+}
+
+
+// ── SECTION: PACKAGE & TYPE OF EVENT DONUT ──────────────────
+let _pkgChartInst = null;
+let _evtChartInst = null;
+
+function renderPackageEventCharts() {
+  const events = getFilteredEvents().filter(e => e.status !== 'CANCEL');
+
+  // Count per package
+  const pkgMap = {};
+  events.forEach(e => {
+    const k = (e.package || 'OTHER').trim().toUpperCase() || 'OTHER';
+    pkgMap[k] = (pkgMap[k] || 0) + 1;
+  });
+  // Count per eventType
+  const evtMap = {};
+  events.forEach(e => {
+    const raw = (e.eventType && e.eventType.trim()) ? e.eventType.trim() : (e.package || 'OTHER');
+    const k = raw.toUpperCase() || 'OTHER';
+    evtMap[k] = (evtMap[k] || 0) + 1;
+  });
+
+  const PALETTE = [
+    '#c9a84c','#6366f1','#10b981','#f59e0b','#5dade2',
+    '#9b59b6','#e74c3c','#f39c12','#2ecc71','#3498db','#e67e22','#1abc9c'
+  ];
+
+  function buildDonutData(map) {
+    const entries = Object.entries(map).sort((a,b)=>b[1]-a[1]);
+    return {
+      labels: entries.map(e=>e[0]),
+      data:   entries.map(e=>e[1]),
+      colors: entries.map((_,i)=>PALETTE[i%PALETTE.length])
+    };
+  }
+
+  const pkgD = buildDonutData(pkgMap);
+  const evtD = buildDonutData(evtMap);
+  const total = events.length;
+
+  const sec = document.createElement('div');
+  sec.innerHTML = `
+    <div class="section-hdr" style="margin-top:28px;">
+      <div class="section-title">◆ Package & Type of Event</div>
+      <div class="section-sub">Distribusi ${total} Event Aktif</div>
+    </div>
+    <div class="chart-row fade-up">
+      <div class="chart-card">
+        <div class="chart-title">Package Distribution</div>
+        <div class="canvas-wrap" style="height:200px;">
+          <canvas id="chart-pkg"></canvas>
+        </div>
+        <div id="legend-pkg" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Type of Event Distribution</div>
+        <div class="canvas-wrap" style="height:200px;">
+          <canvas id="chart-evt"></canvas>
+        </div>
+        <div id="legend-evt" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+      </div>
+    </div>`;
+
+  // Render charts after DOM insert
+  setTimeout(() => {
+    if (_pkgChartInst) { _pkgChartInst.destroy(); _pkgChartInst = null; }
+    if (_evtChartInst) { _evtChartInst.destroy(); _evtChartInst = null; }
+
+    function makeDonut(canvasId, d, legendId) {
+      const ctx = document.getElementById(canvasId);
+      if (!ctx || !d.data.length) return;
+      const inst = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: d.labels,
+          datasets: [{ data: d.data, backgroundColor: d.colors, borderWidth: 0, hoverOffset: 4 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          cutout: '68%',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const pct = Math.round(ctx.parsed / total * 100);
+                  return ` ${ctx.label}: ${ctx.parsed} event (${pct}%)`;
+                }
+              },
+              backgroundColor: '#1e1e24', titleColor: '#c9a84c',
+              bodyColor: '#e8e4dc', borderColor: 'rgba(255,255,255,.1)', borderWidth: 1
+            }
+          }
+        }
+      });
+
+      // Custom legend
+      const leg = document.getElementById(legendId);
+      if (leg) {
+        leg.innerHTML = d.labels.map((lbl,i) => {
+          const pct = Math.round(d.data[i]/total*100);
+          return `<div style="display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.04);border-radius:6px;padding:3px 8px;">
+            <span style="width:8px;height:8px;border-radius:2px;background:${d.colors[i]};flex-shrink:0;display:inline-block;"></span>
+            <span style="font-size:9px;color:var(--muted);">${esc(lbl)}</span>
+            <span style="font-size:9px;font-weight:700;color:var(--text);">${d.data[i]}</span>
+            <span style="font-size:8px;color:var(--dim);">${pct}%</span>
+          </div>`;
+        }).join('');
+      }
+      return inst;
+    }
+
+    _pkgChartInst = makeDonut('chart-pkg', pkgD, 'legend-pkg');
+    _evtChartInst = makeDonut('chart-evt', evtD, 'legend-evt');
+  }, 50);
+
+  return sec;
+}
+
+// ── SECTION: REVENUE TREND LINE + OCCUPANCY ──────────────────
+let _trendChartInst = null;
+
+function renderOccupancySection() {
+  const VENUES = ['Ball Room','VIP Room','Teratai Room','Fox Steak House'];
+  // Days per month 2026
+  const DAYS_IN_MONTH = [31,28,31,30,31,30,31,31,30,31,30,31];
+  // Max slot per venue per hari = 2 (slot 1 + OVERFLOW)
+  const SLOTS_PER_DAY = 2;
+
+  // Hitung occupancy per venue per bulan
+  const occData = {}; // occData[venue][bulan] = { booked, total }
+  VENUES.forEach(v => {
+    occData[v] = {};
+    MONTHS.forEach((m, mi) => {
+      const totalSlots = DAYS_IN_MONTH[mi] * SLOTS_PER_DAY;
+      const events = (_reportData?.[m]?.events || [])
+        .filter(e => e.venue.toUpperCase() === v.toUpperCase() && e.status !== 'CANCEL');
+      occData[v][m] = { booked: events.length, total: totalSlots };
+    });
+  });
+
+  // Revenue trend per bulan (line chart)
+  const trendRevenue = MONTHS.map(m => (_reportData?.[m]?.events||[]).filter(e=>e.status!=='CANCEL').reduce((s,e)=>s+getRevenue(e.revenue),0));
+  const trendBudget  = MONTHS.map(m => getBudgetDisplay(getBudgetFor(m).targetRevenue));
+  const trendCount   = MONTHS.map(m => _reportData?.[m]?.count || 0);
+
+  const sec = document.createElement('div');
+  sec.innerHTML = `
+    <div class="section-hdr" style="margin-top:28px;">
+      <div class="section-title">◆ Revenue Trend & Occupancy</div>
+      <div class="section-sub">Line Chart + Occupancy Rate per Venue</div>
+    </div>
+    <div class="chart-card full fade-up" style="margin-bottom:12px;">
+      <div class="chart-title">Revenue Trend 2026 — Actual vs Budget</div>
+      <div class="canvas-wrap" style="height:200px;">
+        <canvas id="chart-trend"></canvas>
+      </div>
+    </div>
+    <div class="chart-card full fade-up">
+      <div class="chart-title">Occupancy Rate per Venue per Bulan</div>
+      <div style="font-size:9px;color:var(--dim);margin-bottom:10px;">Basis: ${SLOTS_PER_DAY} slot/hari. Hijau ≥70%, Kuning ≥40%, Abu &lt;40%</div>
+      <div class="tbl-wrap">
+        <table class="occ-table">
+          <thead>
+            <tr>
+              <th>Venue</th>
+              ${MONTH_SHORT.map(m=>`<th>${m}</th>`).join('')}
+              <th>Avg</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${VENUES.map(v => {
+              const pcts = MONTHS.map((m,mi) => {
+                const d = occData[v][m];
+                return d.total > 0 ? Math.round(d.booked/d.total*100) : 0;
+              });
+              const avg = Math.round(pcts.reduce((a,b)=>a+b,0)/12);
+              const cells = pcts.map(p => {
+                const cls = p>=70?'hi':p>=40?'mid':'lo';
+                return `<td><span class="occ-pct ${cls}">${p}%</span></td>`;
+              }).join('');
+              return `<tr><td>${esc(v)}</td>${cells}<td><b>${avg}%</b></td></tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="chart-card full fade-up" style="margin-top:12px;">
+      <div class="chart-title">Heatmap Booking Density — Event Count per Venue per Bulan</div>
+      ${renderHeatmap(occData, VENUES)}
+    </div>`;
+
+  // Line chart setelah DOM insert
+  setTimeout(() => {
+    if (_trendChartInst) { _trendChartInst.destroy(); _trendChartInst = null; }
+    const ctx = document.getElementById('chart-trend');
+    if (!ctx) return;
+    _trendChartInst = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: MONTH_SHORT,
+        datasets: [
+          {
+            label: 'Actual Revenue',
+            data: trendRevenue,
+            borderColor: '#c9a84c',
+            backgroundColor: 'rgba(201,168,76,.08)',
+            borderWidth: 2, pointRadius: 4,
+            pointBackgroundColor: '#c9a84c',
+            fill: true, tension: 0.3
+          },
+          {
+            label: 'Budget Target',
+            data: trendBudget,
+            borderColor: 'rgba(201,168,76,.3)',
+            backgroundColor: 'transparent',
+            borderWidth: 1.5, borderDash: [4,3],
+            pointRadius: 2, pointBackgroundColor: 'rgba(201,168,76,.5)',
+            fill: false, tension: 0.3
+          },
+          {
+            label: 'Event Count',
+            data: trendCount,
+            borderColor: '#6366f1',
+            backgroundColor: 'transparent',
+            borderWidth: 1.5, pointRadius: 3,
+            pointBackgroundColor: '#6366f1',
+            fill: false, tension: 0.3,
+            yAxisID: 'y2'
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            labels: { color: '#8a8580', font: { size: 10 }, boxWidth: 12 }
+          },
+          tooltip: {
+            backgroundColor: '#1e1e24', titleColor: '#c9a84c',
+            bodyColor: '#e8e4dc', borderColor: 'rgba(255,255,255,.1)', borderWidth: 1,
+            callbacks: {
+              label: ctx => {
+                if (ctx.dataset.yAxisID === 'y2')
+                  return ` ${ctx.dataset.label}: ${ctx.parsed.y} event`;
+                return ` ${ctx.dataset.label}: ${fmtRp(ctx.parsed.y)}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { ticks: { color: '#555050', font:{size:9} }, grid: { color: 'rgba(255,255,255,.04)' } },
+          y: {
+            ticks: { color: '#8a8580', font:{size:9}, callback: v => fmtRp(v) },
+            grid: { color: 'rgba(255,255,255,.04)' }
+          },
+          y2: {
+            position: 'right',
+            ticks: { color: '#6366f1', font:{size:9} },
+            grid: { drawOnChartArea: false }
+          }
+        }
+      }
+    });
+  }, 100);
+
+  return sec;
+}
+
+function renderHeatmap(occData, venues) {
+  const maxEvents = Math.max(...venues.flatMap(v =>
+    MONTHS.map(m => occData[v][m].booked)
+  ), 1);
+
+  const headers = `<div class="hm-cell" style="background:transparent;border:none;"></div>` +
+    MONTH_SHORT.map(m => `<div class="hm-header">${m}</div>`).join('');
+
+  const rows = venues.map(v =>
+    `<div class="hm-venue-lbl">${esc(v)}</div>` +
+    MONTHS.map(m => {
+      const n = occData[v][m].booked;
+      const lv = n === 0 ? 0 : n <= maxEvents*.2 ? 1 : n <= maxEvents*.4 ? 2 : n <= maxEvents*.6 ? 3 : n <= maxEvents*.8 ? 4 : 5;
+      return `<div class="hm-cell lv${lv}" title="${v} ${m}: ${n} event">${n > 0 ? n : ''}</div>`;
+    }).join('')
+  ).join('');
+
+  return `<div class="heatmap-wrap">
+    <div class="heatmap-grid" style="grid-template-columns:130px repeat(12,1fr);gap:6px;">
+      ${headers}${rows}
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;margin-top:8px;font-size:9px;color:var(--dim);">
+      Density: ${[0,1,2,3,4,5].map(lv=>
+        `<span class="hm-cell lv${lv}" style="width:14px;height:14px;aspect-ratio:auto;display:inline-block;border-radius:3px;flex-shrink:0;"></span>`
+      ).join('')} <span style="margin-left:4px;">Rendah → Tinggi</span>
+    </div>
+  </div>`;
+}
+
+// ── SECTION 7: BUDGET EDITOR ─────────────────────────────────────
+function renderBudgetEditor() {
+  const rows = MONTHS.map((m,i) => {
+    const b = getBudgetFor(m);
+    return `
+      <div class="budget-row">
+        <div class="budget-month">${MONTH_SHORT[i]} · ${m}</div>
+        <div class="budget-inp-wrap">
+          <label class="budget-inp-lbl">Target Revenue (Rp)</label>
+          <input class="budget-inp" id="bud-rev-${m}" type="number" value="${b.targetRevenue||''}" placeholder="0">
+          <label class="budget-inp-lbl" style="margin-top:4px;">Target Events</label>
+          <input class="budget-inp" id="bud-evt-${m}" type="number" value="${b.targetEvents||''}" placeholder="0">
+        </div>
+      </div>`;
+  }).join('');
+
+  const sec = document.createElement('div');
+  sec.innerHTML = `
+    <div class="section-hdr" style="margin-top:28px;">
+      <div class="section-title">◆ Budget Target</div>
+      <div class="section-sub">Edit & Simpan ke Spreadsheet</div>
+    </div>
+    <div class="budget-editor fade-up">
+      <div style="font-size:10px;color:var(--dim);margin-bottom:4px;">
+        Data disimpan ke sheet <b style="color:var(--gold)">BUDGET</b> di spreadsheet. Refresh setelah simpan.
+      </div>
+      <div class="budget-grid">${rows}</div>
+      <button class="budget-save-btn" onclick="saveBudget()">💾 Simpan Semua Budget</button>
+      <div class="budget-status" id="budget-status"></div>
+    </div>`;
+  return sec;
+}
+
+async function saveBudget() {
+  const st = document.getElementById('budget-status');
+  st.textContent = '⏳ Menyimpan...'; st.style.color = 'var(--muted)';
+  try {
+    const rows = MONTHS.map(m => ({
+      bulan:         m,
+      targetRevenue: parseFloat(document.getElementById(`bud-rev-${m}`)?.value) || 0,
+      targetEvents:  parseInt(document.getElementById(`bud-evt-${m}`)?.value)   || 0,
+      targetPax:     0,
+      notes:         ''
+    }));
+    _idToken = await _auth.currentUser.getIdToken(true);
+    const res = await gas({ action:'SAVE_BUDGET', budgetJson: JSON.stringify(rows) });
+    if (res.ok) {
+      st.style.color = 'var(--done)';
+      st.textContent = '✦ Budget disimpan. Klik Refresh untuk update chart.';
+      _budgetData = rows;
+    } else {
+      st.style.color = 'var(--red)';
+      st.textContent = '✗ ' + (res.msg || 'Gagal.');
+    }
+  } catch(e) {
+    st.style.color = 'var(--red)';
+    st.textContent = '✗ ' + e.message;
+  }
+}
+// ══════════════════════════════════════════════════════════════════
+// REVENUE MODE TOGGLE
+// ══════════════════════════════════════════════════════════════════
+function setRevenueMode(mode) {
+  _revenueMode = mode;
+  const btnNett  = document.getElementById('btn-nett');
+  const btnGross = document.getElementById('btn-gross');
+  const activeStyle  = 'padding:5px 12px;border-radius:6px;font-size:11px;font-weight:700;border:none;cursor:pointer;background:var(--gold);color:#000;transition:all .2s;';
+  const inactiveStyle= 'padding:5px 12px;border-radius:6px;font-size:11px;font-weight:700;border:none;cursor:pointer;background:transparent;color:var(--muted);transition:all .2s;';
+  if (btnNett)  btnNett.style.cssText  = mode === 'nett'  ? activeStyle : inactiveStyle;
+  if (btnGross) btnGross.style.cssText = mode === 'gross' ? activeStyle : inactiveStyle;
+  if (_reportData) renderAll();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// BOOKING DETAIL MODAL
+// ══════════════════════════════════════════════════════════════════
+
+// Bulan index map untuk konversi ke YYYY-MM-DD
+const MONTH_NUM = {
+  JANUARI:'01',FEBRUARI:'02',MARET:'03',APRIL:'04',MEI:'05',JUNI:'06',
+  JULI:'07',AGUSTUS:'08',SEPTEMBER:'09',OKTOBER:'10',NOVEMBER:'11',DESEMBER:'12'
+};
+
+function openBkModal(eventObj) {
+  // eventObj = {day, bulan, venue, customer, status, package, eventType, sales, time, pax, price, revenue}
+
+  // [FIX-B1] Batalkan fetch sebelumnya jika masih berjalan
+  if (window._bkAbortCtrl) { window._bkAbortCtrl.abort(); }
+  window._bkAbortCtrl = new AbortController();
+  const fetchId = ++_bkFetchCounter; // ID unik per open, cegah stale write
+
+  const overlay = document.getElementById('bk-modal-overlay');
+  const body    = document.getElementById('bk-modal-body');
+  const foot    = document.getElementById('bk-modal-foot');
+
+  // Header
+  document.getElementById('bk-m-customer').textContent = eventObj.customer || '—';
+  document.getElementById('bk-m-sub').textContent =
+    (eventObj.bulan || '') + ' · ' + (eventObj.venue || '') + ' · ' + (eventObj.sales || '');
+
+  // Loading state
+  body.innerHTML = `<div class="bk-loading-row"><div class="bk-spinner"></div><br>Memuat detail...</div>`;
+  foot.innerHTML = '';
+  overlay.classList.remove('hide');
+  document.body.style.overflow = 'hidden';
+
+  // Fetch detail via GAS CHECK action
+  const mm  = MONTH_NUM[eventObj.bulan] || '01';
+  const dd  = String(eventObj.day || 1).padStart(2, '0');
+  const dateStr = `2026-${mm}-${dd}`;
+
+  _fetchBkDetail(eventObj, dateStr, fetchId, window._bkAbortCtrl.signal);
+}
+
+// Counter untuk guard stale fetch
+let _bkFetchCounter = 0;
+
+async function _fetchBkDetail(ev, dateStr, fetchId, signal) {
+  const body = document.getElementById('bk-modal-body');
+  const foot = document.getElementById('bk-modal-foot');
+  const isAdmin = (window._userRole === 'ADMIN' || window._userRole === 'SUPER_ADMIN');
+
+  let detail = null;
+  try {
+    // [FIX-B1] Timeout 5 detik + abort signal — tidak gantung selamanya
+    const timeoutId = setTimeout(() => { if (window._bkAbortCtrl) window._bkAbortCtrl.abort(); }, 5000);
+    const url = GAS_URL + '?' + new URLSearchParams({
+      action: 'CHECK', date: dateStr, venue: ev.venue,
+      sheet: ev.bulan, idToken: _idToken
+    });
+    const res  = await fetch(url, { redirect:'follow', signal });
+    clearTimeout(timeoutId);
+    const data = await res.json();
+    if (data.ok && data.data) detail = data.data;
+  } catch(err) {
+    if (err.name === 'AbortError') return; // [FIX-B1] fetch dibatalkan → jangan tulis apapun
+    // Error lain → lanjut pakai data report saja
+  }
+
+  // [FIX-B1] Cek apakah ini masih fetch yang relevan (bukan fetch lama yang stale)
+  if (fetchId !== _bkFetchCounter) return;
+
+  // Merge: data GAS lebih lengkap, fallback ke data report
+  const d = {
+    customer:      detail?.customer      || ev.customer || '—',
+    status:        detail?.status        || ev.status   || '—',
+    venue:         ev.venue              || '—',
+    package:       detail?.package       || ev.package  || '—',
+    eventType:     ev.eventType          || '—',
+    sales:         detail?.sales         || ev.sales    || '—',
+    time:          detail?.time          || ev.time     || '—',
+    setup:         detail?.setup         || '—',
+    pax:           detail?.pax           || ev.pax      || '—',
+    price:         detail?.price         || ev.price    || 0,
+    eventTitle:    detail?.eventTitle    || '—',
+    contactPerson: detail?.contactPerson || '—',
+    phone:         detail?.phone         || '—',
+    notes:         detail?.notes         || '—',
+    source:        detail?.source        || ev.source   || 'BULAN'
+  };
+
+  const priceDisp  = d.price  > 0 ? fmtRpFull(getRevenue(d.price))  : '—';
+  const revDisp    = (ev.revenue||0) > 0 ? fmtRp(getRevenue(ev.revenue)) : '—';
+  const modeLabel  = _revenueMode === 'nett' ? 'Nett' : 'Gross';
+  const ovfBadge   = d.source === 'OVERFLOW'
+    ? `<span style="font-size:9px;background:rgba(93,173,226,.15);color:#5dade2;border:1px solid rgba(93,173,226,.3);border-radius:6px;padding:2px 7px;margin-left:6px;">OVERFLOW</span>` : '';
+
+  body.innerHTML = `
+    <div class="bk-status-row">
+      <span class="bk-status-badge ${d.status}">${d.status}</span>
+      <span class="bk-date-chip">📅 ${ev.bulan} ${ev.day}, ${_selYear}</span>
+      ${ovfBadge}
+    </div>
+
+    <div class="bk-grid">
+      <div class="bk-field">
+        <div class="bk-field-lbl">Venue</div>
+        <div class="bk-field-val">${esc(d.venue)}</div>
+      </div>
+      <div class="bk-field">
+        <div class="bk-field-lbl">Waktu</div>
+        <div class="bk-field-val">${esc(d.time)}</div>
+      </div>
+    </div>
+
+    <div class="bk-grid">
+      <div class="bk-field">
+        <div class="bk-field-lbl">Package</div>
+        <div class="bk-field-val">${esc(d.package)}</div>
+      </div>
+      <div class="bk-field">
+        <div class="bk-field-lbl">Type of Event</div>
+        <div class="bk-field-val">${esc(d.eventType)}</div>
+      </div>
+    </div>
+
+    <div class="bk-grid">
+      <div class="bk-field">
+        <div class="bk-field-lbl">Pax</div>
+        <div class="bk-field-val">${esc(String(d.pax))}</div>
+      </div>
+      <div class="bk-field">
+        <div class="bk-field-lbl">Sales</div>
+        <div class="bk-field-val">${esc(d.sales)}</div>
+      </div>
+    </div>
+
+    <div class="bk-grid">
+      <div class="bk-field">
+        <div class="bk-field-lbl">Harga/Pax (${modeLabel})</div>
+        <div class="bk-field-val gold">${priceDisp}</div>
+      </div>
+      <div class="bk-field">
+        <div class="bk-field-lbl">Revenue (${modeLabel})</div>
+        <div class="bk-field-val gold">${revDisp}</div>
+      </div>
+    </div>
+
+    <hr class="bk-divider">
+
+    <div class="bk-grid full">
+      <div class="bk-field">
+        <div class="bk-field-lbl">Event Title</div>
+        <div class="bk-field-val ${d.eventTitle==='—'?'muted':''}">${esc(d.eventTitle)}</div>
+      </div>
+    </div>
+
+    <div class="bk-grid">
+      <div class="bk-field">
+        <div class="bk-field-lbl">Contact Person</div>
+        <div class="bk-field-val ${d.contactPerson==='—'?'muted':''}">${esc(d.contactPerson)}</div>
+      </div>
+      <div class="bk-field">
+        <div class="bk-field-lbl">Phone</div>
+        <div class="bk-field-val ${d.phone==='—'?'muted':''}">${esc(d.phone)}</div>
+      </div>
+    </div>
+
+    ${d.notes !== '—' ? `
+    <div class="bk-grid full" style="margin-top:0">
+      <div class="bk-field">
+        <div class="bk-field-lbl">Notes</div>
+        <div class="bk-field-val muted" style="font-size:11px;line-height:1.5;">${esc(d.notes)}</div>
+      </div>
+    </div>` : ''}
+
+    <div class="bk-grid full" style="margin-top:10px">
+      <div class="bk-field">
+        <div class="bk-field-lbl">Setup</div>
+        <div class="bk-field-val muted">${esc(d.setup)}</div>
+      </div>
+    </div>`;
+
+  // Footer buttons — simpan params ke cache untuk menghindari encoding issue di onclick
+  window._bkEditParams = { dateStr, venue: ev.venue, bulan: ev.bulan };
+  const editHtml = isAdmin ? `
+    <button class="bk-btn bk-btn-edit" onclick="openEntryEdit(window._bkEditParams.dateStr, window._bkEditParams.venue, window._bkEditParams.bulan)">
+      ✏️ Edit di Entry Form
+    </button>` : '';
+
+  foot.innerHTML = editHtml + `
+    <button class="bk-btn bk-btn-close" onclick="hideBkModal()">Tutup</button>`;
+}
+
+function openEntryEdit(dateStr, venue, bulan) {
+  // Cari entry.html di path yang sama dengan report.html
+  const base = window.location.href.replace(/[^\/]*$/, '');
+  const url  = base + 'entry.html?prefill_date=' + encodeURIComponent(dateStr)
+                    + '&prefill_venue=' + encodeURIComponent(venue)
+                    + '&prefill_month=' + encodeURIComponent(bulan)
+                    + '&prefill_year=' + encodeURIComponent(_selYear);
+  window.open(url, '_blank');
+}
+
+function hideBkModal() {
+  // [FIX-B1] Batalkan fetch yang masih berjalan saat modal ditutup
+  if (window._bkAbortCtrl) { window._bkAbortCtrl.abort(); window._bkAbortCtrl = null; }
+  document.getElementById('bk-modal-overlay').classList.add('hide');
+  document.body.style.overflow = '';
+}
+
+function closeBkModal(e) {
+  // Tutup jika klik overlay (bukan konten modal)
+  if (e.target === document.getElementById('bk-modal-overlay')) hideBkModal();
+}
+
+// Tutup modal dengan Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') hideBkModal();
+});
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light-mode');
+  const btn = document.getElementById('btn-theme');
+  if (btn) btn.textContent = isLight ? '🌞' : '🌙';
+  localStorage.setItem('report_theme', isLight ? 'light' : 'dark');
+  // Re-render charts with new colors
+  if (_reportData) {
+    if (_pkgChartInst)   { _pkgChartInst.destroy();   _pkgChartInst   = null; }
+    if (_evtChartInst)   { _evtChartInst.destroy();   _evtChartInst   = null; }
+    if (_trendChartInst) { _trendChartInst.destroy(); _trendChartInst = null; }
+    renderAll();
+  }
+}
+function applyStoredTheme() {
+  if (localStorage.getItem('report_theme') === 'light') {
+    document.body.classList.add('light-mode');
+    const btn = document.getElementById('btn-theme');
+    if (btn) btn.textContent = '🌞';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// COPY TEXT — salin data tabel ke clipboard sebagai TSV
+// ══════════════════════════════════════════════════════════════════
+function copyTableText() {
+  const tbl = document.getElementById('detail-tbl');
+  if (!tbl) return;
+  const rows = [];
+  // Header
+  const headers = Array.from(tbl.querySelectorAll('thead th')).map(th => th.textContent.trim());
+  rows.push(headers.join('	'));
+  // Body
+  tbl.querySelectorAll('tbody tr').forEach(tr => {
+    const cells = Array.from(tr.querySelectorAll('td')).map(td => td.textContent.trim());
+    rows.push(cells.join('	'));
+  });
+  const text = rows.join('\n');
+  navigator.clipboard.writeText(text).then(() => {
+    _showToast('📋 Data disalin ke clipboard! (' + (rows.length-1) + ' baris)');
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    _showToast('📋 Data disalin ke clipboard!');
+  });
+}
+
+function _showToast(msg) {
+  let toast = document.getElementById('rpt-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'rpt-toast';
+    toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);' +
+      'background:var(--card);border:1px solid var(--border2);color:var(--text);' +
+      'padding:10px 20px;border-radius:10px;font-size:12px;font-weight:600;' +
+      'z-index:9999;transition:opacity .3s;pointer-events:none;';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  clearTimeout(toast._to);
+  toast._to = setTimeout(() => { toast.style.opacity = '0'; }, 2500);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// EXPORT EXCEL — export tabel detail ke .xlsx
+// ══════════════════════════════════════════════════════════════════
+function exportTableExcel() {
+  if (typeof XLSX === 'undefined') {
+    _showToast('⚠ SheetJS belum termuat. Coba refresh halaman.'); return;
+  }
+  const events = getFilteredEvents().filter(e => e.status !== 'CANCEL');
+  if (!events.length) { _showToast('⚠ Tidak ada data.'); return; }
+
+  const modeLabel = _revenueMode === 'nett' ? 'Nett' : 'Gross';
+  const headers = ['Bulan','Tgl','Customer','Venue','Package','Type of Event',
+                   'Status','Pax','Harga/Pax','Revenue '+modeLabel,'Sales','Waktu'];
+
+  // Semua angka sebagai NUMBER agar bisa formula di Excel
+  const dataRows = events.map(e => [
+    e.bulan || '', e.day || '', e.customer, e.venue,
+    e.package, e.eventType || e.package, e.status,
+    e.pax || 0,
+    e.price > 0 ? Math.round(getRevenue(e.price)) : 0,        // Harga/Pax Nett/Gross
+    e.revenue > 0 ? Math.round(getRevenue(e.revenue)) : 0,    // Revenue Nett/Gross
+    e.sales, e.time
+  ]);
+
+  // Total row
+  const totalPax = dataRows.reduce((s,r)=>s+r[7],0);
+  const totalRev = dataRows.reduce((s,r)=>s+r[9],0);
+  const totalRow = ['TOTAL','','','','','',
+    dataRows.length+' event', totalPax, '', totalRev, '', ''];
+
+  const wsData = [headers, ...dataRows, totalRow];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // Column widths
+  ws['!cols'] = [
+    {wch:12},{wch:5},{wch:30},{wch:16},{wch:14},{wch:18},
+    {wch:12},{wch:8},{wch:16},{wch:18},{wch:8},{wch:12}
+  ];
+
+  // Format number columns sebagai number (angka murni, bisa SUM)
+  const lastDataRow = dataRows.length + 1; // +1 untuk header
+  for (let ri = 1; ri <= lastDataRow; ri++) {
+    [7, 8, 9].forEach(ci => {
+      const ref = XLSX.utils.encode_cell({r:ri, c:ci});
+      const cell = ws[ref];
+      if (cell && typeof cell.v === 'number') {
+        cell.t = 'n'; // pastikan tipe number
+        cell.z = '#,##0'; // format ribuan tanpa desimal
+      }
+    });
+  }
+
+  // Style header
+  headers.forEach((_, ci) => {
+    const cell = ws[XLSX.utils.encode_cell({r:0, c:ci})];
+    if (cell) cell.s = {
+      font: { bold:true, color:{ rgb:'C9A84C' } },
+      fill: { fgColor:{ rgb:'1A1428' } },
+      alignment: { horizontal:'center' }
+    };
+  });
+
+  // Style total row
+  const totalRowIdx = dataRows.length + 1;
+  [0,7,9].forEach(ci => {
+    const ref = XLSX.utils.encode_cell({r:totalRowIdx, c:ci});
+    const cell = ws[ref];
+    if (cell) cell.s = { font: { bold:true }, fill: { fgColor:{ rgb:'FFF3CD' } } };
+  });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Detail Booking');
+  _addSummarySheet(wb);
+
+  const month = _selMonth === 'ALL' ? 'Semua_Bulan' : _selMonth;
+  const date  = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `Lotus_Garden_${modeLabel}_${month}_${date}.xlsx`);
+  _showToast(`📊 Excel ${modeLabel} berhasil diunduh!`);
+}
+
+
+function _addSummarySheet(wb) {
+  if (!_reportData) return;
+  const headers = ['Bulan','Events','Confirm','Tentative','Done','Cancel',
+                   'Total Pax','Revenue Actual','Budget Target','Achievement %'];
+  const rows = MONTHS.map((m, i) => {
+    const d = _reportData[m];
+    const b = getBudgetFor(m);
+    const rev = d ? (d.events||[]).filter(e=>e.status!=='CANCEL').reduce((s,e)=>s+getRevenue(e.revenue),0) : 0;
+    const budDisplay = getBudgetDisplay(b.targetRevenue);
+    const ach = budDisplay > 0 ? Math.round(rev/budDisplay*100) : 0;
+    return [
+      m, d ? d.count : 0,
+      d ? d.countConfirm : 0, d ? d.countTentative : 0,
+      d ? d.countDone : 0, d ? d.countCancel : 0,
+      d ? d.pax : 0, rev, budDisplay,
+      budDisplay > 0 ? (ach + '%') : '—'
+    ];
+  });
+
+  // Add total row
+  const totRev = MONTHS.reduce((s,m) => s + (_reportData[m]?.events||[]).filter(e=>e.status!=='CANCEL').reduce((ss,e)=>ss+getRevenue(e.revenue),0), 0);
+  const totBud = MONTHS.reduce((s,m) => s + getBudgetDisplay(getBudgetFor(m).targetRevenue), 0);
+  rows.push(['TOTAL',
+    MONTHS.reduce((s,m) => s + (_reportData[m]?.count||0), 0),
+    MONTHS.reduce((s,m) => s + (_reportData[m]?.countConfirm||0), 0),
+    MONTHS.reduce((s,m) => s + (_reportData[m]?.countTentative||0), 0),
+    MONTHS.reduce((s,m) => s + (_reportData[m]?.countDone||0), 0),
+    MONTHS.reduce((s,m) => s + (_reportData[m]?.countCancel||0), 0),
+    MONTHS.reduce((s,m) => s + (_reportData[m]?.pax||0), 0),
+    totRev, totBud,
+    totBud > 0 ? Math.round(totRev/totBud*100) + '%' : '—'
+  ]);
+
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  ws['!cols'] = [{wch:14},{wch:8},{wch:10},{wch:12},{wch:8},{wch:8},
+                 {wch:10},{wch:16},{wch:16},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Summary Bulanan');
+}
+
+// Full export (semua sheet)
+function exportExcel() { exportTableExcel(); }
+
+
+
+// ══════════════════════════════════════════════════════════════
+// EXPORT BANQUET JSON — untuk Estimasi Revenue
+// ══════════════════════════════════════════════════════════════
+function exportBanquetJSON(){
+  if(!_reportData){
+    showExportModal(null, 'Data belum dimuat. Silakan login dan tunggu data selesai dimuat.');
+    return;
+  }
+
+  // Ikuti filter bulan yang aktif di topbar
+  const selMonth = document.getElementById('sel-month')?.value || 'ALL';
+  const isFiltered = selMonth && selMonth !== 'ALL';
+  const filterLabel = isFiltered ? selMonth : 'SEMUA BULAN';
+
+  const monthMap={
+    'JANUARI':'JAN','FEBRUARI':'FEB','MARET':'MAR','APRIL':'APR',
+    'MEI':'MEI','JUNI':'JUN','JULI':'JUL','AGUSTUS':'AUG',
+    'SEPTEMBER':'SEP','OKTOBER':'OKT','NOVEMBER':'NOV','DESEMBER':'DES'
+  };
+
+  const out={};
+
+  // Iterasi: jika filter aktif, hanya proses bulan tersebut
+  Object.entries(_reportData).forEach(([mName, mData])=>{
+    // Skip bulan lain jika ada filter
+    if(isFiltered && mName !== selMonth) return;
+
+    const key = monthMap[mName]||mName;
+    const events = (mData.events||[])
+      .filter(ev=>ev.status==='CONFIRM'||ev.status==='TENTATIVE')
+      .map(ev=>{
+        const grossRev = (ev.pax||0)*(ev.price||0);
+        const revenue  = getRevenue(grossRev); // ikut toggle Nett/Gross
+        return {
+          status:   ev.status,
+          date:     ev.date||'',
+          venue:    ev.venue||'',
+          customer: ev.customer||'',
+          pax:      ev.pax||0,
+          price:    ev.price||0,
+          revenue,  // sudah di-convert sesuai mode
+          package:  ev.package||'',
+          sales:    ev.sales||''
+        };
+      });
+    out[mName]={
+      events,
+      total_confirm:   events.filter(e=>e.status==='CONFIRM').reduce((s,e)=>s+e.revenue,0),
+      total_tentative: events.filter(e=>e.status==='TENTATIVE').reduce((s,e)=>s+e.revenue,0),
+      total:           events.reduce((s,e)=>s+e.revenue,0),
+      count:           events.length,
+      mode:            _revenueMode  // catat mode saat export
+    };
+  });
+
+  const json = JSON.stringify(out);
+
+  // Summary
+  const totalConfirm   = Object.values(out).reduce((s,m)=>s+m.total_confirm,0);
+  const totalTentative = Object.values(out).reduce((s,m)=>s+m.total_tentative,0);
+  const totalAll       = totalConfirm + totalTentative;
+  const totalEvents    = Object.values(out).reduce((s,m)=>s+m.count,0);
+  const bulanCount     = Object.keys(out).length;
+
+  showExportModal(json, null, {
+    totalConfirm, totalTentative, totalAll, totalEvents,
+    filterLabel, isFiltered, bulanCount,
+    mode: _revenueMode  // 'nett' atau 'gross'
+  });
+}
+
+function showExportModal(json, errMsg, summary){
+  // Remove existing modal if any
+  const existing = document.getElementById('bnq-export-modal');
+  if(existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'bnq-export-modal';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:9999;
+    background:rgba(0,0,0,.75);backdrop-filter:blur(6px);
+    display:flex;align-items:center;justify-content:center;padding:24px;
+  `;
+
+  if(errMsg){
+    modal.innerHTML = `
+      <div style="background:var(--card);border:1px solid var(--border2);border-radius:18px;
+        padding:32px 36px;max-width:460px;width:100%;text-align:center;">
+        <div style="font-size:36px;margin-bottom:12px">⚠</div>
+        <div style="font-size:14px;color:var(--text);font-weight:600;margin-bottom:16px">${errMsg}</div>
+        <button onclick="document.getElementById('bnq-export-modal').remove()"
+          style="padding:8px 24px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;
+          background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.3);color:var(--gold)">Tutup</button>
+      </div>`;
+    document.body.appendChild(modal);
+    return;
+  }
+
+  const fmtRp = n => {
+    const a=Math.abs(n||0);
+    if(a>=1e9) return'Rp '+(n/1e9).toFixed(2)+' M';
+    if(a>=1e6) return'Rp '+(n/1e6).toFixed(1)+' jt';
+    return'Rp '+Math.round(n||0).toLocaleString('id-ID');
+  };
+
+  modal.innerHTML = `
+    <div style="background:var(--card);border:1px solid rgba(20,184,166,.3);border-radius:18px;
+      padding:28px 32px;max-width:580px;width:100%;position:relative;">
+
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--teal)">
+            📋 Export Banquet Onhand
+          </div>
+          <div style="font-size:10px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;margin-top:3px">
+            ${summary.isFiltered
+              ? `Bulan: <span style="color:var(--gold);font-weight:800">${summary.filterLabel}</span> · ${summary.bulanCount} bulan`
+              : `Semua Bulan · ${summary.bulanCount} bulan`}
+            &nbsp;·&nbsp; Untuk Estimasi Revenue di hotel_revenue.html
+          </div>
+        </div>
+        <button onclick="document.getElementById('bnq-export-modal').remove()"
+          style="background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--muted);
+          border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;font-weight:700;">✕ Tutup</button>
+      </div>
+
+      <!-- Summary -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;">
+        <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:12px;text-align:center;">
+          <div style="font-size:9px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">CONFIRM</div>
+          <div style="font-family:'DM Mono',monospace;font-size:16px;font-weight:800;color:#22f0a0">${fmtRp(summary.totalConfirm)}</div>
+        </div>
+        <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:12px;text-align:center;">
+          <div style="font-size:9px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">TENTATIVE</div>
+          <div style="font-family:'DM Mono',monospace;font-size:16px;font-weight:800;color:#ffd23f">${fmtRp(summary.totalTentative)}</div>
+        </div>
+        <div style="background:rgba(20,184,166,.08);border:1px solid rgba(20,184,166,.25);border-radius:10px;padding:12px;text-align:center;">
+          <div style="font-size:9px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">
+            TOTAL · ${summary.totalEvents} event
+            <br><span style="color:var(--teal);font-size:9px;font-weight:800;letter-spacing:.05em">
+              ${summary.mode==='nett'?'📊 NETT (÷1.21)':'💰 GROSS'}
+            </span>
+          </div>
+          <div style="font-family:'DM Mono',monospace;font-size:16px;font-weight:800;color:var(--teal)">${fmtRp(summary.totalAll)}</div>
+        </div>
+      </div>
+
+      <!-- Instructions -->
+      <div style="background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.18);
+        border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:11px;
+        color:var(--muted);line-height:1.8;">
+        <strong style="color:var(--gold)">Cara pakai:</strong><br>
+        1. Klik tombol <strong style="color:var(--teal)">📋 Copy JSON</strong> di bawah<br>
+        2. Buka <strong>hotel_revenue.html</strong> → pilih view <strong>🔮 Estimasi All Revenue</strong><br>
+        3. Paste di kotak <strong>Onhand Banquet (JSON)</strong> → klik <strong>✓ Parse JSON</strong>
+      </div>
+
+      <!-- JSON preview -->
+      <div style="font-size:9px;color:var(--dim);margin-bottom:6px;letter-spacing:.08em;text-transform:uppercase">
+        JSON Preview (${Math.round(json.length/1024*10)/10} KB):
+      </div>
+      <textarea id="bnq-json-output" readonly
+        style="width:100%;height:80px;background:var(--surface);border:1px solid var(--border2);
+        color:var(--teal);border-radius:10px;padding:10px 12px;font-size:9px;
+        font-family:'DM Mono',monospace;resize:none;outline:none;line-height:1.5;"
+        >${json.substring(0,300)}...</textarea>
+
+      <!-- Action buttons -->
+      <div style="display:flex;gap:10px;margin-top:14px;">
+        <button id="bnq-copy-btn" onclick="doCopyBanquetJSON()"
+          style="flex:1;padding:11px;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;
+          background:rgba(20,184,166,.15);border:1.5px solid rgba(20,184,166,.4);color:var(--teal);
+          transition:all .2s;letter-spacing:.03em;">
+          📋 Copy JSON ke Clipboard
+        </button>
+        <button onclick="downloadBanquetJSON()"
+          style="padding:11px 18px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;
+          background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);color:var(--gold);
+          transition:all .2s;">
+          💾 Download .json
+        </button>
+      </div>
+      <div id="bnq-copy-status" style="font-size:11px;color:var(--green);margin-top:8px;min-height:16px;text-align:center;font-weight:600;"></div>
+    </div>`;
+
+  // Store json for copy/download
+  modal._json = json;
+  document.body.appendChild(modal);
+
+  // Close on backdrop click
+  modal.addEventListener('click', e=>{if(e.target===modal) modal.remove();});
+}
+
+function doCopyBanquetJSON(){
+  const modal = document.getElementById('bnq-export-modal');
+  if(!modal||!modal._json) return;
+  const status = document.getElementById('bnq-copy-status');
+  const btn = document.getElementById('bnq-copy-btn');
+
+  // Method 1: Clipboard API
+  if(navigator.clipboard&&window.isSecureContext){
+    navigator.clipboard.writeText(modal._json).then(()=>{
+      status.textContent = '✓ JSON berhasil di-copy! Buka hotel_revenue.html dan paste.';
+      btn.textContent = '✓ Copied!';
+      btn.style.background = 'rgba(16,185,129,.2)';
+      btn.style.borderColor = 'rgba(16,185,129,.4)';
+      btn.style.color = '#22f0a0';
+      setTimeout(()=>{
+        btn.textContent = '📋 Copy JSON ke Clipboard';
+        btn.style.background = 'rgba(20,184,166,.15)';
+        btn.style.borderColor = 'rgba(20,184,166,.4)';
+        btn.style.color = 'var(--teal)';
+      }, 3000);
+    }).catch(()=>_copyFallback(modal._json));
+  } else {
+    _copyFallback(modal._json);
+  }
+}
+
+function _copyFallback(json){
+  // Fallback: select textarea
+  const ta = document.getElementById('bnq-json-output');
+  if(ta){
+    // Replace preview with full JSON
+    ta.value = json;
+    ta.select();
+    ta.setSelectionRange(0,99999);
+    document.execCommand('copy');
+    const status = document.getElementById('bnq-copy-status');
+    status.textContent = '✓ Copied via selection! Buka hotel_revenue.html dan paste.';
+  }
+}
+
+function downloadBanquetJSON(){
+  const modal = document.getElementById('bnq-export-modal');
+  if(!modal||!modal._json) return;
+  const blob = new Blob([modal._json], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'banquet_onhand_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  document.getElementById('bnq-copy-status').textContent = '✓ File banquet_onhand.json berhasil didownload!';
+}
+</script>
+</body>
+</html>

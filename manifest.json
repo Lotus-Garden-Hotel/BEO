@@ -9,7 +9,10 @@
   "background_color": "#07070a",
   "theme_color": "#07070a",
   "lang": "id",
-  "categories": ["business", "productivity"],
+  "categories": [
+    "business",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='36' fill='%2307070a'/%3E%3Crect x='8' y='8' width='176' height='176' rx='30' fill='none' stroke='%23c9a84c' stroke-width='2' opacity='.3'/%3E%3Ctext x='96' y='118' text-anchor='middle' font-size='90' font-family='serif' fill='%23c9a84c'%3E%E2%97%86%3C/text%3E%3Ctext x='96' y='155' text-anchor='middle' font-size='18' font-family='sans-serif' fill='%23c9a84c' font-weight='700' letter-spacing='2'%3EVENUE%3C/text%3E%3C/svg%3E",
@@ -30,7 +33,12 @@
       "short_name": "Check Venue",
       "description": "Langsung cek ketersediaan venue",
       "url": "/BEO/venue",
-      "icons": [{ "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' rx='18' fill='%2307070a'/%3E%3Ctext x='48' y='64' text-anchor='middle' font-size='52' font-family='serif' fill='%23c9a84c'%3E%E2%97%86%3C/text%3E%3C/svg%3E", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' rx='18' fill='%2307070a'/%3E%3Ctext x='48' y='64' text-anchor='middle' font-size='52' font-family='serif' fill='%23c9a84c'%3E%E2%97%86%3C/text%3E%3C/svg%3E",
+          "sizes": "96x96"
+        }
+      ]
     }
   ]
 }

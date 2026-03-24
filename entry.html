@@ -3,6 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<!-- PWA -->
+<meta name="application-name" content="BEO Entry">
+<meta name="description" content="Form input booking banquet Lotus Garden Hotel">
+<meta name="theme-color" content="#080706">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BEO Entry">
+<link rel="manifest" href="manifest_entry.json">
   <title>LOTUS GARDEN HOTEL — Sales Edition</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1181,6 +1190,7 @@
         <!-- Role badge + Logout -->
         <span id="role-badge"></span>
         <div class="btn-icon btn-icon-logout" id="btn-logout" onclick="logoutUser()" title="Keluar" style="display:none">⎋</div>
+        <div class="btn-icon btn-icon-gold" id="btn-install-pwa-entry" onclick="installPWAEntry()" title="Install App" style="display:none;font-size:14px;">📲</div>
       </div>
 
       <!-- ── BARIS 2: SA Tools (SUPER_ADMIN only, hidden sampai login) ── -->
@@ -1994,10 +2004,13 @@ async function _gasRaw(params) {
   } finally { clearTimeout(timer); }
 }
 
-// [SEC-03] Semua request ke GAS otomatis inject idToken
+// [SEC-03] Semua request ke GAS otomatis inject idToken + year
 async function gas(params) {
   const idToken = await getIdToken();
-  const res     = await _gasRaw({ ...params, idToken });
+  // Auto-inject year: dari params.year → dari f-date → dari current year
+  const yr = params.year || _getEntryYear();
+  const inject = params.action === 'CHECK_ACCESS' ? {} : { year: yr };
+  const res = await _gasRaw({ ...params, ...inject, idToken });
 
   // [FIX] Auto-retry sekali jika GAS mengembalikan error auth.
   // Skenario mobile: app di-background → token di-cache 55 menit → saat dibuka lagi
@@ -2959,6 +2972,21 @@ function esc(str) {
 // Helper monthName (dipakai di submit/delete/force)
 function monthName(d) { return MONTHS[parseInt(d.split('-')[1],10)-1]; }
 
+// Helper: ambil tahun dari f-date field (YYYY-MM-DD) atau dari URL atau current year
+function _getEntryYear() {
+  const fdate = (document.getElementById('f-date')?.value||'').trim();
+  if (fdate && fdate.length >= 4) {
+    const y = parseInt(fdate.substring(0,4),10);
+    if (y >= 2024 && y <= 2099) return y;
+  }
+  // Fallback ke URL param prefill_year
+  try {
+    const py = new URLSearchParams(window.location.search).get('prefill_year');
+    if (py && /^\d{4}$/.test(py)) return parseInt(py,10);
+  } catch(_){}
+  return new Date().getFullYear();
+}
+
 // Preload badge on startup
 // [FIX] initAppData() dipanggil dari auth success — bukan window.load
 // window.load hanya setup config, tidak fetch data (karena user belum tentu login)
@@ -3009,6 +3037,7 @@ function applyUrlPrefill() {
     if (!rawDay && !rawVenue) return;
 
     // ── Hitung tanggal lengkap YYYY-MM-DD ──
+    const rawYear = params.get('prefill_year');
     let dateStr = '';
     if (rawDay) {
       const day = parseInt(rawDay, 10);
@@ -3019,7 +3048,10 @@ function applyUrlPrefill() {
           const mi = MONTHS.indexOf(rawMonth.toUpperCase().trim());
           if (mi >= 0) monthIdx = mi;
         }
-        const year = now.getFullYear();
+        // [MULTI-YEAR] gunakan prefill_year jika ada, fallback ke tahun sekarang
+        const year = (rawYear && /^\d{4}$/.test(rawYear))
+          ? parseInt(rawYear, 10)
+          : now.getFullYear();
         dateStr = year + '-'
           + String(monthIdx + 1).padStart(2, '0') + '-'
           + String(day).padStart(2, '0');
@@ -4431,6 +4463,36 @@ async function _doSaveMenuTemplate(customer, templateName, showFeedback) {
 }
 
 
+
+// ══ PWA — BEO Entry Service Worker + Install Prompt ══════════════
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/BEO/sw_entry.js', { scope: '/BEO/' })
+      .then(reg => { console.log('[SW Entry] OK', reg.scope); setInterval(() => reg.update(), 60*60*1000); })
+      .catch(e => console.warn('[SW Entry] fail:', e));
+  });
+}
+let _deferredPromptEntry = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredPromptEntry = e;
+  const btn = document.getElementById('btn-install-pwa-entry');
+  if (btn) btn.style.display = 'flex';
+});
+async function installPWAEntry() {
+  if (!_deferredPromptEntry) return;
+  _deferredPromptEntry.prompt();
+  const { outcome } = await _deferredPromptEntry.userChoice;
+  _deferredPromptEntry = null;
+  const btn = document.getElementById('btn-install-pwa-entry');
+  if (btn) btn.style.display = 'none';
+}
+window.addEventListener('appinstalled', () => {
+  _deferredPromptEntry = null;
+  const btn = document.getElementById('btn-install-pwa-entry');
+  if (btn) btn.style.display = 'none';
+  toast('✅ BEO Entry berhasil diinstall!', 'success', 3000);
+});
 </script>
 
 </body>

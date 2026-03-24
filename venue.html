@@ -84,6 +84,9 @@ body.light-mode #ctrl-bar{background:rgba(244,243,239,.97);}
 #ctrl-bar.hidden{transform:translateY(-100%);opacity:0;pointer-events:none;}
 .ctrl-sel{background:var(--surface);border:1px solid var(--border2);color:var(--text);
   border-radius:7px;padding:5px 8px;font-size:11px;font-weight:600;outline:none;cursor:pointer;}
+/* Year selector — styled gold to stand out */
+#sel-year{background:rgba(201,168,76,.1);border-color:rgba(201,168,76,.35);
+  color:var(--gold);font-weight:800;letter-spacing:.04em;}
 .vm-toggle{display:flex;gap:1px;background:var(--surface);border:1px solid var(--border2);border-radius:7px;padding:2px;}
 .vm-btn{padding:4px 10px;border-radius:5px;font-size:10px;font-weight:700;
   border:none;cursor:pointer;background:transparent;color:var(--muted);}
@@ -454,6 +457,10 @@ body.light-mode .bottom-bar{background:rgba(244,243,239,.97);}
     <button class="vm-btn active" id="vm-m" onclick="setVM('month')">Bulan</button>
     <button class="vm-btn" id="vm-r" onclick="setVM('range')">Range</button>
   </div>
+  <select class="ctrl-sel" id="sel-year" onchange="onYearChange()">
+    <option value="2026">2026</option>
+    <option value="2027">2027</option>
+  </select>
   <select class="ctrl-sel" id="sel-month" onchange="renderTable()">
     <option value="JANUARI">Januari</option><option value="FEBRUARI">Februari</option>
     <option value="MARET">Maret</option><option value="APRIL">April</option>
@@ -533,13 +540,15 @@ body.light-mode .bottom-bar{background:rgba(244,243,239,.97);}
 // ══ CONFIG ══
 const FB={apiKey:'AIzaSyCX0--DGM_tp_2y7hBbrGiMfeVyToVD4zM',authDomain:'banquet-dashboard-kediri.firebaseapp.com',projectId:'banquet-dashboard-kediri',storageBucket:'banquet-dashboard-kediri.firebasestorage.app',messagingSenderId:'716626784276',appId:'1:716626784276:web:4f7d4d51dace341d21b701'};
 // Use ENTRY GAS URL (has READ_MONTH action with live data)
-const GAS='https://script.google.com/macros/s/AKfycbyQTrvw2WtHV0zpItsVA2hG_02R0gscUrOua2rnOqw750PvT3PODSaO6LaM3HWUTXJi/exec';
+const GAS='https://script.google.com/macros/s/AKfycbx-yE5bs_ZgNeDvEKnXzUmqjV9ScUjQ0vgShnPGLDkSpOqUQlab9RI5nI8mRoeTZ9N0/exec';
 const MONTHS=['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'];
 const MNAMES=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 const MI={JANUARI:0,FEBRUARI:1,MARET:2,APRIL:3,MEI:4,JUNI:5,JULI:6,AGUSTUS:7,SEPTEMBER:8,OKTOBER:9,NOVEMBER:10,DESEMBER:11};
 const DS=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
 // Venue default — kolom selalu tampil meski belum ada booking (tidak bergantung data)
 const VENUES_DEFAULT=['Ball Room','Fox Steak House','Teratai Room','VIP Room'];
+// Tahun yang tersedia — sinkron dengan SPREADSHEETS di GAS
+const YEARS_AVAILABLE=[2026,2027];
 
 // ══ STATE ══
 let _auth,_prov,_av=false,_af=false;
@@ -604,10 +613,37 @@ function logoutUser(){_auth.signOut();_av=false;_af=false;_rows={};_venues=[];_t
 // ══ INIT ══
 function initDefaults(){
   const now=new Date();
+  const curYear=now.getFullYear();
+  // Set year selector — default tahun sekarang
+  const ySel=document.getElementById('sel-year');
+  if(ySel){
+    // Pastikan opsi tahun sekarang ada (tambah dinamis jika belum)
+    if(![...ySel.options].some(o=>o.value==curYear)){
+      const opt=document.createElement('option');
+      opt.value=curYear;opt.textContent=curYear;
+      ySel.insertBefore(opt,ySel.firstChild);
+    }
+    ySel.value=curYear;
+  }
   document.getElementById('sel-month').value=MONTHS[now.getMonth()]||'JANUARI';
-  const y=now.getFullYear(),m=now.getMonth();
+  const y=curYear,m=now.getMonth();
   document.getElementById('df').value=new Date(y,m,1).toISOString().slice(0,10);
   document.getElementById('dt').value=new Date(y,m+1,0).toISOString().slice(0,10);
+}
+
+// Helper: ambil tahun yang dipilih
+function getSelYear(){
+  const el=document.getElementById('sel-year');
+  return el?parseInt(el.value)||new Date().getFullYear():new Date().getFullYear();
+}
+
+// Saat year berubah: reload data dari spreadsheet yang berbeda
+async function onYearChange(){
+  _rows={};  // clear data lama
+  _venues=[...VENUES_DEFAULT]; // reset venues
+  _updateVenueDd();
+  renderTable();  // render kosong dulu
+  await loadData(); // load ulang dari spreadsheet tahun baru
 }
 
 // ══ GAS CALL (token cache — tidak force refresh tiap loadData) ══
@@ -620,7 +656,10 @@ async function getToken(forceRefresh=false){
 }
 async function gas(params){
   const tok=await getToken();
-  const url=GAS+'?'+new URLSearchParams({...params,idToken:tok,_t:Date.now()});
+  // Auto-inject year ke semua request kecuali CHECK_ACCESS (tidak butuh spreadsheet)
+  const yr=params.year||getSelYear();
+  const inject=params.action==='CHECK_ACCESS'?{}:{year:yr};
+  const url=GAS+'?'+new URLSearchParams({...params,...inject,idToken:tok,_t:Date.now()});
   const r=await fetch(url,{redirect:'follow',cache:'no-store'});
   return r.json();
 }
@@ -714,7 +753,7 @@ function getRange(){
   if(_vm==='month'){
     const key=document.getElementById('sel-month').value;
     const mi=MI[key]??0;
-    const yr=new Date().getFullYear();
+    const yr=getSelYear(); // gunakan tahun yang dipilih user
     return{from:new Date(yr,mi,1),to:new Date(yr,mi+1,0),months:[key]};
   }
   const f=document.getElementById('df').value;
@@ -757,7 +796,7 @@ function buildEvMap(days,months,stFilter,vFilter){
   months.forEach(mKey=>{
     const mRows=_rows[mKey]||[];
     const mi=MI[mKey]??0;
-    const yr=new Date().getFullYear();
+    const yr=getSelYear(); // tahun dari selector
     mRows.forEach(r=>{
       if(stFilter!=='ALL'&&r.status!==stFilter)return;
       const day=parseInt(r.day);if(!day||isNaN(day))return;
@@ -897,7 +936,7 @@ function renderTable(){
   // Summary
   const sum=document.getElementById('summary');
   sum.style.display='flex';
-  const label=_vm==='month'?MNAMES[MI[document.getElementById('sel-month').value]]+' '+new Date().getFullYear():document.getElementById('df').value+' – '+document.getElementById('dt').value;
+  const label=_vm==='month'?MNAMES[MI[document.getElementById('sel-month').value]]+' '+getSelYear():document.getElementById('df').value+' – '+document.getElementById('dt').value;
   sum.innerHTML=`<strong style="color:var(--text)">${label}</strong>
     <span style="color:var(--green);font-weight:700">✓ ${tK} kosong</span>
     ${tCF?`<span style="color:var(--amber);font-weight:700;animation:dbl 1.4s infinite">⚡ ${tCF} double booking</span>`:''}
@@ -995,10 +1034,12 @@ function openAvail(venue,day,dayStr,mKey){
 function closePopup(){document.getElementById('popup').classList.remove('show');}
 
 function goEntry(date,venue,month){
+  const yr=getSelYear();
   const base=window.location.href.replace(/[^\/]*$/,'');
   window.open(base+'entry.html?prefill_date='+encodeURIComponent(date)
     +'&prefill_venue='+encodeURIComponent(venue)
-    +'&prefill_month='+encodeURIComponent(month),'_blank');
+    +'&prefill_month='+encodeURIComponent(month)
+    +'&prefill_year='+encodeURIComponent(yr),'_blank');
 }
 
 // ══ UTILS ══
@@ -1085,7 +1126,7 @@ function openStatDrawer(type){
   document.getElementById('sd-count').textContent=
     cards.length+' item ditemukan · '+
     (document.getElementById('sel-month').style.display!=='none'
-      ? MNAMES[MI[document.getElementById('sel-month').value]]+' '+new Date().getFullYear()
+      ? MNAMES[MI[document.getElementById('sel-month').value]]+' '+getSelYear()
       : document.getElementById('df').value+' – '+document.getElementById('dt').value);
 
   if(!cards.length){
@@ -1104,7 +1145,7 @@ function openStatDrawer(type){
     if(c.type==='KOSONG'){
       // Vacant card → klik buka entry form kosong
       const mKey=MONTHS[d.getMonth()];
-      return`<div class="sdev sdev-vac" onclick="goEntry('${dn}','${c.venue}','${mKey}');closeStatDrawer()">
+      return`<div class="sdev sdev-vac" onclick="goEntry('${dn}','${esc(c.venue)}','${mKey}');closeStatDrawer()">
         <div class="sdev-top">
           <div class="sdev-name">${vIcon(c.venue)} ${esc(c.venue)}</div>
           <span class="sdev-badge tent">VACANT</span>
@@ -1155,10 +1196,12 @@ function closeStatDrawer(){
 // Buka entry.html dalam mode edit (venue + tanggal + bulan sudah terisi)
 function goEntryEdit(day,venue,month){
   const base=window.location.href.replace(/[^\/]*$/,'');
+  const yr=getSelYear();
   window.open(
     base+'entry.html?prefill_date='+encodeURIComponent(day)
     +'&prefill_venue='+encodeURIComponent(venue)
-    +'&prefill_month='+encodeURIComponent(month),
+    +'&prefill_month='+encodeURIComponent(month)
+    +'&prefill_year='+encodeURIComponent(yr),
     '_blank'
   );
 }
@@ -1168,7 +1211,7 @@ function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'
 // ══ PWA ══════════════════════════════════════════════════════════════
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('/BEO-Lotus-Garden-Hotel/sw.js',{scope:'/BEO-Lotus-Garden-Hotel/'})
+    navigator.serviceWorker.register('/BEO/sw.js',{scope:'/BEO/'})
       .then(reg=>{console.log('[SW] OK',reg.scope);setInterval(()=>reg.update(),60*60*1000);})
       .catch(e=>console.warn('[SW] fail:',e));
   });
