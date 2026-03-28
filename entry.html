@@ -350,6 +350,10 @@
     .s-confirm   { background:rgba(46,204,113,.08);  color:var(--green);  border:1px solid rgba(46,204,113,.2); }
     .s-none      { background:rgba(192,57,43,.08);   color:#e74c3c;        border:1px solid rgba(192,57,43,.2); }
     .s-done      { background:rgba(100,100,100,.08); color:#6b7280;        border:1px solid rgba(100,100,100,.2); }
+    .s-cancel    { background:rgba(248,113,113,.08); color:#f87171;        border:1px solid rgba(248,113,113,.2); }
+    .s-postpone  { background:rgba(251,146,60,.08);  color:#fb923c;        border:1px solid rgba(251,146,60,.2); }
+    .s-dipinjam  { background:rgba(45,212,191,.08);  color:#2dd4bf;        border:1px solid rgba(45,212,191,.2); }
+    .s-ns        { background:rgba(156,163,175,.08); color:#9ca3af;        border:1px solid rgba(156,163,175,.2); }
     mark.hl { background:rgba(201,168,76,.3); color:var(--gold2); border-radius:2px; padding:0 1px; }
 
     /* ── Force Venue slot cards ── */
@@ -820,6 +824,7 @@
     .cust-history-item.CANCEL   { border-color:rgba(231,76,60,.2);    background:rgba(231,76,60,.03); opacity:.6; }
     .cust-history-item.DIPINJAM { border-color:rgba(20,184,166,.25);  background:rgba(20,184,166,.03); }
     .cust-history-item.POSTPONE { border-color:rgba(249,115,22,.25);  background:rgba(249,115,22,.03); }
+    .cust-history-item.N\/S     { border-color:rgba(156,163,175,.2);  background:rgba(156,163,175,.03); opacity:.7; }
 
     .cust-item-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
     .cust-item-date { font-size:11px; font-weight:700; color:var(--gold); }
@@ -1937,7 +1942,7 @@ const DEFAULT_CFG = {
     "TINA"
   ],
   "brand": "LOTUS GARDEN HOTEL",
-  "version": "SALES EDITION BANQUET ENTRY",
+  "version": "SALES EDITION V.6.2",
   "dashboard": "https://lotus-garden-hotel.github.io/BEO/",
   "casePackage": "none",
   "caseSales": "title"
@@ -2671,10 +2676,14 @@ function _renderScannerResults() {
   let rows = _scanState.rows.filter(r => r.customer && r.customer.trim());
 
   // Filter status
-  if (sf === 'TENTATIVE') rows = rows.filter(r => (r.status||'').toUpperCase() === 'TENTATIVE');
-  else if (sf === 'CONFIRM') rows = rows.filter(r => (r.status||'').toUpperCase() === 'CONFIRM');
-  else if (sf === 'DONE')    rows = rows.filter(r => (r.status||'').toUpperCase() === 'DONE');
-  else if (sf === 'NONE')    rows = rows.filter(r => !(r.status||'').trim());
+  if      (sf === 'TENTATIVE') rows = rows.filter(r => (r.status||'').toUpperCase() === 'TENTATIVE');
+  else if (sf === 'CONFIRM')   rows = rows.filter(r => (r.status||'').toUpperCase() === 'CONFIRM');
+  else if (sf === 'DONE')      rows = rows.filter(r => (r.status||'').toUpperCase() === 'DONE');
+  else if (sf === 'CANCEL')    rows = rows.filter(r => (r.status||'').toUpperCase() === 'CANCEL');
+  else if (sf === 'POSTPONE')  rows = rows.filter(r => (r.status||'').toUpperCase() === 'POSTPONE');
+  else if (sf === 'DIPINJAM')  rows = rows.filter(r => (r.status||'').toUpperCase() === 'DIPINJAM');
+  else if (sf === 'N/S')       rows = rows.filter(r => (r.status||'').toUpperCase() === 'N/S');
+  else if (sf === 'NONE')      rows = rows.filter(r => !(r.status||'').trim());
   // ALL = semua status
 
   // Filter search (nama, venue, tanggal)
@@ -2711,8 +2720,14 @@ function _renderScannerResults() {
     const dNum   = r.day ? String(r.day).padStart(2,'0') : (r.dateLabel.match(/[0-9]+/)||['1'])[0].padStart(2,'0');
     const iso    = targetYr + '-' + mo + '-' + dNum;
     const st     = (r.status||'').toUpperCase();
-    const cls    = st==='TENTATIVE' ? 's-tentative' : st==='CONFIRM' ? 's-confirm'
-                 : st==='DONE' ? 's-done' : 's-none';
+    const cls    = st==='TENTATIVE' ? 's-tentative'
+                 : st==='CONFIRM'  ? 's-confirm'
+                 : st==='DONE'     ? 's-done'
+                 : st==='CANCEL'   ? 's-cancel'
+                 : st==='POSTPONE' ? 's-postpone'
+                 : st==='DIPINJAM' ? 's-dipinjam'
+                 : st==='N/S'      ? 's-ns'
+                 : 's-none';
     const rowNum = parseInt(r.row, 10) || 0;
     const srcBadge = r.source==='OVERFLOW'
       ? `<span style="font-size:8px;color:var(--gold);margin-left:4px">✦ OVF</span>` : '';
@@ -4157,22 +4172,25 @@ async function searchCustomer() {
         });
 
         // ── Kalkulasi statistik per customer ──
-        let totalRev = 0, totalPax = 0, doneC = 0, cancelC = 0;
+        let totalRev = 0, totalPax = 0, doneC = 0, cancelC = 0, postponeC = 0, dipinjamC = 0;
         const pkgCount = {};
         let lastBooking = '';
+        const NON_REVENUE = ['CANCEL','POSTPONE','DIPINJAM','N/S'];
 
         evts.forEach(r => {
           const status = (r.status || '').toUpperCase();
           const price  = parseFloat((r.price || '0').toString().replace(/[^0-9.]/g,'')) || 0;
           const pax    = parseFloat((r.pax   || '0').toString().replace(/[^0-9.]/g,'')) || 0;
-          if (status !== 'CANCEL') {
+          if (!NON_REVENUE.includes(status)) {
             // Heuristik: jika price < 5jt dan pax > 1 → kemungkinan harga per-pax
             const rev = (price > 0 && pax > 1 && price < 5000000) ? price * pax : price;
             totalRev += rev;
             totalPax += pax;
           }
-          if (status === 'DONE')   doneC++;
-          if (status === 'CANCEL') cancelC++;
+          if (status === 'DONE')     doneC++;
+          if (status === 'CANCEL')   cancelC++;
+          if (status === 'POSTPONE') postponeC++;
+          if (status === 'DIPINJAM') dipinjamC++;
           const pkg = (r.package || '').trim();
           if (pkg) pkgCount[pkg] = (pkgCount[pkg] || 0) + 1;
           if (!lastBooking && r.dateLabel) lastBooking = r.dateLabel;
@@ -4192,7 +4210,7 @@ async function searchCustomer() {
         <div style="margin-bottom:22px;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
             <span style="font-size:13px;font-weight:800;color:var(--gold);background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.25);padding:3px 12px;border-radius:20px;">${esc(cust.name)}</span>
-            <span style="font-size:9px;color:var(--dim);font-weight:600;">${totalEvt} booking · ${doneC} done · ${cancelC} cancel</span>
+            <span style="font-size:9px;color:var(--dim);font-weight:600;">${totalEvt} booking · ${doneC} done · ${cancelC} cancel${postponeC?` · ${postponeC} postpone`:''}${dipinjamC?` · ${dipinjamC} dipinjam`:''}</span>
           </div>
 
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px;">
