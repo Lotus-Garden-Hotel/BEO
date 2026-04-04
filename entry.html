@@ -1373,7 +1373,7 @@
   <div class="footer">
     <a id="ui-dashboard" href="#" target="_blank">◆ Open Dashboard ↗</a>
     <button onclick="openBEO()" id="btn-beo" style="flex:1;background:linear-gradient(135deg,#1e3a5f,#2d5a8e);border:1px solid rgba(100,160,255,.3);color:#7eb8ff;font-size:11px;font-weight:700;letter-spacing:.08em;padding:12px;border-radius:10px;cursor:pointer;">📄 BEO ↗</button>
-    <button onclick="openSendWA()" id="btn-send-wa" style="flex:1;background:linear-gradient(135deg,#0d3320,#1a5c38);border:1px solid rgba(37,211,102,.3);color:#25d366;font-size:11px;font-weight:700;letter-spacing:.08em;padding:12px;border-radius:10px;cursor:pointer;">📲 Kirim Dept</button>
+    <button onclick="openReportBanquet()" id="btn-report-bqt" style="flex:1;background:linear-gradient(135deg,#0d3320,#1a5c38);border:1px solid rgba(37,211,102,.3);color:#25d366;font-size:11px;font-weight:700;letter-spacing:.08em;padding:12px;border-radius:10px;cursor:pointer;">📊 Report Banquet</button>
   </div>
 
 <!-- ─── MENU TEMPLATE DRAWER ────────────────────────────────── -->
@@ -3879,6 +3879,14 @@ function buildWAPreview() {
     '━━━━━━━━━━━━━━━━━━━━━',
     '✅ Status  : ' + (d.status||'—'),
   ].filter(Boolean).join('\n');
+}
+
+function openReportBanquet() {
+  const d = val('f-date'); // "YYYY-MM-DD"
+  const month = d ? monthName(d) : '';
+  const base = 'https://lotus-garden-hotel.github.io/Report/report_bqt.html';
+  const url  = month ? base + '?month=' + encodeURIComponent(month) : base;
+  window.open(url, '_blank');
 }
 
 function openSendWA() {
