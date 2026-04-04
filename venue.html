@@ -371,6 +371,53 @@ body.light-mode .bottom-bar{background:rgba(244,243,239,.97);}
   cursor:pointer;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);color:var(--green);}
 .btn-add:active{opacity:.75;}
 
+/* ══ VENUE ORDER POPUP ═════════════════════════════════════════════ */
+#venue-order-overlay{
+  position:fixed;inset:0;z-index:800;
+  background:rgba(0,0,0,.72);backdrop-filter:blur(8px);
+  display:none;align-items:center;justify-content:center;padding:16px;
+}
+#venue-order-overlay.show{display:flex;}
+#venue-order-box{
+  background:var(--card);border:1px solid var(--border2);
+  border-radius:20px;width:100%;max-width:360px;
+  animation:slideUp .22s ease both;
+}
+.vo-head{
+  padding:16px 18px 12px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.vo-title{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:700;color:var(--gold);}
+.vo-sub{font-size:9px;color:var(--dim);margin-top:2px;letter-spacing:.04em;}
+.vo-x{background:none;border:none;color:var(--dim);font-size:18px;cursor:pointer;padding:2px 6px;}
+.vo-body{padding:14px 18px;}
+.vo-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+.vo-item{
+  display:flex;align-items:center;gap:10px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:11px;padding:11px 14px;
+  cursor:grab;user-select:none;transition:all .15s;
+}
+.vo-item:active{cursor:grabbing;}
+.vo-item.drag-over{border-color:var(--gold);background:rgba(201,168,76,.08);transform:scale(1.02);}
+.vo-item.dragging{opacity:.4;border-style:dashed;}
+.vo-handle{font-size:16px;color:var(--dim);flex-shrink:0;cursor:grab;}
+.vo-num{font-size:10px;font-weight:800;color:var(--gold);width:16px;text-align:center;flex-shrink:0;}
+.vo-name{font-size:13px;font-weight:700;flex:1;}
+.vo-foot{display:flex;gap:8px;}
+.vo-btn-save{
+  flex:1;padding:11px;border-radius:11px;font-size:12px;font-weight:800;cursor:pointer;
+  background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.35);color:var(--gold);
+  transition:all .15s;
+}
+.vo-btn-save:hover{background:rgba(201,168,76,.25);}
+.vo-btn-reset{
+  padding:11px 16px;border-radius:11px;font-size:12px;font-weight:700;cursor:pointer;
+  background:var(--surface);border:1px solid var(--border2);color:var(--muted);
+  transition:all .15s;
+}
+.vo-btn-reset:hover{border-color:var(--red);color:var(--red);}
+
 /* ══ STATS DRAWER ══════════════════════════════════════════════════ */
 #stats-overlay{
   position:fixed;inset:0;z-index:700;
@@ -462,6 +509,7 @@ body.light-mode .bottom-bar{background:rgba(244,243,239,.97);}
     <span class="sync-lbl" id="sync-lbl"></span>
     <button class="tb-btn" onclick="loadData()">↺</button>
     <button class="tb-btn" onclick="window.print()">🖨</button>
+    <button class="tb-btn" id="btn-venue-order" onclick="openVenueOrder()" title="Atur Urutan Venue" style="font-size:13px;">⚙</button>
     <button class="tb-btn" id="btn-theme" onclick="toggleTheme()">🌙</button>
     <button class="tb-btn" id="btn-install-pwa" onclick="installPWA()" title="Install App" style="display:none;background:rgba(201,168,76,.12);border-color:rgba(201,168,76,.4);color:var(--gold);font-size:13px;padding:4px 8px;">📲</button>
     <button class="tb-btn red" onclick="logoutUser()">⎋</button>
@@ -723,6 +771,19 @@ function _buildVenues(){
   const all=new Set(VENUES_DEFAULT);
   // Tambahkan venue lain yang ditemukan di data (venue baru yang belum di-default)
   Object.values(_rows).forEach(rows=>rows.forEach(r=>{if(r.venue&&r.venue.trim())all.add(r.venue.trim());}));
+
+  // Cek apakah ada urutan tersimpan di localStorage
+  try {
+    const saved = JSON.parse(localStorage.getItem('cv_venue_order') || '[]');
+    if (saved.length > 0) {
+      // Gabung: saved order dulu, sisanya di belakang (venue baru yang tidak ada di saved)
+      const remaining = [...all].filter(v => !saved.includes(v));
+      _venues = [...saved.filter(v => all.has(v)), ...remaining];
+      return;
+    }
+  } catch(_) {}
+
+  // Default: urutan VENUES_DEFAULT + sort untuk yang lain
   _venues=[...all].sort();
 }
 function _updateVenueDd(){
@@ -1260,6 +1321,86 @@ window.addEventListener('beforeinstallprompt',e=>{
   e.preventDefault();_deferredPrompt=e;
   const btn=document.getElementById('btn-install-pwa');if(btn)btn.style.display='flex';
 });
+// ══ VENUE ORDER — Drag & Drop ══════════════════════════════════════
+let _dragSrcIdx = null;
+
+function openVenueOrder() {
+  _renderVoList();
+  document.getElementById('venue-order-overlay').classList.add('show');
+}
+function closeVenueOrder(e) {
+  if (e.target === document.getElementById('venue-order-overlay')) closeVenueOrderDirect();
+}
+function closeVenueOrderDirect() {
+  document.getElementById('venue-order-overlay').classList.remove('show');
+}
+
+function _renderVoList() {
+  const list = document.getElementById('vo-list');
+  list.innerHTML = _venues.map((v, i) => `
+    <div class="vo-item" draggable="true" data-idx="${i}"
+      ondragstart="voDragStart(event,${i})"
+      ondragover="voDragOver(event,${i})"
+      ondrop="voDrop(event,${i})"
+      ondragleave="voDragLeave(event)"
+      ondragend="voDragEnd(event)">
+      <span class="vo-handle">⠿</span>
+      <span class="vo-num">${i + 1}</span>
+      <span class="vo-name">${esc(v)}</span>
+    </div>`).join('');
+}
+
+function voDragStart(e, idx) {
+  _dragSrcIdx = idx;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function voDragOver(e, idx) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.vo-item').forEach((el, i) => {
+    el.classList.toggle('drag-over', i === idx && i !== _dragSrcIdx);
+  });
+}
+function voDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+function voDrop(e, targetIdx) {
+  e.preventDefault();
+  if (_dragSrcIdx === null || _dragSrcIdx === targetIdx) return;
+  const moved = _venues.splice(_dragSrcIdx, 1)[0];
+  _venues.splice(targetIdx, 0, moved);
+  _dragSrcIdx = null;
+  _renderVoList();
+}
+function voDragEnd(e) {
+  _dragSrcIdx = null;
+  document.querySelectorAll('.vo-item').forEach(el => {
+    el.classList.remove('dragging', 'drag-over');
+  });
+}
+
+function saveVenueOrder() {
+  try { localStorage.setItem('cv_venue_order', JSON.stringify(_venues)); } catch(_) {}
+  closeVenueOrderDirect();
+  _updateVenueDd();
+  renderTable();
+  toast('✓ Urutan venue disimpan');
+}
+
+function resetVenueOrder() {
+  try { localStorage.removeItem('cv_venue_order'); } catch(_) {}
+  _venues = [...VENUES_DEFAULT];
+  const all = new Set(VENUES_DEFAULT);
+  Object.values(_rows).forEach(rows => rows.forEach(r => { if(r.venue&&r.venue.trim()) all.add(r.venue.trim()); }));
+  const extra = [...all].filter(v => !VENUES_DEFAULT.includes(v)).sort();
+  _venues = [...VENUES_DEFAULT, ...extra];
+  _renderVoList();
+  _updateVenueDd();
+  renderTable();
+  toast('↺ Urutan venue direset ke default');
+}
+
 async function installPWA(){
   if(!_deferredPrompt)return;
   _deferredPrompt.prompt();
@@ -1327,5 +1468,25 @@ async function getDeviceInfo() {
   return _cachedDeviceInfo;
 }
 </script>
+<!-- ══ VENUE ORDER POPUP ════════════════════════════════════════════ -->
+<div id="venue-order-overlay" onclick="closeVenueOrder(event)">
+  <div id="venue-order-box">
+    <div class="vo-head">
+      <div>
+        <div class="vo-title">⚙ Atur Urutan Venue</div>
+        <div class="vo-sub">Drag & drop untuk ubah urutan kolom</div>
+      </div>
+      <button class="vo-x" onclick="closeVenueOrderDirect()">✕</button>
+    </div>
+    <div class="vo-body">
+      <div class="vo-list" id="vo-list"></div>
+      <div class="vo-foot">
+        <button class="vo-btn-save" onclick="saveVenueOrder()">✓ Simpan Urutan</button>
+        <button class="vo-btn-reset" onclick="resetVenueOrder()">↺ Reset</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
