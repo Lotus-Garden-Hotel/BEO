@@ -2263,7 +2263,18 @@ function fillForm(data, date, venue) {
   calcRevenue(); onStatusChange();
   // Update warna status saat form diisi dari cloud
   _updateStatusColor(val('f-status'));
-  show('btn-duplicate');
+  // Tampilkan duplikat — tapi disable jika status bukan TENTATIVE/CONFIRM
+  const _stNow = (val('f-status') || '').toUpperCase();
+  const _dupBtn = document.getElementById('btn-duplicate');
+  if (_dupBtn) {
+    _dupBtn.style.display  = '';
+    _dupBtn.classList.remove('hidden');
+    const _dupActive = ['TENTATIVE', 'CONFIRM'].includes(_stNow);
+    _dupBtn.disabled     = !_dupActive;
+    _dupBtn.style.opacity = _dupActive ? '1' : '0.35';
+    _dupBtn.style.cursor  = _dupActive ? 'pointer' : 'not-allowed';
+    _dupBtn.title         = _dupActive ? 'Duplikat booking ini' : 'Duplikat tidak tersedia untuk status ' + _stNow;
+  }
 }
 
 // ─── FEATURE 1: DUPLICATE BOOKING ──────────────────────────────────────────
@@ -2816,7 +2827,15 @@ function pickEventFromCard(el) {
     banner.textContent = '▲ TERISI — ' + (ds.status || 'TENTATIVE') + srcLabel;
 
     const btnDup = document.getElementById('btn-duplicate');
-    if (btnDup) btnDup.classList.remove('hidden');
+    const _stScanner = (ds.status || '').toUpperCase();
+    const _scanActive = ['TENTATIVE', 'CONFIRM'].includes(_stScanner);
+    if (btnDup) {
+      btnDup.classList.remove('hidden');
+      btnDup.disabled     = !_scanActive;
+      btnDup.style.opacity = _scanActive ? '1' : '0.35';
+      btnDup.style.cursor  = _scanActive ? 'pointer' : 'not-allowed';
+      btnDup.title         = _scanActive ? 'Duplikat booking ini' : 'Duplikat tidak tersedia untuk status ' + _stScanner;
+    }
     hide('btn-force');
     hideNewSlotBtn(); // [OVF] dari scanner — tidak perlu tombol slot 2
     onStatusChange(); calcRevenue(); // onStatusChange akan lock jika CONFIRM/DONE
@@ -2873,6 +2892,25 @@ function onStatusChange() {
 
   // Warna select berubah sesuai status
   _updateStatusColor(s);
+
+  // ── Sync disable Slot 2 & Duplikat sesuai status ──
+  const _stNow2 = (s || '').toUpperCase();
+  const _isActive = ['TENTATIVE', 'CONFIRM'].includes(_stNow2);
+
+  const _slotBtn = document.getElementById('btn-new-slot');
+  if (_slotBtn && _slotBtn.style.display !== 'none') {
+    _slotBtn.disabled     = !_isActive;
+    _slotBtn.style.opacity = _isActive ? '1' : '0.35';
+    _slotBtn.style.cursor  = _isActive ? 'pointer' : 'not-allowed';
+    _slotBtn.title         = _isActive ? 'Buat Booking Slot 2' : 'Slot 2 tidak tersedia untuk status ' + _stNow2;
+  }
+  const _dupBtn2 = document.getElementById('btn-duplicate');
+  if (_dupBtn2 && _dupBtn2.style.display !== 'none') {
+    _dupBtn2.disabled     = !_isActive;
+    _dupBtn2.style.opacity = _isActive ? '1' : '0.35';
+    _dupBtn2.style.cursor  = _isActive ? 'pointer' : 'not-allowed';
+    _dupBtn2.title         = _isActive ? 'Duplikat booking ini' : 'Duplikat tidak tersedia untuk status ' + _stNow2;
+  }
 }
 
 function _updateStatusColor(s) {
@@ -2911,7 +2949,23 @@ function unlockUpdate() {
 // ─── [OVF] SLOT 2 — Buat booking baru di venue yang sudah terisi ───────────
 function showNewSlotBtn() {
   const btn = document.getElementById('btn-new-slot');
-  if (btn) btn.style.display = 'block';
+  if (!btn) return;
+  const st = (val('f-status') || '').toUpperCase();
+  const activeStatuses = ['TENTATIVE', 'CONFIRM'];
+  if (activeStatuses.includes(st)) {
+    btn.style.display   = 'block';
+    btn.disabled        = false;
+    btn.style.opacity   = '1';
+    btn.style.cursor    = 'pointer';
+    btn.title           = 'Buat Booking Slot 2 di venue yang sama';
+  } else if (st) {
+    // Status tidak aktif → tampil tapi disabled
+    btn.style.display   = 'block';
+    btn.disabled        = true;
+    btn.style.opacity   = '0.35';
+    btn.style.cursor    = 'not-allowed';
+    btn.title           = 'Slot 2 tidak tersedia untuk status ' + st;
+  }
 }
 
 function hideNewSlotBtn() {
