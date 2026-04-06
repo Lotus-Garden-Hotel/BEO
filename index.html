@@ -345,7 +345,7 @@
         }
 
         const GAS_URL    = 'https://script.google.com/macros/s/AKfycbx-yE5bs_ZgNeDvEKnXzUmqjV9ScUjQ0vgShnPGLDkSpOqUQlab9RI5nI8mRoeTZ9N0/exec';
-        const TIMEOUT_MS = 12000;
+        const TIMEOUT_MS = 20000; // GAS cold start bisa 15-20 detik
 
         async function gasRaw(params) {
             const ctrl = new AbortController();
@@ -385,35 +385,41 @@
             try {
                 const idToken = await user.getIdToken(true);
 
-                let res;
+                let res = null;
                 try {
                     res = await gasRaw({ action: 'CHECK_ACCESS', idToken });
                 } catch(netErr) {
-                    // Koneksi gagal (timeout/offline) — JANGAN signOut
-                    if (errEl) { errEl.textContent = '⚠ Tidak dapat terhubung ke server. Periksa internet lalu refresh halaman.'; errEl.style.display = 'block'; }
+                    // GAS timeout / offline — tetap izinkan masuk jika Firebase auth berhasil
+                    // (GAS akan verifikasi token di setiap READ/WRITE berikutnya)
+                    console.warn('[Dashboard] CHECK_ACCESS gagal, fallback ke Firebase auth:', netErr.message);
+                    res = null;
+                }
+
+                // Jika GAS menolak karena email tidak terdaftar — blokir
+                if (res && !res.ok && res.msg && res.msg.includes('tidak terdaftar')) {
+                    firebase.auth().signOut();
+                    if (errEl) { errEl.textContent = '⚠ Akun tidak diizinkan akses sistem ini.'; errEl.style.display = 'block'; }
                     _authInFlight = false;
                     return;
                 }
 
-                if (res.ok && res.allowed) {
-                    // ✅ Diizinkan
-                    _authVerified = true;
-                    _cachedToken = idToken; _tokenFetchedAt = Date.now();
-                    window._userRole = res.role || 'STAFF'; // simpan role
-                    applyRoleUI(res.role || 'STAFF');
-                    if (errEl) errEl.style.display = 'none';
-                    gate.style.transform = 'translateY(-100%)';
-                    setTimeout(() => { gate.style.display = 'none'; handleInit(); }, 500);
-
-                } else if (res.msg && res.msg.includes('tidak terdaftar')) {
-                    // ❌ Email tidak ada di whitelist GAS — signOut sah
+                // Jika GAS OK dan role STAFF — blokir
+                if (res && res.ok && res.allowed && res.role === 'STAFF') {
                     firebase.auth().signOut();
-                    if (errEl) { errEl.textContent = '⚠ Akun tidak diizinkan akses sistem ini.'; errEl.style.display = 'block'; }
-
-                } else {
-                    // ❌ Respons tidak dikenal / GAS error — JANGAN signOut
-                    if (errEl) { errEl.textContent = '⚠ Verifikasi gagal (' + (res.msg||'unknown') + '). Refresh halaman.'; errEl.style.display = 'block'; }
+                    if (errEl) { errEl.textContent = '⚠ Akses ditolak. Dashboard hanya untuk Manager & Admin.'; errEl.style.display = 'block'; }
+                    _authInFlight = false;
+                    return;
                 }
+
+                // Semua kondisi lain (GAS OK, GAS timeout, error lain) — izinkan masuk
+                _authVerified = true;
+                _cachedToken = idToken; _tokenFetchedAt = Date.now();
+                const role = (res && res.role) ? res.role : 'MANAGER';
+                window._userRole = role;
+                applyRoleUI(role);
+                if (errEl) errEl.style.display = 'none';
+                gate.style.transform = 'translateY(-100%)';
+                setTimeout(() => { gate.style.display = 'none'; handleInit(); }, 500);
 
             } catch(unexpectedErr) {
                 // Error tak terduga — kalau user masih ada di Firebase, biarkan masuk
