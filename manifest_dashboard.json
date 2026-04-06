@@ -2,14 +2,17 @@
   "name": "BEO Dashboard — Lotus Garden",
   "short_name": "BEO Dashboard",
   "description": "Dashboard Informasi Banquet Lotus Garden Hotel",
-  "start_url": "/index.html",
-  "scope": "/",
+  "start_url": "/BEO/",
+  "scope": "/BEO/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#020617",
   "theme_color": "#020617",
   "lang": "id",
-  "categories": ["business", "productivity"],
+  "categories": [
+    "business",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='36' fill='%23020617'/%3E%3Crect x='8' y='8' width='176' height='176' rx='30' fill='none' stroke='%236366f1' stroke-width='2' opacity='.3'/%3E%3Ctext x='96' y='118' text-anchor='middle' font-size='90' font-family='serif' fill='%236366f1'%3E%E2%97%86%3C/text%3E%3Ctext x='96' y='158' text-anchor='middle' font-size='16' font-family='sans-serif' fill='%236366f1' font-weight='700' letter-spacing='1'%3EDASHBOARD%3C/text%3E%3C/svg%3E",
@@ -29,8 +32,13 @@
       "name": "Buka Dashboard",
       "short_name": "Dashboard",
       "description": "Langsung buka dashboard banquet",
-      "url": "/index.html",
-      "icons": [{ "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' rx='18' fill='%23020617'/%3E%3Ctext x='48' y='64' text-anchor='middle' font-size='52' font-family='serif' fill='%236366f1'%3E%E2%97%86%3C/text%3E%3C/svg%3E", "sizes": "96x96" }]
+      "url": "/BEO/",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' rx='18' fill='%23020617'/%3E%3Ctext x='48' y='64' text-anchor='middle' font-size='52' font-family='serif' fill='%236366f1'%3E%E2%97%86%3C/text%3E%3C/svg%3E",
+          "sizes": "96x96"
+        }
+      ]
     }
   ]
 }

@@ -5,7 +5,7 @@
 const CACHE_NAME = 'beo-dashboard-v1';
 
 const PRECACHE = [
-  '/index.html',
+  '/BEO/',
   'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap',
 ];
 
@@ -51,7 +51,7 @@ self.addEventListener('fetch', event => {
           caches.open(CACHE_NAME).then(c => c.put(event.request, res.clone()));
           return res;
         })
-        .catch(() => caches.match(event.request) || caches.match('/index.html'))
+        .catch(() => caches.match(event.request) || caches.match('/BEO/'))
     );
     return;
   }

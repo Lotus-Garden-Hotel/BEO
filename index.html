@@ -1257,7 +1257,7 @@
 // ══ PWA — BEO Dashboard Service Worker + Install Prompt ══════════
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw_dashboard.js', { scope: '/' })
+    navigator.serviceWorker.register('/BEO/sw_dashboard.js', { scope: '/BEO/' })
       .then(reg => {
         console.log('[SW Dashboard] OK', reg.scope);
         setInterval(() => reg.update(), 60 * 60 * 1000);
