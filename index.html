@@ -4,6 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Dashboard Information - BANQUET LOTUS GARDEN HOTEL</title>
+
+    <!-- Favicon SVG inline — tidak perlu file terpisah -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23020617'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='18' font-family='serif' fill='%236366f1'%3E%E2%97%86%3C/text%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='36' fill='%23020617'/%3E%3Ctext x='90' y='118' text-anchor='middle' font-size='96' font-family='serif' fill='%236366f1'%3E%E2%97%86%3C/text%3E%3C/svg%3E">
+
+    <!-- PWA -->
+    <meta name="application-name" content="BEO Dashboard">
+    <meta name="description" content="Dashboard Informasi Banquet Lotus Garden Hotel">
+    <meta name="theme-color" content="#020617">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="BEO Dashboard">
+    <link rel="manifest" href="manifest_dashboard.json">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -222,6 +236,7 @@
         <div class="flex gap-2">
             <button onclick="toggleNightMode()" id="night-btn" class="btn-top bg-slate-800 border border-slate-700" title="Mode Malam">🌙</button>
             <button onclick="openWAHistory()" class="btn-top" style="background:rgba(37,211,102,.1);border:1px solid rgba(37,211,102,.25);color:#25d366;font-size:15px;" title="History Pengiriman WA">📬</button>
+            <button id="btn-install-pwa-dash" onclick="installPWADash()" title="Install sebagai App" style="display:none;width:34px;height:34px;border-radius:10px;background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.35);color:#818cf8;font-size:15px;align-items:center;justify-content:center;cursor:pointer;">📲</button>
             <button onclick="logoutManual()" class="btn-top btn-logout" title="Keluar dari Sistem">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
             </button>
@@ -1237,5 +1252,40 @@
 
       </div>
     </div>
+
+<script>
+// ══ PWA — BEO Dashboard Service Worker + Install Prompt ══════════
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw_dashboard.js', { scope: '/' })
+      .then(reg => {
+        console.log('[SW Dashboard] OK', reg.scope);
+        setInterval(() => reg.update(), 60 * 60 * 1000);
+      })
+      .catch(e => console.warn('[SW Dashboard] fail:', e));
+  });
+}
+let _deferredPromptDash = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredPromptDash = e;
+  const btn = document.getElementById('btn-install-pwa-dash');
+  if (btn) btn.style.display = 'flex';
+});
+async function installPWADash() {
+  if (!_deferredPromptDash) return;
+  _deferredPromptDash.prompt();
+  const { outcome } = await _deferredPromptDash.userChoice;
+  _deferredPromptDash = null;
+  const btn = document.getElementById('btn-install-pwa-dash');
+  if (btn) btn.style.display = 'none';
+}
+window.addEventListener('appinstalled', () => {
+  _deferredPromptDash = null;
+  const btn = document.getElementById('btn-install-pwa-dash');
+  if (btn) btn.style.display = 'none';
+  console.log('[PWA] Dashboard installed');
+});
+</script>
 </body>
 </html>
