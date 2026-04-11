@@ -143,16 +143,6 @@ body {
 }
 .topbar-brand span { font-size:10px; color:var(--muted); font-family:'DM Sans',sans-serif; margin-left:8px; letter-spacing:.1em; text-transform:uppercase; }
 .topbar-controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-/* Year selector — gold accent */
-#sel-year {
-  background:rgba(201,168,76,.1);
-  border-color:rgba(201,168,76,.4);
-  color:var(--gold);
-  font-weight:800;
-  letter-spacing:.04em;
-  min-width:70px;
-}
-#sel-year:focus { border-color:var(--gold2); }
 .ctrl-select {
   background:var(--card); border:1px solid var(--border2); color:var(--text);
   border-radius:8px; padding:6px 10px; font-size:11px; font-family:'DM Sans',sans-serif;
@@ -287,6 +277,20 @@ body {
 .lb-bar-wrap { width:80px; }
 .lb-bar-track { height:4px; background:rgba(255,255,255,.06); border-radius:2px; overflow:hidden; }
 .lb-bar-fill { height:100%; border-radius:2px; background:linear-gradient(90deg,var(--gold),var(--gold2)); }
+/* ── LEADERBOARD BUDGET ROW ── */
+.lb-row-budget {
+  display:block; padding:14px 16px;
+  background:var(--surface); border:1px solid var(--border); border-radius:12px;
+}
+.lb-achieve-grid {
+  display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:10px;
+}
+.lb-mini-card {
+  background:rgba(255,255,255,.04); border:1px solid var(--border);
+  border-radius:8px; padding:8px 10px;
+}
+.lb-mini-lbl { font-size:8px; color:var(--dim); letter-spacing:.1em; text-transform:uppercase; margin-bottom:3px; }
+.lb-mini-val { font-size:13px; font-weight:800; font-family:'DM Mono',monospace; line-height:1.2; }
 
 /* ── DETAIL TABLE ── */
 .tbl-controls { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; align-items:center; }
@@ -354,6 +358,67 @@ table.detail-tbl { width:100%; border-collapse:collapse; font-size:11px; }
 }
 .budget-save-btn:hover { background:rgba(201,168,76,.25); }
 .budget-status { font-size:10px; color:var(--green); margin-top:8px; min-height:16px; }
+
+/* ── ACTUAL VS BUDGET GAP CARDS ── */
+.actvbud-grid {
+  display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;
+  margin-bottom:16px; margin-top:4px;
+}
+@media(max-width:900px) { .actvbud-grid { grid-template-columns:1fr; } }
+@media(max-width:600px) { .actvbud-grid { grid-template-columns:1fr; } }
+
+.actvbud-card {
+  background:var(--card); border:1px solid var(--border); border-radius:14px;
+  padding:18px 18px 14px; position:relative; overflow:hidden;
+  transition:transform .2s, box-shadow .2s;
+}
+.actvbud-card:hover { transform:translateY(-2px); box-shadow:0 6px 24px rgba(0,0,0,.25); }
+.actvbud-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+}
+.actvbud-card.gold::before  { background:linear-gradient(90deg,var(--gold),var(--gold2)); }
+.actvbud-card.green::before { background:linear-gradient(90deg,var(--green),#82e0aa); }
+.actvbud-card.red::before   { background:linear-gradient(90deg,var(--red),#f1948a); }
+.actvbud-card.amber::before { background:linear-gradient(90deg,var(--amber),#f8c471); }
+
+.actvbud-lbl {
+  font-size:9px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--dim); margin-bottom:10px;
+}
+.actvbud-pct {
+  font-size:36px; font-weight:800; line-height:1.1; margin-bottom:6px;
+  font-family:'DM Mono',monospace;
+}
+.actvbud-pct.gold  { color:var(--gold); }
+.actvbud-pct.green { color:var(--green); }
+.actvbud-pct.red   { color:var(--red); }
+.actvbud-pct.amber { color:var(--amber); }
+
+.actvbud-row {
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:11px; color:var(--muted); margin-top:4px; line-height:1.6;
+}
+.actvbud-row strong { color:var(--text); font-weight:600; }
+.actvbud-badge {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700;
+  margin-top:10px;
+}
+.actvbud-badge.green { background:rgba(46,204,113,.12); color:var(--green); }
+.actvbud-badge.red   { background:rgba(231,76,60,.12);  color:var(--red); }
+.actvbud-badge.amber { background:rgba(243,156,18,.12); color:var(--amber); }
+
+.actvbud-bar-wrap { margin-top:12px; }
+.actvbud-bar-track {
+  height:5px; background:rgba(255,255,255,.06); border-radius:3px; overflow:hidden;
+}
+.actvbud-bar-fill { height:5px; border-radius:3px; transition:width .6s ease; }
+
+/* GAP column in monthly table */
+.gap-positive { color:var(--green); font-weight:700; }
+.gap-negative { color:var(--red);   font-weight:700; }
+.gap-zero     { color:var(--dim);   font-weight:400; }
+th.th-gap     { color:var(--red) !important; font-weight:800; }
 
 /* ── CANVAS CHARTS ── */
 .canvas-wrap { position:relative; width:100%; }
@@ -511,10 +576,6 @@ body.light-mode .hm-cell.lv5     { background:rgba(140,100,20,1);   color:#fff; 
         <button id="btn-nett"  onclick="setRevenueMode('nett')"  style="padding:5px 12px;border-radius:6px;font-size:11px;font-weight:700;border:none;cursor:pointer;background:var(--gold);color:#000;transition:all .2s;">Nett</button>
         <button id="btn-gross" onclick="setRevenueMode('gross')" style="padding:5px 12px;border-radius:6px;font-size:11px;font-weight:700;border:none;cursor:pointer;background:transparent;color:var(--muted);transition:all .2s;">Gross</button>
       </div>
-      <select class="ctrl-select" id="sel-year" onchange="onYearChange()" title="Pilih Tahun">
-        <option value="2026">2026</option>
-        <option value="2027">2027</option>
-      </select>
       <select class="ctrl-select" id="sel-month" onchange="onFilterChange()">
         <option value="ALL">Semua Bulan</option>
         <option value="JANUARI">Januari</option>
@@ -595,15 +656,19 @@ const GAS_URL = (function() {
 const MONTHS = ["JANUARI","FEBRUARI","MARET","APRIL","MEI","JUNI",
                 "JULI","AGUSTUS","SEPTEMBER","OKTOBER","NOVEMBER","DESEMBER"];
 const MONTH_SHORT = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agt","Sep","Okt","Nov","Des"];
-// Multi-year: tambah tahun baru di sini jika perlu
-const REPORT_YEARS = [2026, 2027];
+
+// ── Budget split per sales — ubah di sini untuk adjustment ke depan ──
+// Key = nama sales UPPERCASE, value = porsi dari total budget bulanan (0–1)
+const SALES_BUDGET_SPLIT = {
+  'DWI':  0.60,
+  'TINA': 0.40,
+};
 
 // ── State ──
 let _idToken   = '';
 let _reportData = null;   // { JANUARI:{events,revenue,pax,count,...}, ... }
 let _budgetData = null;   // [{ bulan, targetRevenue, targetEvents, targetPax }, ...]
 let _selMonth  = 'ALL';
-let _selYear   = new Date().getFullYear(); // default tahun sekarang
 let _revenueMode = 'nett'; // 'nett' atau 'gross'
 let _onhandMode  = false;  // true = tampilkan hanya CONFIRM & TENTATIVE
 const VAT = 1.21; // PPN 11% → sebenarnya 1.11, tapi pakai 1.21 sesuai request
@@ -666,11 +731,7 @@ _auth.onAuthStateChanged(async user => {
     try {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 10000); // 10s timeout
-      const _diR = await getDeviceInfo();
-      const url  = GAS_URL + '?' + new URLSearchParams({
-        action:'CHECK_ACCESS', idToken, from:'report',
-        ip:_diR.ip, browser:_diR.browser, os:_diR.os, device:_diR.device
-      });
+      const url  = GAS_URL + '?' + new URLSearchParams({ action:'CHECK_ACCESS', idToken, from:'report' });
       const resp = await fetch(url, { redirect:'follow', signal: ctrl.signal });
       clearTimeout(timer);
       res = await resp.json();
@@ -706,33 +767,7 @@ _auth.onAuthStateChanged(async user => {
     document.getElementById('topbar-user').textContent = user.email || '';
     errEl.textContent = '';
     applyStoredTheme();
-    // Set year selector to current year
-    const ySel2 = document.getElementById('sel-year');
-    if (ySel2) {
-      _selYear = new Date().getFullYear();
-      // Add current year option if not exists
-      if (![...ySel2.options].some(o => parseInt(o.value) === _selYear)) {
-        const opt = document.createElement('option');
-        opt.value = _selYear; opt.textContent = _selYear;
-        ySel2.insertBefore(opt, ySel2.firstChild);
-      }
-      ySel2.value = _selYear;
-    }
     await loadAll();
-    // ── Baca ?month= dari URL (dikirim dari entry.html / tombol Report Banquet) ──
-    const _urlMonth = new URLSearchParams(window.location.search).get('month');
-    if (_urlMonth) {
-      const selM = document.getElementById('sel-month');
-      if (selM) {
-        // Cari option yang cocok (case-insensitive)
-        const opt = [...selM.options].find(o => o.value.toUpperCase() === _urlMonth.toUpperCase());
-        if (opt) {
-          selM.value = opt.value;
-          _selMonth  = opt.value;
-          renderAll();
-        }
-      }
-    }
   } catch(e) {
     if (_auth.currentUser) {
       _authVerified = true;
@@ -786,15 +821,13 @@ function showLoading(txt) {
 function hideLoading() { document.getElementById('loading').classList.add('hide'); }
 
 async function gas(params) {
-  // Auto-inject year ke semua request kecuali CHECK_ACCESS
-  const inject = params.action === 'CHECK_ACCESS' ? {} : { year: _selYear };
-  const url = GAS_URL + '?' + new URLSearchParams({ ...params, ...inject, idToken: _idToken });
+  const url = GAS_URL + '?' + new URLSearchParams({ ...params, idToken: _idToken });
   const res = await fetch(url, { redirect:'follow' });
   return res.json();
 }
 
 async function loadAll() {
-  showLoading('Memuat report ' + _selYear + '...');
+  showLoading('Memuat report data...');
   try {
     _idToken = await _auth.currentUser.getIdToken(true);
     const [repRes, budRes] = await Promise.all([
@@ -815,15 +848,6 @@ async function loadAll() {
 function onFilterChange() {
   _selMonth = document.getElementById('sel-month').value;
   if (_reportData) renderAll();
-}
-
-// Ganti tahun → clear data lama → reload dari spreadsheet baru
-async function onYearChange() {
-  const ySel = document.getElementById('sel-year');
-  _selYear = parseInt(ySel.value) || new Date().getFullYear();
-  _reportData = null;
-  _budgetData = null;
-  await loadAll();
 }
 
 // ── ONHAND TOGGLE ────────────────────────────────────────────────
@@ -954,8 +978,126 @@ function renderKPI() {
         <div class="kpi-val">${cancel}</div>
         <div class="kpi-sub">${count + cancel > 0 ? Math.round(cancel/(count+cancel)*100) : 0}% cancellation rate</div>
       </div>
-    </div>`;
+    </div>
+    ${renderActVsBudCards(revenue, budgetRev, _selMonth)}`;
   return sec;
+}
+
+// ── ACTUAL VS BUDGET GAP CARDS ─────────────────────────────────
+function renderActVsBudCards(revenue, budgetRev, selMonth) {
+  if (!budgetRev || budgetRev === 0) return '';
+
+  // ── Hitung Achievement ──
+  const achPct   = budgetRev > 0 ? parseFloat((revenue / budgetRev * 100).toFixed(2)) : 0;
+  const gap      = revenue - budgetRev;   // negatif = kurang
+  const gapAbs   = Math.abs(gap);
+  const gapPct   = parseFloat((Math.abs(gap) / budgetRev * 100).toFixed(2));
+  const isOver   = gap >= 0;
+
+  // ── Sisa hari bulan ini (otomatis hari ini) ──
+  const now      = new Date();
+  const yr       = now.getFullYear();
+  const mo       = now.getMonth();   // 0-based
+  const today    = now.getDate();
+  const daysInMo = new Date(yr, mo + 1, 0).getDate();
+  const remain   = Math.max(daysInMo - today, 0);
+
+  // Hanya tampilkan needed/day jika filter bulan = bulan aktif atau ALL
+  const MONTH_IDX = {
+    'JANUARI':0,'FEBRUARI':1,'MARET':2,'APRIL':3,'MEI':4,'JUNI':5,
+    'JULI':6,'AGUSTUS':7,'SEPTEMBER':8,'OKTOBER':9,'NOVEMBER':10,'DESEMBER':11
+  };
+  const isCurMonth = selMonth === 'ALL' ||
+    (MONTH_IDX[selMonth] !== undefined && MONTH_IDX[selMonth] === mo);
+  const neededDay = (!isOver && remain > 0 && isCurMonth) ? gapAbs / remain : 0;
+
+  // ── Warna & label ──
+  const achColor  = isOver ? 'green' : achPct >= 70 ? 'amber' : 'red';
+  const gapColor  = isOver ? 'green' : 'red';
+  const cardColor = isOver ? 'green' : achPct >= 70 ? 'amber' : 'red';
+
+  // ── Card 1: Actual vs Budget ──
+  const card1 = `
+    <div class="actvbud-card ${cardColor}">
+      <div class="actvbud-lbl">📊 Actual vs Budget</div>
+      <div class="actvbud-pct ${achColor}">${achPct.toFixed(2)}%</div>
+      <div class="actvbud-row">
+        <span>Actual</span>
+        <strong>${fmtRpFull(revenue)}</strong>
+      </div>
+      <div class="actvbud-row">
+        <span>Budget</span>
+        <strong>${fmtRpFull(budgetRev)}</strong>
+      </div>
+      <span class="actvbud-badge ${achColor}">
+        ${isOver ? '▲ Melampaui target' : achPct >= 70 ? '▼ Mendekati target' : '▼ Di bawah target'}
+      </span>
+      <div class="actvbud-bar-wrap">
+        <div class="actvbud-bar-track">
+          <div class="actvbud-bar-fill" style="width:${Math.min(achPct,100)}%;background:${isOver?'var(--green)':achPct>=70?'var(--amber)':'var(--red)'}"></div>
+        </div>
+      </div>
+    </div>`;
+
+  // ── Card 2: Variance / GAP ──
+  const card2 = `
+    <div class="actvbud-card ${gapColor}">
+      <div class="actvbud-lbl">📉 Variance / GAP</div>
+      <div class="actvbud-pct ${gapColor}">${isOver ? '+' : '−'} ${fmtRp(gapAbs)}</div>
+      <div class="actvbud-row">
+        <span>GAP Rp</span>
+        <strong class="${gapColor}">${isOver ? '+' : '−'}${fmtRpFull(gapAbs)}</strong>
+      </div>
+      <div class="actvbud-row">
+        <span>GAP %</span>
+        <strong class="${gapColor}">${isOver ? '+' : '−'}${gapPct.toFixed(2)}% dari budget</strong>
+      </div>
+      <span class="actvbud-badge ${gapColor}">
+        ${isOver ? '✓ Surplus budget' : '✗ Belum tercapai'}
+      </span>
+    </div>`;
+
+  // ── Card 3: Kebutuhan/Hari ──
+  let card3 = '';
+  if (isOver) {
+    card3 = `
+    <div class="actvbud-card green">
+      <div class="actvbud-lbl">📅 Kebutuhan Revenue/Hari</div>
+      <div class="actvbud-pct green">—</div>
+      <div class="actvbud-row"><span>Status</span><strong>Budget sudah tercapai</strong></div>
+      <div class="actvbud-row"><span>Surplus</span><strong class="green">${fmtRpFull(gapAbs)}</strong></div>
+      <span class="actvbud-badge green">✓ Target selesai</span>
+    </div>`;
+  } else if (!isCurMonth) {
+    card3 = `
+    <div class="actvbud-card amber">
+      <div class="actvbud-lbl">📅 Kebutuhan Revenue/Hari</div>
+      <div class="actvbud-pct amber">—</div>
+      <div class="actvbud-row"><span>Info</span><strong>Pilih bulan berjalan</strong></div>
+      <div class="actvbud-row"><span>Total kurang</span><strong class="red">${fmtRpFull(gapAbs)}</strong></div>
+      <span class="actvbud-badge amber">Bulan tidak aktif</span>
+    </div>`;
+  } else if (remain === 0) {
+    card3 = `
+    <div class="actvbud-card amber">
+      <div class="actvbud-lbl">📅 Kebutuhan Revenue/Hari</div>
+      <div class="actvbud-pct red">${fmtRp(gapAbs)}</div>
+      <div class="actvbud-row"><span>Status</span><strong>Bulan sudah berakhir</strong></div>
+      <div class="actvbud-row"><span>GAP Final</span><strong class="red">${fmtRpFull(gapAbs)}</strong></div>
+      <span class="actvbud-badge red">Bulan berakhir</span>
+    </div>`;
+  } else {
+    card3 = `
+    <div class="actvbud-card red">
+      <div class="actvbud-lbl">📅 Kebutuhan Revenue/Hari</div>
+      <div class="actvbud-pct red">${fmtRp(neededDay)}</div>
+      <div class="actvbud-row"><span>Per hari</span><strong class="red">${remain} hari tersisa</strong></div>
+      <div class="actvbud-row"><span>Total kurang</span><strong class="red">${fmtRpFull(gapAbs)}</strong></div>
+      <span class="actvbud-badge red">Target harian tambahan</span>
+    </div>`;
+  }
+
+  return `<div class="actvbud-grid fade-up">${card1}${card2}${card3}</div>`;
 }
 
 // ── SECTION 2: ON-HAND vs BUDGET ────────────────────────────────
@@ -1156,11 +1298,20 @@ function renderMonthlyTable() {
   const rows = MONTHS.map((m, i) => {
     const d = _reportData?.[m];
     const b = getBudgetFor(m);
-    const rev = d ? (d.events||[]).filter(e=>e.status!=='CANCEL').reduce((s,e)=>s+getRevenue(e.revenue),0) : 0;
-    const cnt = d?.count   || 0;
-    const pax = d?.pax     || 0;
+    const rev      = d ? (d.events||[]).filter(e=>e.status!=='CANCEL').reduce((s,e)=>s+getRevenue(e.revenue),0) : 0;
+    const cnt      = d?.count || 0;
+    const pax      = d?.pax   || 0;
     const budDisplay = getBudgetDisplay(b.targetRevenue);
-    const ach = pct(rev, budDisplay);
+    const ach      = pct(rev, budDisplay);
+
+    // Variance GAP
+    const gap      = rev - budDisplay;            // negatif = kurang
+    const gapAbs   = Math.abs(gap);
+    const gapPct   = budDisplay > 0 ? parseFloat((gapAbs / budDisplay * 100).toFixed(2)) : 0;
+    const isOver   = gap >= 0;
+    const gapCls   = budDisplay === 0 ? 'gap-zero' : isOver ? 'gap-positive' : 'gap-negative';
+    const gapSign  = budDisplay === 0 ? '' : isOver ? '+' : '−';
+
     const isActive = _selMonth === m || _selMonth === 'ALL';
     return `<tr style="opacity:${isActive?1:.4}">
       <td style="font-weight:700;color:var(--gold)">${MONTH_SHORT[i]}</td>
@@ -1173,6 +1324,12 @@ function renderMonthlyTable() {
       <td class="tbl-revenue">${fmtRp(rev)}</td>
       <td style="color:var(--muted)">${budDisplay > 0 ? fmtRp(budDisplay) : '—'}</td>
       <td style="font-weight:700;color:${ach>=100?'var(--done)':ach>=70?'var(--amber)':'var(--red)'}">${budDisplay>0?ach+'%':'—'}</td>
+      <td class="${gapCls}" style="font-size:11px;white-space:nowrap;">
+        ${budDisplay > 0
+          ? `${gapSign}${fmtRp(gapAbs)}<br>
+             <span style="font-size:9px;opacity:.8">${gapSign}${gapPct.toFixed(2)}%</span>`
+          : '—'}
+      </td>
     </tr>`;
   }).join('');
 
@@ -1182,6 +1339,7 @@ function renderMonthlyTable() {
         <thead><tr>
           <th>Bulan</th><th>Events</th><th>Confirm</th><th>Tentative</th><th>Done</th><th>Cancel</th>
           <th>Pax</th><th>Revenue</th><th>Budget</th><th>Achieve</th>
+          <th class="th-gap">Variance GAP</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
@@ -1273,25 +1431,93 @@ function renderSalesLeaderboard() {
   const sorted = Object.entries(salesMap).sort((a,b)=>b[1].rev-a[1].rev);
   const maxRev = sorted[0]?.[1]?.rev || 1;
 
-  const rows = sorted.map(([name,d],i) => `
-    <div class="lb-row">
-      <div class="lb-rank ${i===0?'r1':i===1?'r2':i===2?'r3':''}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</div>
-      <div class="lb-name">${esc(name)}</div>
-      <div class="lb-bar-wrap">
-        <div class="lb-bar-track"><div class="lb-bar-fill" style="width:${pct(d.rev,maxRev)}%"></div></div>
-      </div>
-      <div class="lb-stats">
-        <div class="lb-stat"><div class="lb-stat-val">${d.cnt}</div><div class="lb-stat-lbl">Events</div></div>
-        <div class="lb-stat"><div class="lb-stat-val" style="color:var(--gold)">${fmtRp(d.rev)}</div><div class="lb-stat-lbl">Revenue</div></div>
-        <div class="lb-stat"><div class="lb-stat-val">${d.pax}</div><div class="lb-stat-lbl">Pax</div></div>
-      </div>
-    </div>`).join('');
+  // ── Total budget periode terpilih ──
+  let totalBudget = 0;
+  if (_selMonth === 'ALL') {
+    MONTHS.forEach(m => { totalBudget += getBudgetDisplay(getBudgetFor(m).targetRevenue); });
+  } else {
+    totalBudget = getBudgetDisplay(getBudgetFor(_selMonth).targetRevenue);
+  }
+
+  // ── Label judul sesuai filter ──
+  const monthLabel = _selMonth === 'ALL'
+    ? 'Semua Bulan'
+    : _selMonth.charAt(0) + _selMonth.slice(1).toLowerCase() + ' 2026';
+
+  const rows = sorted.map(([name, d], i) => {
+    const splitKey  = name.toUpperCase();
+    const split     = SALES_BUDGET_SPLIT[splitKey];
+    const hasBudget = split !== undefined && totalBudget > 0;
+    const budgetSales = hasBudget ? totalBudget * split : 0;
+    const achieve   = hasBudget ? (d.rev / budgetSales * 100) : 0;
+    const achColor  = achieve >= 100 ? 'var(--green)' : achieve >= 70 ? 'var(--amber)' : 'var(--red)';
+    const rankClass = i===0?'r1':i===1?'r2':i===2?'r3':'';
+    const rankIcon  = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'';
+
+    if (hasBudget) {
+      const barW = Math.min(achieve, 100).toFixed(1);
+      return `
+        <div class="lb-row lb-row-budget">
+          <!-- nama + badge target -->
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="lb-rank ${rankClass}">${rankIcon}</div>
+            <div class="lb-name" style="font-size:13px;flex:1;">${esc(name)}</div>
+            <div style="font-size:9px;color:var(--dim);background:rgba(255,255,255,.05);
+              border:1px solid var(--border);border-radius:20px;padding:3px 10px;
+              letter-spacing:.06em;white-space:nowrap;">
+              Target ${Math.round(split*100)}% Budget
+            </div>
+          </div>
+          <!-- 3 mini card: Actual / Budget / Achieve -->
+          <div class="lb-achieve-grid">
+            <div class="lb-mini-card">
+              <div class="lb-mini-lbl">Actual</div>
+              <div class="lb-mini-val" style="color:var(--gold)">${fmtRp(d.rev)}</div>
+            </div>
+            <div class="lb-mini-card">
+              <div class="lb-mini-lbl">Budget</div>
+              <div class="lb-mini-val" style="color:var(--muted)">${fmtRp(budgetSales)}</div>
+            </div>
+            <div class="lb-mini-card">
+              <div class="lb-mini-lbl">Achieve</div>
+              <div class="lb-mini-val" style="color:${achColor}">${achieve.toFixed(2)}%</div>
+            </div>
+          </div>
+          <!-- progress bar achieve -->
+          <div style="margin-bottom:10px;">
+            <div style="height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;">
+              <div style="height:100%;width:${barW}%;background:${achColor};border-radius:3px;transition:width .6s ease;"></div>
+            </div>
+          </div>
+          <!-- Events & Pax -->
+          <div style="display:flex;gap:20px;">
+            <div class="lb-stat"><div class="lb-stat-val">${d.cnt}</div><div class="lb-stat-lbl">Events</div></div>
+            <div class="lb-stat"><div class="lb-stat-val">${d.pax.toLocaleString('id-ID')}</div><div class="lb-stat-lbl">Pax</div></div>
+          </div>
+        </div>`;
+    } else {
+      // Sales tanpa mapping budget → tampilan sederhana (original)
+      return `
+        <div class="lb-row">
+          <div class="lb-rank ${rankClass}">${rankIcon}</div>
+          <div class="lb-name">${esc(name)}</div>
+          <div class="lb-bar-wrap">
+            <div class="lb-bar-track"><div class="lb-bar-fill" style="width:${pct(d.rev,maxRev)}%"></div></div>
+          </div>
+          <div class="lb-stats">
+            <div class="lb-stat"><div class="lb-stat-val">${d.cnt}</div><div class="lb-stat-lbl">Events</div></div>
+            <div class="lb-stat"><div class="lb-stat-val" style="color:var(--gold)">${fmtRp(d.rev)}</div><div class="lb-stat-lbl">Revenue</div></div>
+            <div class="lb-stat"><div class="lb-stat-val">${d.pax.toLocaleString('id-ID')}</div><div class="lb-stat-lbl">Pax</div></div>
+          </div>
+        </div>`;
+    }
+  }).join('');
 
   const sec = document.createElement('div');
   sec.innerHTML = `
     <div class="section-hdr" style="margin-top:28px;">
       <div class="section-title">◆ Sales Leaderboard</div>
-      <div class="section-sub">Performance per Sales</div>
+      <div class="section-sub">${monthLabel}</div>
     </div>
     <div class="chart-card fade-up">
       <div class="leaderboard">${rows || '<div style="color:var(--dim);text-align:center;padding:20px;">Tidak ada data</div>'}</div>
@@ -1880,7 +2106,7 @@ async function _fetchBkDetail(ev, dateStr, fetchId, signal) {
   body.innerHTML = `
     <div class="bk-status-row">
       <span class="bk-status-badge ${d.status}">${d.status}</span>
-      <span class="bk-date-chip">📅 ${ev.bulan} ${ev.day}, ${_selYear}</span>
+      <span class="bk-date-chip">📅 ${ev.bulan} ${ev.day}, 2026</span>
       ${ovfBadge}
     </div>
 
@@ -1979,8 +2205,7 @@ function openEntryEdit(dateStr, venue, bulan) {
   const base = window.location.href.replace(/[^\/]*$/, '');
   const url  = base + 'entry.html?prefill_date=' + encodeURIComponent(dateStr)
                     + '&prefill_venue=' + encodeURIComponent(venue)
-                    + '&prefill_month=' + encodeURIComponent(bulan)
-                    + '&prefill_year=' + encodeURIComponent(_selYear);
+                    + '&prefill_month=' + encodeURIComponent(bulan);
   window.open(url, '_blank');
 }
 
@@ -2438,60 +2663,6 @@ function downloadBanquetJSON(){
   a.click();
   URL.revokeObjectURL(url);
   document.getElementById('bnq-copy-status').textContent = '✓ File banquet_onhand.json berhasil didownload!';
-}
-
-
-// ══ DEVICE & IP DETECTION (untuk monitoring IT) ═══════════════════
-async function _getDeviceInfo() {
-  const ua = navigator.userAgent;
-  // Browser
-  let browser = 'Unknown';
-  if (/Edg\//.test(ua))      browser = 'Edge ' + (ua.match(/Edg\/([\d.]+)/)||[])[1];
-  else if (/OPR\//.test(ua)) browser = 'Opera ' + (ua.match(/OPR\/([\d.]+)/)||[])[1];
-  else if (/Chrome\//.test(ua)) browser = 'Chrome ' + (ua.match(/Chrome\/([\d.]+)/)||[])[1];
-  else if (/Firefox\//.test(ua)) browser = 'Firefox ' + (ua.match(/Firefox\/([\d.]+)/)||[])[1];
-  else if (/Safari\//.test(ua))  browser = 'Safari ' + (ua.match(/Version\/([\d.]+)/)||[])[1];
-  // OS
-  let os = 'Unknown';
-  if (/Windows NT 10/.test(ua)) os = 'Windows 10/11';
-  else if (/Windows NT 6/.test(ua)) os = 'Windows 7/8';
-  else if (/Windows/.test(ua)) os = 'Windows';
-  else if (/Android (\d+)/.test(ua)) os = 'Android ' + ua.match(/Android ([\d.]+)/)[1];
-  else if (/iPhone OS ([\d_]+)/.test(ua)) os = 'iOS ' + ua.match(/iPhone OS ([\d_]+)/)[1].replace(/_/g,'.');
-  else if (/iPad.*OS ([\d_]+)/.test(ua)) os = 'iPadOS ' + ua.match(/OS ([\d_]+)/)[1].replace(/_/g,'.');
-  else if (/Mac OS X/.test(ua)) os = 'macOS';
-  else if (/Linux/.test(ua)) os = 'Linux';
-  // Device type
-  let device = 'Desktop';
-  if (/Mobi|Android|iPhone|iPod/.test(ua)) device = 'Mobile';
-  else if (/iPad|Tablet/.test(ua)) device = 'Tablet';
-  // Screen size info
-  device += ' ' + screen.width + 'x' + screen.height;
-  // IP — fetch dari ipapi.co (free, no key needed, 1000 req/day)
-  let ip = '—';
-  try {
-    const r = await Promise.race([
-      fetch('https://api.ipapi.is/?q=1', { cache:'no-store' }),
-      new Promise((_,rej) => setTimeout(()=>rej(new Error('timeout')), 3000))
-    ]);
-    const d = await r.json();
-    ip = d.ip || d.query || '—';
-  } catch(_) {
-    try {
-      const r2 = await fetch('https://api.ipify.org?format=json');
-      const d2 = await r2.json();
-      ip = d2.ip || '—';
-    } catch(_) {}
-  }
-  return { browser, os, device, ip };
-}
-
-// Cache device info agar tidak fetch berkali-kali
-let _cachedDeviceInfo = null;
-async function getDeviceInfo() {
-  if (_cachedDeviceInfo) return _cachedDeviceInfo;
-  _cachedDeviceInfo = await _getDeviceInfo();
-  return _cachedDeviceInfo;
 }
 </script>
 </body>
