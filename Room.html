@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SalesSync Portal v2.0</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0d1b3e;--navy-mid:#132252;--navy-light:#1a2f6b;
+  --gold:#c9943a;--gold-l:#e8b455;
+  --white:#f8f9fc;--text:#e2e8f4;--muted:#8898c0;
+  --ok:#34c87a;--err:#f05252;--warn:#f5a623;--info:#63b3ed;
+  --card:rgba(19,34,82,0.88);--border:rgba(201,148,58,0.2);
+  --r:14px;--sh:0 20px 60px rgba(0,0,0,0.5);
+  --tr:all 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse 80% 50% at 20% -10%,rgba(201,148,58,.12),transparent 60%),linear-gradient(160deg,#0d1b3e,#0a1428 50%,#091020);pointer-events:none;}
+body::after{content:'';position:fixed;inset:0;z-index:0;background-image:radial-gradient(rgba(201,148,58,.06) 1px,transparent 1px);background-size:32px 32px;pointer-events:none;}
+.wrap{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;}
+
+/* ── Header ── */
+.hdr{background:linear-gradient(135deg,rgba(13,27,62,.97),rgba(19,34,82,.97));border-bottom:1px solid var(--border);backdrop-filter:blur(20px);padding:0 20px;height:62px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;}
+.hdr-brand{display:flex;align-items:center;gap:11px;}
+.logo{width:36px;height:36px;background:linear-gradient(135deg,var(--gold),var(--gold-l));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--navy);}
+.hdr-brand h1{font-family:'Playfair Display',serif;font-size:17px;color:var(--white);}
+.hdr-brand h1 span{color:var(--gold-l);}
+.hdr-r{display:flex;align-items:center;gap:10px;}
+.badge-sales{display:none;align-items:center;gap:7px;background:rgba(201,148,58,.12);border:1px solid rgba(201,148,58,.3);border-radius:30px;padding:4px 12px;font-size:12.5px;font-weight:500;color:var(--gold-l);}
+.badge-sales .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);}
+#btn-lo{display:none;background:none;border:1px solid rgba(240,82,82,.4);color:var(--err);padding:5px 12px;border-radius:7px;font-size:11.5px;font-weight:500;cursor:pointer;font-family:inherit;}
+
+/* ── Main ── */
+.main{flex:1;padding:24px 18px;max-width:1200px;margin:0 auto;width:100%;}
+
+/* ── BUG FIX: Semua screen default hidden via inline style diset di JS ── */
+/* Tidak ada lagi ID selector yang bisa override class selector */
+.screen{display:none;}
+.screen.active{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.fadein{animation:fadeUp .35s ease both;}
+
+/* ── Config Banner ── */
+.cfg-banner{background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.3);border-radius:12px;padding:16px 20px;margin-bottom:18px;display:none;gap:12px;}
+.cfg-banner.show{display:flex;align-items:flex-start;}
+.cfg-banner-body{flex:1;}
+.cfg-title{font-size:13.5px;font-weight:700;color:var(--warn);}
+.cfg-msg{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.6;}
+.cfg-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.cfg-input{flex:1;min-width:240px;padding:9px 13px;font-size:12.5px;border-radius:8px;border:1px solid rgba(245,166,35,.4);background:rgba(245,166,35,.05);color:var(--white);font-family:inherit;outline:none;}
+.cfg-input:focus{border-color:var(--warn);box-shadow:0 0 0 3px rgba(245,166,35,.1);}
+.cfg-btn{background:rgba(245,166,35,.2);border:1px solid rgba(245,166,35,.4);color:var(--warn);padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
+.cfg-btn:hover{background:rgba(245,166,35,.3);}
+
+/* ── Loading ── */
+#s-load{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:55vh;gap:18px;}
+.spin{width:44px;height:44px;border:3px solid rgba(201,148,58,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .85s linear infinite;}
+.spin.sm{width:18px;height:18px;border-width:2px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.ld-txt{color:var(--muted);font-size:13.5px;}
+/* Skeleton */
+.skel{background:linear-gradient(90deg,rgba(255,255,255,.04) 0%,rgba(255,255,255,.1) 50%,rgba(255,255,255,.04) 100%);background-size:200% 100%;animation:skel 1.4s ease infinite;border-radius:8px;}
+@keyframes skel{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+
+/* ── Auth ── */
+#s-auth{display:flex;align-items:center;justify-content:center;min-height:68vh;}
+.auth-card{background:var(--card);border:1px solid var(--border);border-radius:22px;padding:42px 36px;width:100%;max-width:390px;backdrop-filter:blur(20px);box-shadow:var(--sh);text-align:center;}
+.auth-ico{width:64px;height:64px;margin:0 auto 20px;background:linear-gradient(135deg,rgba(201,148,58,.15),rgba(201,148,58,.04));border:1px solid rgba(201,148,58,.3);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:28px;}
+.auth-card h2{font-family:'Playfair Display',serif;font-size:22px;margin-bottom:4px;color:var(--white);}
+.auth-card p{color:var(--muted);font-size:12.5px;margin-bottom:24px;}
+.pin-row{display:flex;justify-content:center;gap:11px;margin:18px 0;}
+.pd{width:14px;height:14px;border-radius:50%;border:2px solid rgba(201,148,58,.4);background:transparent;transition:var(--tr);}
+.pd.on{background:var(--gold);border-color:var(--gold);box-shadow:0 0 10px rgba(201,148,58,.5);}
+.kp{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px;}
+.k{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;color:var(--white);font-size:18px;font-weight:500;padding:13px;cursor:pointer;transition:var(--tr);font-family:inherit;aspect-ratio:1;}
+.k:hover{background:rgba(201,148,58,.15);border-color:rgba(201,148,58,.3);}
+.k:active{transform:scale(.93);}
+.k.del{font-size:15px;color:var(--muted);}
+.k.ok{background:linear-gradient(135deg,var(--gold),var(--gold-l));color:var(--navy);font-weight:700;font-size:13px;}
+.auth-err{font-size:12px;color:var(--err);min-height:16px;margin-bottom:6px;}
+.shake{animation:shake .4s ease;}
+@keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-8px);}40%{transform:translateX(8px);}60%{transform:translateX(-5px);}80%{transform:translateX(5px);}}
+
+/* ── Tabs ── */
+.tabs{display:flex;gap:3px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:11px;padding:3px;margin-bottom:22px;}
+.tab{flex:1;padding:9px 10px;border:none;border-radius:8px;background:none;color:var(--muted);font-size:12px;font-weight:500;cursor:pointer;transition:var(--tr);font-family:inherit;display:flex;align-items:center;justify-content:center;gap:4px;}
+.tab.on{background:linear-gradient(135deg,var(--navy-light),var(--navy-mid));color:var(--gold-l);box-shadow:0 2px 12px rgba(0,0,0,.3);}
+
+/* ── Cards & Forms ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:22px;backdrop-filter:blur(20px);box-shadow:var(--sh);margin-bottom:14px;}
+.ct{font-size:11.5px;font-weight:700;color:var(--gold);letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--border);padding-bottom:11px;margin-bottom:16px;display:flex;align-items:center;gap:7px;}
+.fg{display:grid;gap:13px;}
+.fg.c2{grid-template-columns:1fr 1fr;}
+.fg.c3{grid-template-columns:1fr 1fr 1fr;}
+.fg.c4{grid-template-columns:1fr 1fr 1fr 1fr;}
+.f{display:flex;flex-direction:column;gap:5px;}
+.f.s2{grid-column:span 2;}
+.f.s3{grid-column:span 3;}
+.f.s4{grid-column:span 4;}
+label{font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;}
+input,select,textarea{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:9px;padding:10px 12px;color:var(--white);font-size:13px;font-family:inherit;transition:var(--tr);width:100%;outline:none;}
+input:focus,select:focus,textarea:focus{border-color:var(--gold);background:rgba(201,148,58,.06);box-shadow:0 0 0 3px rgba(201,148,58,.1);}
+select option{background:var(--navy-mid);}
+textarea{resize:vertical;min-height:64px;}
+input[readonly]{background:rgba(255,255,255,.02);color:var(--muted);cursor:default;}
+hr.div{border:none;border-top:1px solid var(--border);margin:14px 0;}
+
+/* ── Rate Box ── */
+.rate-box{border-radius:10px;padding:13px 15px;margin-top:7px;border:1px solid;}
+.rate-box.rb-c{background:linear-gradient(135deg,rgba(52,200,122,.08),rgba(52,200,122,.03));border-color:rgba(52,200,122,.3);}
+.rate-box.rb-r{background:linear-gradient(135deg,rgba(99,179,237,.08),rgba(99,179,237,.03));border-color:rgba(99,179,237,.3);}
+.rate-box.rb-e{background:linear-gradient(135deg,rgba(245,166,35,.08),rgba(245,166,35,.03));border-color:rgba(245,166,35,.3);}
+.rate-box.rb-m{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.08);}
+.rb-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;}
+.rtag{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:700;}
+.rtag-c{background:rgba(52,200,122,.15);color:var(--ok);}
+.rtag-r{background:rgba(99,179,237,.15);color:var(--info);}
+.rtag-e{background:rgba(245,166,35,.15);color:var(--warn);}
+.rtag-m{background:rgba(148,163,184,.1);color:var(--muted);}
+.rb-val{font-family:'Playfair Display',serif;font-size:21px;font-weight:700;color:var(--white);margin:3px 0;}
+.rb-val span{font-size:12px;font-weight:400;color:var(--muted);font-family:inherit;margin-left:4px;}
+.rb-meta{font-size:11px;color:var(--muted);display:flex;flex-wrap:wrap;gap:10px;margin-top:3px;}
+.rb-warn{font-size:11.5px;margin-top:7px;padding:6px 10px;border-radius:6px;}
+.rb-warn.w{background:rgba(245,166,35,.1);color:var(--warn);}
+.rb-load{display:flex;align-items:center;gap:8px;padding:8px;color:var(--muted);font-size:12.5px;}
+
+/* ── Autocomplete ── */
+.sw{position:relative;}
+.acd{position:absolute;top:calc(100% + 5px);left:0;right:0;z-index:300;background:var(--navy-mid);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:0 14px 44px rgba(0,0,0,.55);display:none;}
+.acd.on{display:block;}
+.ac-item{padding:11px 14px;cursor:pointer;transition:var(--tr);border-bottom:1px solid rgba(255,255,255,.04);}
+.ac-item:last-child{border-bottom:none;}
+.ac-item:hover{background:rgba(201,148,58,.1);}
+.ac-name{font-size:13.5px;font-weight:500;color:var(--white);}
+.ac-sub{font-size:11px;color:var(--muted);margin-top:2px;display:flex;gap:7px;flex-wrap:wrap;align-items:center;}
+.ac-stag{background:rgba(201,148,58,.15);color:var(--gold-l);padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;}
+.ac-new{padding:9px 14px;cursor:pointer;background:rgba(52,200,122,.07);border-top:1px solid rgba(52,200,122,.15);color:var(--ok);font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:7px;transition:var(--tr);}
+.ac-new:hover{background:rgba(52,200,122,.14);}
+.ac-empty{padding:12px 14px;color:var(--muted);font-size:12.5px;text-align:center;}
+
+/* ── Preview Bar ── */
+.prev-bar{background:linear-gradient(135deg,rgba(201,148,58,.1),rgba(201,148,58,.03));border:1px solid rgba(201,148,58,.22);border-radius:10px;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:10px;transition:var(--tr);}
+.prev-bar.hide{opacity:0;pointer-events:none;}
+.pv{text-align:center;}
+.pv-val{font-family:'Playfair Display',serif;font-size:19px;color:var(--gold-l);font-weight:700;}
+.pv-lbl{font-size:10.5px;color:var(--muted);margin-top:2px;}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 20px;border-radius:9px;border:none;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:var(--tr);}
+.btn-g{background:linear-gradient(135deg,var(--gold),#d4a030);color:var(--navy);width:100%;padding:13px;box-shadow:0 4px 20px rgba(201,148,58,.3);}
+.btn-g:hover{transform:translateY(-1px);box-shadow:0 6px 22px rgba(201,148,58,.4);}
+.btn-g:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.btn-s{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--text);}
+.btn-s:hover{background:rgba(255,255,255,.11);}
+.btn-d{background:rgba(240,82,82,.1);border:1px solid rgba(240,82,82,.3);color:var(--err);}
+.btn-d:hover{background:rgba(240,82,82,.18);}
+.btn-ok{background:rgba(52,200,122,.1);border:1px solid rgba(52,200,122,.3);color:var(--ok);}
+.btn-ok:hover{background:rgba(52,200,122,.18);}
+.sm{padding:6px 12px;font-size:11.5px;border-radius:7px;}
+.bsp{display:none;width:15px;height:15px;border:2px solid rgba(13,27,62,.3);border-top-color:var(--navy);border-radius:50%;animation:spin .8s linear infinite;}
+.btn-g.ld .bsp{display:block;}.btn-g.ld .bl{display:none;}
+
+/* ── History Table ── */
+.htbl-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;backdrop-filter:blur(20px);box-shadow:var(--sh);}
+.htbar{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.hflt{display:flex;gap:7px;flex-wrap:wrap;align-items:center;}
+.fs{padding:7px 10px;font-size:11.5px;border-radius:8px;min-width:110px;}
+.hs{padding:7px 11px;font-size:12.5px;min-width:140px;}
+.ts{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{background:rgba(13,27,62,.92);padding:10px 12px;text-align:left;color:var(--muted);font-weight:700;font-size:10px;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--text);vertical-align:middle;}
+tr:hover td{background:rgba(201,148,58,.04);}
+tr:last-child td{border-bottom:none;}
+
+/* ── Badges ── */
+.bg{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap;}
+.bg-tent{background:rgba(245,166,35,.15);color:var(--warn);}
+.bg-conf{background:rgba(52,200,122,.15);color:var(--ok);}
+.bg-canc{background:rgba(240,82,82,.15);color:var(--err);}
+.bg-ctr {background:rgba(52,200,122,.15);color:var(--ok);}
+.bg-rack{background:rgba(99,179,237,.15);color:var(--info);}
+.bg-man {background:rgba(148,163,184,.1);color:var(--muted);}
+.bg-corp{background:rgba(99,179,237,.15);color:#63b3ed;}
+.bg-gov {background:rgba(154,230,180,.15);color:#9ae6b4;}
+.bg-ta  {background:rgba(251,211,141,.15);color:#fbd38d;}
+.bg-ota {background:rgba(197,141,253,.15);color:#c58af9;}
+.bg-mice{background:rgba(252,129,129,.15);color:#fc8181;}
+.bg-soc {background:rgba(129,230,217,.15);color:#81e6d9;}
+.bg-fit {background:rgba(246,173,85,.15);color:#f6ad55;}
+.bg-whl {background:rgba(118,169,250,.15);color:#76a9fa;}
+.bg-arl {background:rgba(248,180,180,.15);color:#f8b4b4;}
+.bg-lng {background:rgba(134,239,172,.15);color:#86efac;}
+.bg-oth {background:rgba(148,163,184,.15);color:#94a3b8;}
+
+/* ── Analytics ── */
+.ag{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:13px;margin-bottom:18px;}
+.acard{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:17px;position:relative;overflow:hidden;cursor:default;}
+.acard.clickable{cursor:pointer;transition:var(--tr);}
+.acard.clickable:hover{border-color:rgba(201,148,58,.4);transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,0,0,.3);}
+.acard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r) var(--r) 0 0;}
+.c1::before{background:linear-gradient(90deg,#63b3ed,#4299e1);}
+.c2::before{background:linear-gradient(90deg,#9ae6b4,#48bb78);}
+.c3::before{background:linear-gradient(90deg,#fbd38d,#ed8936);}
+.c4::before{background:linear-gradient(90deg,#c58af9,#9f7aea);}
+.c5::before{background:linear-gradient(90deg,#fc8181,#e53e3e);}
+.al{font-size:10.5px;color:var(--muted);font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px;}
+.av{font-family:'Playfair Display',serif;font-size:24px;color:var(--white);font-weight:700;}
+.as{font-size:11px;color:var(--muted);margin-top:3px;}
+.cw{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px;box-shadow:var(--sh);margin-bottom:14px;}
+.cwtit{font-size:11.5px;font-weight:700;color:var(--gold);letter-spacing:1px;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;}
+.bar-row{display:flex;align-items:center;gap:9px;margin-bottom:10px;}
+.bar-lbl{width:105px;font-size:11.5px;color:var(--text);text-align:right;flex-shrink:0;}
+.bar-trk{flex:1;height:24px;background:rgba(255,255,255,.04);border-radius:6px;overflow:hidden;cursor:pointer;transition:var(--tr);}
+.bar-trk:hover{opacity:.85;}
+.bar-fill{height:100%;border-radius:6px;transition:width .8s cubic-bezier(.4,0,.2,1);display:flex;align-items:center;padding:0 10px;font-size:10px;font-weight:700;color:rgba(255,255,255,.9);min-width:32px;white-space:nowrap;}
+.bar-rev{width:90px;text-align:right;font-size:11.5px;color:var(--gold-l);flex-shrink:0;font-weight:600;}
+
+/* ── Segment Detail Panel ── */
+.seg-detail{background:var(--card);border:1px solid rgba(201,148,58,.35);border-radius:var(--r);padding:22px;box-shadow:var(--sh);margin-bottom:14px;}
+.sd-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+.sd-title{font-family:'Playfair Display',serif;font-size:20px;color:var(--white);}
+.sd-close{background:none;border:1px solid rgba(255,255,255,.1);color:var(--muted);padding:5px 12px;border-radius:7px;cursor:pointer;font-size:12px;font-family:inherit;}
+.sd-kpi{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:20px;}
+.kpi-box{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:13px;}
+.kpi-lbl{font-size:10.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;}
+.kpi-val{font-family:'Playfair Display',serif;font-size:20px;color:var(--gold-l);font-weight:700;}
+.kpi-sub{font-size:10.5px;color:var(--muted);margin-top:2px;}
+.sd-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.sd-section{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:16px;}
+.sd-sec-title{font-size:11px;font-weight:700;color:var(--gold);letter-spacing:.8px;text-transform:uppercase;margin-bottom:12px;}
+/* Monthly chart */
+.month-chart{display:flex;align-items:flex-end;gap:5px;height:80px;}
+.mc-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.mc-bar{width:100%;border-radius:3px 3px 0 0;min-height:3px;transition:height .6s ease;cursor:default;}
+.mc-bar:hover{opacity:.8;}
+.mc-lbl{font-size:9px;color:var(--muted);text-align:center;white-space:nowrap;}
+/* Rate type donut-like */
+.rt-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.rt-bar{flex:1;height:12px;background:rgba(255,255,255,.06);border-radius:6px;overflow:hidden;}
+.rt-fill{height:100%;border-radius:6px;}
+.rt-lbl{font-size:11.5px;color:var(--text);min-width:70px;}
+.rt-pct{font-size:11px;font-weight:700;color:var(--muted);min-width:32px;text-align:right;}
+/* SOB & customers */
+.item-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.item-row:last-child{border-bottom:none;}
+.item-name{font-size:12px;color:var(--text);}
+.item-val{font-size:11px;font-weight:700;color:var(--muted);}
+/* Room type mini bar */
+.rt-mini{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.rt-mini-bar{flex:1;height:10px;background:rgba(255,255,255,.06);border-radius:5px;overflow:hidden;}
+.rt-mini-fill{height:100%;border-radius:5px;}
+
+/* ── Sob Grid ── */
+.sob-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;}
+.sob-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;}
+.sob-ct{font-size:11.5px;font-weight:700;color:var(--gold-l);margin-bottom:10px;display:flex;justify-content:space-between;}
+
+/* ── Contracts Tab ── */
+.ctr-row{display:flex;align-items:center;gap:9px;padding:10px 13px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:9px;margin-bottom:7px;transition:var(--tr);}
+.ctr-row:hover{background:rgba(201,148,58,.05);}
+.ctr-room{font-size:13px;font-weight:600;color:var(--white);min-width:110px;}
+.ctr-rate{font-family:'Playfair Display',serif;font-size:15px;color:var(--gold-l);min-width:100px;}
+.ctr-period{font-size:11px;color:var(--muted);flex:1;}
+
+/* ── Toast ── */
+.toast-wrap{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.toast{display:flex;align-items:flex-start;gap:10px;background:var(--navy-mid);border:1px solid var(--border);border-radius:10px;padding:12px 15px;min-width:260px;max-width:350px;box-shadow:0 8px 32px rgba(0,0,0,.5);border-left-width:4px;pointer-events:all;}
+.toast.ok{border-left-color:var(--ok);}.toast.er{border-left-color:var(--err);}.toast.wn{border-left-color:var(--warn);}
+.ti{font-size:18px;flex-shrink:0;margin-top:1px;}
+.tt{font-size:13px;font-weight:600;color:var(--white);}
+.tm{font-size:11.5px;color:var(--muted);margin-top:2px;line-height:1.5;}
+@keyframes tin{from{opacity:0;transform:translateX(36px) scale(.92);}to{opacity:1;transform:translateX(0) scale(1);}}
+@keyframes tout{from{opacity:1;}to{opacity:0;transform:translateX(36px);}}
+
+/* ── Modal ── */
+.mo{position:fixed;inset:0;z-index:500;background:rgba(4,8,22,.82);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:14px;}
+.mo.on{display:flex;}
+.mb{background:var(--navy-mid);border:1px solid var(--border);border-radius:18px;padding:26px;width:100%;max-width:560px;box-shadow:var(--sh);animation:fadeUp .28s ease both;max-height:90vh;overflow-y:auto;}
+.mh{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.mt{font-family:'Playfair Display',serif;font-size:18px;color:var(--white);}
+.mx{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:7px;}
+.mx:hover{background:rgba(255,255,255,.08);color:var(--white);}
+.ma{display:flex;gap:8px;margin-top:16px;}
+.ma .btn{flex:1;}
+
+/* ── Empty State ── */
+.es{text-align:center;padding:44px 16px;color:var(--muted);}
+.ei{font-size:40px;margin-bottom:11px;}
+
+/* ── Responsive ── */
+@media(max-width:768px){
+  .main{padding:14px 12px;}
+  .fg.c2,.fg.c3,.fg.c4{grid-template-columns:1fr;}
+  .f.s2,.f.s3,.f.s4{grid-column:span 1;}
+  .auth-card{padding:30px 18px;}
+  .tab{font-size:10.5px;padding:7px 5px;}
+  .toast-wrap{bottom:12px;right:12px;left:12px;}
+  .toast{min-width:unset;width:100%;}
+  table{min-width:800px;}
+  .ag{grid-template-columns:1fr 1fr;}
+  .sd-grid{grid-template-columns:1fr;}
+}
+@media(min-width:769px) and (max-width:1024px){
+  .fg.c3,.fg.c4{grid-template-columns:1fr 1fr;}
+  .f.s3,.f.s4{grid-column:span 2;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hdr">
+  <div class="hdr-brand">
+    <div class="logo">S</div>
+    <h1>Sales<span>Sync</span> <small style="font-size:10px;color:var(--muted);font-family:inherit;font-weight:400">v2.0</small></h1>
+  </div>
+  <div class="hdr-r">
+    <div class="badge-sales" id="badge-sales"><span class="dot"></span><span id="badge-name">—</span></div>
+    <button id="btn-lo" onclick="doLogout()">↩ Logout</button>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- Config Banner -->
+  <div class="cfg-banner" id="cfg-banner">
+    <div style="font-size:22px;flex-shrink:0">⚙️</div>
+    <div class="cfg-banner-body">
+      <div class="cfg-title">Setup — Masukkan GAS Deployment URL</div>
+      <div class="cfg-msg">Paste URL dari Google Apps Script deployment Anda.<br>Format: <code style="color:var(--gold-l)">https://script.google.com/macros/s/AKfycb.../exec</code></div>
+      <div class="cfg-row">
+        <input class="cfg-input" type="text" id="gas-url-in" placeholder="https://script.google.com/macros/s/.../exec">
+        <button class="cfg-btn" onclick="saveGasUrl()">💾 Simpan & Hubungkan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ▸ LOADING -->
+  <div id="s-load" class="screen active">
+    <div class="spin"></div>
+    <p class="ld-txt" id="ld-txt">Menghubungkan ke server…</p>
+  </div>
+
+  <!-- ▸ AUTH -->
+  <div id="s-auth" class="screen">
+    <div class="auth-card fadein">
+      <div class="auth-ico">🔐</div>
+      <h2>Sales Login</h2>
+      <p>Pilih nama Anda, masukkan PIN 4 digit.</p>
+      <div class="f" style="text-align:left;margin-bottom:9px;">
+        <label>Nama Sales</label>
+        <select id="sel-sales"><option value="">— Pilih —</option></select>
+      </div>
+      <div class="pin-row"><div class="pd" id="pd0"></div><div class="pd" id="pd1"></div><div class="pd" id="pd2"></div><div class="pd" id="pd3"></div></div>
+      <div class="auth-err" id="auth-err"></div>
+      <div class="kp">
+        <button class="k" onclick="pk('1')">1</button><button class="k" onclick="pk('2')">2</button><button class="k" onclick="pk('3')">3</button>
+        <button class="k" onclick="pk('4')">4</button><button class="k" onclick="pk('5')">5</button><button class="k" onclick="pk('6')">6</button>
+        <button class="k" onclick="pk('7')">7</button><button class="k" onclick="pk('8')">8</button><button class="k" onclick="pk('9')">9</button>
+        <button class="k del" onclick="pdel()">⌫</button><button class="k" onclick="pk('0')">0</button><button class="k ok" onclick="psubmit()">✓</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ▸ DASHBOARD -->
+  <div id="s-dash" class="screen">
+    <div class="tabs">
+      <button class="tab on" onclick="goTab('in')"   id="tab-in">📝 Input</button>
+      <button class="tab"    onclick="goTab('rv')"   id="tab-rv">📋 Riwayat</button>
+      <button class="tab"    onclick="goTab('an')"   id="tab-an">📊 Segment</button>
+      <button class="tab"    onclick="goTab('ct')"   id="tab-ct">📄 Kontrak</button>
+    </div>
+
+    <!-- ══ INPUT BOOKING ══ -->
+    <div id="pane-in">
+      <div class="card">
+        <div class="ct">🏢 Customer</div>
+        <div class="fg c2">
+          <div class="f s2">
+            <label>Cari Nama Perusahaan</label>
+            <div class="sw">
+              <input type="text" id="fc-name" placeholder="Ketik min. 2 huruf…" autocomplete="off" oninput="onSearch(this.value)">
+              <div class="acd" id="acd-main"></div>
+            </div>
+          </div>
+          <div class="f"><label>Customer ID</label><input type="text" id="fc-id" readonly placeholder="Auto-terisi"></div>
+          <div class="f"><label>Contact Person</label><input type="text" id="fc-cp" placeholder="Nama PIC"></div>
+          <div class="f"><label>Nama Tamu</label><input type="text" id="fc-guest" placeholder="Tamu utama"></div>
+          <div class="f"><label>No. HP</label><input type="text" id="fc-ph" placeholder="08xx…"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ct">📅 Detail Booking</div>
+        <div class="fg c3">
+          <div class="f"><label>Check-In</label><input type="date" id="fi-ci" onchange="calcPrev()"></div>
+          <div class="f"><label>Check-Out</label><input type="date" id="fi-co" onchange="calcPrev()"></div>
+          <div class="f"><label>Tipe Kamar</label><select id="fi-rt" onchange="onRTChange()"><option value="">— Pilih —</option></select></div>
+          <div class="f"><label>Jumlah Kamar</label><input type="number" id="fi-rooms" min="1" value="1" oninput="calcPrev()"></div>
+          <div class="f"><label>Status</label><select id="fi-st"><option value="">— Pilih —</option></select></div>
+          <div class="f"><label>Market Segment</label><select id="fi-seg" onchange="calcPrev()"><option value="">— Pilih —</option></select></div>
+          <div class="f s3"><label>Source of Business</label><select id="fi-sob"><option value="">— Pilih —</option></select></div>
+        </div>
+        <hr class="div">
+        <div class="ct" style="border:none;padding:0;margin-bottom:11px;">💰 Room Rate</div>
+        <!-- Rate Box -->
+        <div class="rate-box rb-m" id="rate-box">
+          <div class="rb-hdr"><span class="rtag rtag-m">✏️ Manual Input</span><span style="font-size:10.5px;color:var(--muted)">Pilih Customer + Tipe Kamar untuk cek kontrak</span></div>
+        </div>
+        <div class="f" style="margin-top:11px;">
+          <label>Room Rate per Malam (Rp)</label>
+          <input type="number" id="fi-rate" min="0" placeholder="Masukkan rate…" oninput="calcPrev()">
+        </div>
+        <!-- Preview -->
+        <div class="prev-bar hide" id="prev-bar">
+          <div class="pv"><div class="pv-val" id="pv-rn">0</div><div class="pv-lbl">Room Nights</div></div>
+          <div class="pv"><div class="pv-val" id="pv-rm">0</div><div class="pv-lbl">Kamar</div></div>
+          <div class="pv"><div class="pv-val" id="pv-rv">Rp 0</div><div class="pv-lbl">Est. Revenue</div></div>
+          <div class="pv" id="pv-seg-w" style="display:none"><div class="pv-val" id="pv-seg" style="font-size:13px"></div><div class="pv-lbl">Segment</div></div>
+          <div class="pv"><div class="pv-val" id="pv-rt" style="font-size:12px">Manual</div><div class="pv-lbl">Rate Type</div></div>
+        </div>
+        <div class="f" style="margin-top:13px;"><label>Remarks</label><textarea id="fi-rem"></textarea></div>
+        <div style="margin-top:14px;">
+          <button class="btn btn-g" id="btn-sub" onclick="submitBooking()">
+            <div class="bsp"></div><span class="bl">💾 Simpan Booking</span>
+          </button>
+        </div>
+      </div>
+    </div><!-- /pane-in -->
+
+    <!-- ══ RIWAYAT ══ -->
+    <div id="pane-rv" style="display:none">
+      <div class="htbl-wrap">
+        <div class="htbar">
+          <div class="hflt">
+            <input type="text" class="hs" id="hs-kw" placeholder="🔍 Cari…" oninput="filtH()">
+            <select class="fs" id="fs-seg" onchange="filtH()"><option value="">Semua Segment</option></select>
+            <select class="fs" id="fs-sob" onchange="filtH()"><option value="">Semua SOB</option></select>
+            <select class="fs" id="fs-st"  onchange="filtH()"><option value="">Semua Status</option></select>
+            <select class="fs" id="fs-rt"  onchange="filtH()">
+              <option value="">Semua Rate</option>
+              <option value="Contract">Contract</option>
+              <option value="Rack">Rack</option>
+              <option value="Manual">Manual</option>
+            </select>
+          </div>
+          <button class="btn btn-s sm" onclick="loadH()">↻ Refresh</button>
+        </div>
+        <div id="h-loading" style="padding:22px;text-align:center;color:var(--muted);display:none"><div class="spin sm" style="margin:0 auto 9px;width:28px;height:28px;border-width:2px"></div>Memuat…</div>
+        <div class="ts">
+          <table>
+            <thead><tr>
+              <th>Booking ID</th><th>Tgl</th><th>Customer</th><th>CI</th><th>CO</th>
+              <th>Tipe</th><th style="text-align:right">Km</th><th style="text-align:right">RN</th>
+              <th style="text-align:right">Rate/mlm</th><th style="text-align:right">Revenue</th>
+              <th>Rate Type</th><th>Segment</th><th>SOB</th><th>Status</th><th>Aksi</th>
+            </tr></thead>
+            <tbody id="h-body">
+              <tr><td colspan="15"><div class="es"><div class="ei">📋</div><p>Klik Refresh untuk memuat data.</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div><!-- /pane-rv -->
+
+    <!-- ══ SEGMENT ANALYTICS ══ -->
+    <div id="pane-an" style="display:none">
+      <!-- Stat Cards -->
+      <div class="ag">
+        <div class="acard c1"><div class="al">Total Booking</div><div class="av" id="a-tbk">—</div></div>
+        <div class="acard c2"><div class="al">Total Revenue</div><div class="av" id="a-trv">—</div></div>
+        <div class="acard c3"><div class="al">Total Room Nights</div><div class="av" id="a-trn">—</div></div>
+        <div class="acard c4"><div class="al">Segment Terkuat</div><div class="av" id="a-top" style="font-size:15px">—</div><div class="as" id="a-toprv">—</div></div>
+        <div class="acard c5"><div class="al">Contract Rate Usage</div><div class="av" id="a-cpct">—</div></div>
+      </div>
+
+      <!-- Segment Detail Panel (hidden by default) -->
+      <div class="seg-detail" id="seg-detail" style="display:none">
+        <div class="sd-hdr">
+          <div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;font-weight:700">Detail Segment</div>
+            <div class="sd-title" id="sd-title">—</div>
+          </div>
+          <button class="sd-close" onclick="closeSegDetail()">✕ Tutup</button>
+        </div>
+        <!-- KPIs -->
+        <div class="sd-kpi" id="sd-kpi"></div>
+        <!-- Grid detail -->
+        <div class="sd-grid" id="sd-grid"></div>
+      </div>
+
+      <!-- Revenue Bar Chart — klik untuk drill down -->
+      <div class="cw">
+        <div class="cwtit">
+          <span>📊 Revenue per Segment <span style="font-size:10px;color:var(--muted);font-weight:400">(klik bar untuk detail)</span></span>
+          <button class="btn btn-s sm" onclick="loadAn()">↻ Refresh</button>
+        </div>
+        <div id="an-chart"><div class="es"><div class="ei">📊</div><p>Klik Refresh untuk memuat.</p></div></div>
+      </div>
+
+      <!-- SOB Breakdown -->
+      <div class="cw">
+        <div class="cwtit">🔗 Source of Business per Segment</div>
+        <div class="sob-grid" id="an-sob"><div class="es"><div class="ei">🔗</div><p>Refresh data.</p></div></div>
+      </div>
+    </div><!-- /pane-an -->
+
+    <!-- ══ KONTRAK ══ -->
+    <div id="pane-ct" style="display:none">
+      <div class="card">
+        <div class="ct">📄 Contract Rate per Customer</div>
+        <div class="f" style="margin-bottom:14px;">
+          <label>Cari Customer</label>
+          <div class="sw">
+            <input type="text" id="ct-kw" placeholder="Ketik nama perusahaan…" autocomplete="off" oninput="onCtrSearch(this.value)">
+            <div class="acd" id="acd-ctr"></div>
+          </div>
+        </div>
+        <div id="ctr-panel" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div style="font-size:13px;font-weight:600;color:var(--white)">Kontrak: <span id="ctr-co-name" style="color:var(--gold-l)"></span></div>
+            <button class="btn btn-ok sm" onclick="openAddCtr()">➕ Tambah Kontrak</button>
+          </div>
+          <div id="ctr-list"></div>
+        </div>
+      </div>
+    </div><!-- /pane-ct -->
+
+  </div><!-- /s-dash -->
+</main>
+</div><!-- /wrap -->
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<!-- Modal: Edit Booking -->
+<div class="mo" id="m-edit">
+  <div class="mb">
+    <div class="mh"><div class="mt">✏️ Edit Booking</div><button class="mx" onclick="closeMo('m-edit')">✕</button></div>
+    <input type="hidden" id="e-ri"><input type="hidden" id="e-bid"><input type="hidden" id="e-cid">
+    <div class="fg c2">
+      <div class="f s2"><label>Nama Perusahaan</label><input type="text" id="e-co"></div>
+      <div class="f"><label>Nama Tamu</label><input type="text" id="e-gu"></div>
+      <div class="f"><label>Status</label><select id="e-st"></select></div>
+      <div class="f"><label>Check-In</label><input type="date" id="e-ci"></div>
+      <div class="f"><label>Check-Out</label><input type="date" id="e-co2"></div>
+      <div class="f"><label>Tipe Kamar</label><select id="e-rt"></select></div>
+      <div class="f"><label>Jumlah Kamar</label><input type="number" id="e-rm" min="1"></div>
+      <div class="f"><label>Room Rate (Rp)</label><input type="number" id="e-rp" min="0"></div>
+      <div class="f"><label>Rate Type</label>
+        <select id="e-rtype"><option value="Contract">Contract</option><option value="Rack">Rack</option><option value="Manual">Manual</option></select>
+      </div>
+      <div class="f"><label>Contract Ref</label><input type="text" id="e-cref"></div>
+      <div class="f"><label>Market Segment</label><select id="e-seg"></select></div>
+      <div class="f"><label>Source of Business</label><select id="e-sob"></select></div>
+      <div class="f s2"><label>Remarks</label><textarea id="e-rem"></textarea></div>
+    </div>
+    <div class="ma">
+      <button class="btn btn-d sm" id="btn-del" onclick="delBooking()">🗑 Hapus</button>
+      <button class="btn btn-s sm" onclick="closeMo('m-edit')">Batal</button>
+      <button class="btn btn-g sm" id="btn-esave" onclick="saveEdit()" style="width:auto;padding:9px 18px;">
+        <div class="bsp" style="width:13px;height:13px;border-width:2px"></div><span class="bl">💾 Simpan</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: New Customer -->
+<div class="mo" id="m-nc">
+  <div class="mb" style="max-width:450px">
+    <div class="mh"><div class="mt">➕ Customer Baru</div><button class="mx" onclick="closeMo('m-nc')">✕</button></div>
+    <div class="fg c2">
+      <div class="f s2"><label>Nama Perusahaan *</label><input type="text" id="nc-co" placeholder="PT / CV …"></div>
+      <div class="f"><label>Contact Person</label><input type="text" id="nc-cp"></div>
+      <div class="f"><label>No. HP</label><input type="text" id="nc-ph"></div>
+      <div class="f"><label>Market Segment</label><select id="nc-seg"><option value="">— Pilih —</option></select></div>
+      <div class="f"><label>Default SOB</label><select id="nc-sob"><option value="">— Pilih —</option></select></div>
+    </div>
+    <div class="ma">
+      <button class="btn btn-s" onclick="closeMo('m-nc')">Batal</button>
+      <button class="btn btn-g" onclick="doSaveNC()" style="width:auto;padding:11px 20px;">✅ Simpan Customer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add Contract -->
+<div class="mo" id="m-ctr">
+  <div class="mb" style="max-width:470px">
+    <div class="mh"><div class="mt">📄 Tambah Kontrak Rate</div><button class="mx" onclick="closeMo('m-ctr')">✕</button></div>
+    <input type="hidden" id="ctr-cid">
+    <div class="fg c2">
+      <div class="f s2"><label>Perusahaan</label><input type="text" id="ctr-co" readonly style="color:var(--gold-l)"></div>
+      <div class="f"><label>Tipe Kamar</label><select id="ctr-rt"><option value="">— Pilih —</option></select></div>
+      <div class="f"><label>Contract Rate (Rp)</label><input type="number" id="ctr-rp" min="0"></div>
+      <div class="f"><label>Berlaku Mulai</label><input type="date" id="ctr-vf"></div>
+      <div class="f"><label>Berlaku Sampai</label><input type="date" id="ctr-vt"></div>
+      <div class="f s2"><label>Remarks</label><textarea id="ctr-rem" style="min-height:50px"></textarea></div>
+    </div>
+    <div class="ma">
+      <button class="btn btn-s" onclick="closeMo('m-ctr')">Batal</button>
+      <button class="btn btn-g" onclick="doSaveCtr()" style="width:auto;padding:11px 20px;">💾 Simpan Kontrak</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   CONFIG & API
+═══════════════════════════════════════════════════════════ */
+const GAS_KEY = 'ss_gas_url';
+const CFG_KEY = 'ss_cfg_cache';
+const CFG_TTL = 15 * 60 * 1000; // 15 menit cache
+
+let GAS_URL = localStorage.getItem(GAS_KEY) || '';
+let CONFIG  = {};
+let SESSION = { name:'', auth:false };
+let PIN     = '';
+let HIST    = [];
+let SRCH_T  = null, CSRCH_T = null;
+let CUR_RT  = 'Manual', CUR_CREF = '';
+let CTR_CUS = null;
+let NC_KEYWORD = ''; // keyword yang di-carry ke modal new customer
+
+/* ── gasCall: fetch ke GAS doPost ── */
+async function gasCall(action, params={}) {
+  if (!GAS_URL) throw new Error('GAS URL belum diset.');
+  const r = await fetch(GAS_URL, {
+    method:'POST',
+    headers:{'Content-Type':'text/plain'},
+    body: JSON.stringify({ action, ...params })
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ▸ BUG FIX #1 — showScreen
+   Masalah: ID selector (#screen-auth{display:flex}) punya
+   specificity lebih tinggi dari class selector (.screen{display:none}).
+   Fix: explicitly set style.display='none' di semua screen.
+═══════════════════════════════════════════════════════════ */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(el => {
+    el.classList.remove('active');
+    el.style.display = 'none'; // override semua ID/class CSS rules
+  });
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('active');
+  // Set display berdasarkan kebutuhan layout tiap screen
+  if (id === 's-load')  el.style.display = 'flex';   // loading: flex center
+  else if (id === 's-auth')  el.style.display = 'flex';   // auth: flex center
+  else el.style.display = 'block';                    // dashboard: block
+  el.classList.add('fadein');
+  setTimeout(() => el.classList.remove('fadein'), 400);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GAS URL SETUP
+═══════════════════════════════════════════════════════════ */
+function saveGasUrl() {
+  const url = document.getElementById('gas-url-in').value.trim();
+  if (!url.includes('script.google.com')) {
+    toast('wn','URL tidak valid','Harus URL dari script.google.com');return;
+  }
+  GAS_URL = url;
+  localStorage.setItem(GAS_KEY, url);
+  document.getElementById('cfg-banner').classList.remove('show');
+  toast('ok','URL Tersimpan!','Menghubungkan ke server…');
+  initApp();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INIT — dengan localStorage config cache (Bug Fix #3)
+═══════════════════════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', () => {
+  if (!GAS_URL) {
+    showScreen('s-load');
+    document.getElementById('s-load').style.display = 'none'; // hide loading
+    document.getElementById('cfg-banner').classList.add('show');
+  } else {
+    initApp();
+  }
+});
+
+async function initApp() {
+  showScreen('s-load');
+
+  // Coba pakai cache dulu (Bug Fix #3 — speed)
+  try {
+    const cached = JSON.parse(localStorage.getItem(CFG_KEY)||'null');
+    if (cached && (Date.now() - cached._ts) < CFG_TTL) {
+      CONFIG = cached;
+      buildDropdowns();
+      showScreen('s-auth');
+      return; // sudah cepat dari cache
+    }
+  } catch(_) {}
+
+  // Fetch dari GAS
+  try {
+    document.getElementById('ld-txt').textContent = 'Memuat konfigurasi…';
+    const cfg = await gasCall('getGlobalConfig');
+    if (!cfg.success) { showCfgError(cfg.error); return; }
+    cfg._ts = Date.now();
+    CONFIG = cfg;
+    localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); // simpan ke cache
+    buildDropdowns();
+    showScreen('s-auth');
+  } catch(e) {
+    showCfgError(e.message);
+  }
+}
+
+function showCfgError(msg) {
+  toast('er','Koneksi Gagal', msg);
+  document.getElementById('cfg-banner').classList.add('show');
+  document.getElementById('gas-url-in').value = GAS_URL;
+  document.getElementById('s-load').style.display = 'none';
+}
+
+function buildDropdowns() {
+  const o = (list, ph) => `<option value="">${ph}</option>` + (list||[]).map(v=>`<option value="${v}">${v}</option>`).join('');
+  const oa= (list, ph) => `<option value="">${ph}</option>` + (list||[]).map(v=>`<option value="${v}">${v}</option>`).join('');
+  const sl = document.getElementById('sel-sales');
+  sl.innerHTML = '<option value="">— Pilih —</option>';
+  (CONFIG.salesList||[]).forEach(s => sl.innerHTML += `<option value="${s.name}">${s.name}</option>`);
+
+  document.getElementById('fi-rt').innerHTML    = o(CONFIG.roomTypes,  '— Pilih —');
+  document.getElementById('e-rt').innerHTML     = o(CONFIG.roomTypes,  '— Pilih —');
+  document.getElementById('ctr-rt').innerHTML   = o(CONFIG.roomTypes,  '— Pilih —');
+  document.getElementById('fi-st').innerHTML    = o(CONFIG.statusList, '— Pilih —');
+  document.getElementById('e-st').innerHTML     = o(CONFIG.statusList, '— Pilih —');
+  document.getElementById('fi-seg').innerHTML   = o(CONFIG.segmentList,'— Pilih —');
+  document.getElementById('e-seg').innerHTML    = o(CONFIG.segmentList,'— Pilih —');
+  document.getElementById('nc-seg').innerHTML   = o(CONFIG.segmentList,'— Pilih —');
+  document.getElementById('fi-sob').innerHTML   = o(CONFIG.sobList,    '— Pilih —');
+  document.getElementById('e-sob').innerHTML    = o(CONFIG.sobList,    '— Pilih —');
+  document.getElementById('nc-sob').innerHTML   = o(CONFIG.sobList,    '— Pilih —');
+  document.getElementById('fs-seg').innerHTML   = oa(CONFIG.segmentList,'Semua Segment');
+  document.getElementById('fs-sob').innerHTML   = oa(CONFIG.sobList,    'Semua SOB');
+  document.getElementById('fs-st').innerHTML    = oa(CONFIG.statusList, 'Semua Status');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   AUTH
+═══════════════════════════════════════════════════════════ */
+function pk(k)   { if(PIN.length>=4)return; PIN+=k; updPD(); }
+function pdel()  { PIN=PIN.slice(0,-1); updPD(); document.getElementById('auth-err').textContent=''; }
+function updPD() { for(let i=0;i<4;i++) document.getElementById('pd'+i).classList.toggle('on',i<PIN.length); }
+
+function psubmit() {
+  const name = document.getElementById('sel-sales').value;
+  const err  = document.getElementById('auth-err');
+  if (!name) { err.textContent='⚠️ Pilih nama sales.'; return; }
+  if (PIN.length<4) { err.textContent='⚠️ Masukkan PIN 4 digit.'; return; }
+  const match = (CONFIG.salesList||[]).find(s=>s.name===name&&String(s.pin)===PIN);
+  if (match) {
+    SESSION = { name, auth:true };
+    document.getElementById('badge-name').textContent = name;
+    document.getElementById('badge-sales').style.display = 'flex';
+    document.getElementById('btn-lo').style.display = 'block';
+    showScreen('s-dash');
+    toast('ok',`Selamat datang, ${name.split(' ')[0]}!`,'');
+  } else {
+    err.textContent='❌ PIN salah. Coba lagi.';
+    PIN=''; updPD();
+    document.querySelector('.auth-card').classList.remove('shake');
+    void document.querySelector('.auth-card').offsetWidth; // reflow
+    document.querySelector('.auth-card').classList.add('shake');
+  }
+}
+
+function doLogout() {
+  SESSION={name:'',auth:false}; PIN=''; updPD();
+  document.getElementById('sel-sales').value='';
+  document.getElementById('auth-err').textContent='';
+  document.getElementById('badge-sales').style.display='none';
+  document.getElementById('btn-lo').style.display='none';
+  resetForm(); showScreen('s-auth');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TABS
+═══════════════════════════════════════════════════════════ */
+function goTab(t) {
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  document.getElementById('tab-'+t).classList.add('on');
+  ['in','rv','an','ct'].forEach(p=>{
+    document.getElementById('pane-'+p).style.display = p===t ? '' : 'none';
+  });
+  if(t==='rv') loadH();
+  if(t==='an') loadAn();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ▸ BUG FIX #2 — Company Search & New Customer
+   Fix: state management yang benar, dropdown reset setelah pilih,
+   keyword di-carry ke modal new customer
+═══════════════════════════════════════════════════════════ */
+function onSearch(val) {
+  clearTimeout(SRCH_T);
+  const dd = document.getElementById('acd-main');
+  if (val.length < 2) { closeDD('acd-main'); return; }
+  SRCH_T = setTimeout(async () => {
+    try {
+      showDDLoading('acd-main');
+      const res = await gasCall('searchCustomer', { keyword: val });
+      if (res.success) renderDD(res.results, val, 'acd-main', selCus, true);
+    } catch(e) { closeDD('acd-main'); }
+  }, 350);
+}
+
+function showDDLoading(ddId) {
+  const dd = document.getElementById(ddId);
+  dd.innerHTML = `<div class="ac-empty"><div class="spin sm" style="display:inline-block;vertical-align:middle;margin-right:6px"></div>Mencari…</div>`;
+  dd.classList.add('on');
+}
+
+function renderDD(results, keyword, ddId, onSel, showAddNew=false) {
+  const dd = document.getElementById(ddId);
+  dd.innerHTML = '';
+  if (!results.length) {
+    dd.innerHTML = `<div class="ac-empty">Tidak ditemukan untuk "<strong>${keyword}</strong>"</div>`;
+    if (showAddNew) {
+      const n = document.createElement('div');
+      n.className = 'ac-new';
+      n.innerHTML = `➕ Tambah "<strong>${keyword}</strong>" sebagai Customer Baru`;
+      n.onclick = () => { closeDD(ddId); openNewCustomer(keyword); };
+      dd.appendChild(n);
+    }
+  } else {
+    results.forEach(r => {
+      const el = document.createElement('div');
+      el.className = 'ac-item';
+      el.innerHTML = `
+        <div class="ac-name">${r.companyName}</div>
+        <div class="ac-sub">
+          <span>${r.id}</span>
+          ${r.segment ? `<span class="ac-stag">${r.segment}</span>` : ''}
+          <span>${r.contactPerson||'—'}</span>
+          ${r.phone ? `<span>${r.phone}</span>` : ''}
+        </div>`;
+      el.onclick = () => { onSel(r); closeDD(ddId); };
+      dd.appendChild(el);
+    });
+    if (showAddNew) {
+      const n = document.createElement('div');
+      n.className = 'ac-new';
+      n.innerHTML = '➕ Tambah Customer Baru';
+      n.onclick = () => { closeDD(ddId); openNewCustomer(keyword); };
+      dd.appendChild(n);
+    }
+  }
+  dd.classList.add('on');
+}
+
+function closeDD(ddId) {
+  const dd = document.getElementById(ddId);
+  if (dd) dd.classList.remove('on');
+}
+
+// Tutup semua dropdown saat klik di luar
+document.addEventListener('click', e => {
+  if (!e.target.closest('.sw')) {
+    closeDD('acd-main');
+    closeDD('acd-ctr');
+  }
+});
+
+function selCus(c) {
+  document.getElementById('fc-name').value  = c.companyName;
+  document.getElementById('fc-id').value    = c.id;
+  document.getElementById('fc-cp').value    = c.contactPerson || '';
+  document.getElementById('fc-ph').value    = c.phone || '';
+  if (c.segment) document.getElementById('fi-seg').value = c.segment;
+  if (c.sob)     document.getElementById('fi-sob').value = c.sob;
+  // Trigger contract rate check jika room type sudah dipilih
+  const rt = document.getElementById('fi-rt').value;
+  if (rt) lookupRate(c.id, rt);
+  calcPrev();
+}
+
+/* ── New Customer Modal (Bug Fix #2) ── */
+function openNewCustomer(keyword) {
+  NC_KEYWORD = keyword || '';
+  document.getElementById('nc-co').value = NC_KEYWORD;
+  document.getElementById('nc-cp').value = '';
+  document.getElementById('nc-ph').value = '';
+  document.getElementById('nc-seg').value = '';
+  document.getElementById('nc-sob').value = '';
+  document.getElementById('m-nc').classList.add('on');
+  // Focus ke field company
+  setTimeout(() => document.getElementById('nc-co').focus(), 100);
+}
+
+async function doSaveNC() {
+  const co = document.getElementById('nc-co').value.trim();
+  if (!co) { toast('wn','','Nama perusahaan wajib diisi.'); return; }
+  try {
+    const res = await gasCall('saveNewCustomer', { payload:{
+      companyName: co,
+      contactPerson: document.getElementById('nc-cp').value,
+      phone: document.getElementById('nc-ph').value,
+      segment: document.getElementById('nc-seg').value,
+      sob: document.getElementById('nc-sob').value,
+    }});
+    closeMo('m-nc');
+    if (res.success) {
+      // Auto-select customer baru ke form booking (Bug Fix #2)
+      selCus(res.result || { id:res.customerId, companyName:co,
+        contactPerson:document.getElementById('nc-cp').value,
+        phone:document.getElementById('nc-ph').value,
+        segment:document.getElementById('nc-seg').value,
+        sob:document.getElementById('nc-sob').value });
+      // Update search field
+      document.getElementById('fc-name').value = co;
+      toast('ok','Customer Ditambahkan!', res.message);
+    } else toast('er','Gagal', res.error);
+  } catch(e) { toast('er','Error', e.message); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ROOM TYPE CHANGE → CONTRACT RATE LOOKUP
+═══════════════════════════════════════════════════════════ */
+function onRTChange() {
+  calcPrev();
+  const cid = document.getElementById('fc-id').value;
+  const rt  = document.getElementById('fi-rt').value;
+  if (cid && rt) lookupRate(cid, rt);
+  else if (rt)   applyRack(rt);
+  else           resetRB();
+}
+
+async function lookupRate(cid, rt) {
+  setRBLoading();
+  try {
+    const res = await gasCall('getContractRate', { customerId:cid, roomType:rt });
+    applyRateRes(res, rt);
+  } catch(e) { toast('er','Error',e.message); resetRB(); }
+}
+
+function setRBLoading() {
+  document.getElementById('rate-box').outerHTML =
+    `<div class="rate-box rb-m" id="rate-box"><div class="rb-load"><div class="spin sm"></div>Mengecek contract rate…</div></div>`;
+}
+
+function applyRateRes(res, rt) {
+  const ri = document.getElementById('fi-rate');
+  if (res.found && res.status==='active') {
+    CUR_RT='Contract'; CUR_CREF=res.contractId;
+    ri.value=res.contractRate; ri.readOnly=true;
+    const w = res.warning ? `<div class="rb-warn w">${res.warning}</div>` : '';
+    document.getElementById('rate-box').outerHTML = `
+      <div class="rate-box rb-c" id="rate-box">
+        <div class="rb-hdr"><span class="rtag rtag-c">✅ Contract Rate</span><span style="font-size:10px;color:var(--muted)">${res.contractId}</span></div>
+        <div class="rb-val">Rp ${parseInt(res.contractRate).toLocaleString('id-ID')}<span>/ kamar / malam</span></div>
+        <div class="rb-meta"><span>📅 ${res.validFrom} — ${res.validTo}</span><span>👤 ${res.picSales}</span><span>⏳ ${res.daysLeft} hari lagi</span></div>
+        ${w}<div style="margin-top:8px"><button class="btn btn-s sm" onclick="unlockRate()" style="font-size:10.5px">🔓 Override Manual</button></div>
+      </div>`;
+    toast('ok','Contract Rate!',`${res.contractId} · Rp ${parseInt(res.contractRate).toLocaleString('id-ID')}/malam`);
+  } else if (res.found && res.status==='expired') {
+    CUR_RT='Rack'; CUR_CREF=''; applyRackVal(rt);
+    document.getElementById('rate-box').outerHTML = `
+      <div class="rate-box rb-e" id="rate-box">
+        <div class="rb-hdr"><span class="rtag rtag-e">⚠️ Kontrak Expired</span></div>
+        <div class="rb-warn w">${res.warning}</div>
+        <div style="margin-top:7px;font-size:11.5px;color:var(--muted)">Menggunakan Rack Rate sementara.</div>
+      </div>`;
+    toast('wn','Kontrak Expired',res.warning);
+  } else { applyRack(rt); }
+  calcPrev();
+}
+
+function applyRack(rt) {
+  const rack = (CONFIG.rackRateMap||{})[rt];
+  if (rack) {
+    CUR_RT='Rack'; CUR_CREF='';
+    applyRackVal(rt);
+    document.getElementById('rate-box').outerHTML = `
+      <div class="rate-box rb-r" id="rate-box">
+        <div class="rb-hdr"><span class="rtag rtag-r">🏷️ Rack Rate</span><span style="font-size:10px;color:var(--muted)">Tidak ada kontrak aktif</span></div>
+        <div class="rb-val">Rp ${parseInt(rack).toLocaleString('id-ID')}<span>/ kamar / malam</span></div>
+        <div class="rb-meta"><span>📋 Standard rate untuk ${rt}</span></div>
+        <div style="margin-top:7px"><button class="btn btn-s sm" onclick="unlockRate()" style="font-size:10.5px">✏️ Ubah Rate</button></div>
+      </div>`;
+  } else { CUR_RT='Manual'; resetRB(); }
+  calcPrev();
+}
+
+function applyRackVal(rt) {
+  const rack=(CONFIG.rackRateMap||{})[rt];
+  if(rack){document.getElementById('fi-rate').value=rack;document.getElementById('fi-rate').readOnly=false;}
+}
+
+function resetRB() {
+  CUR_RT='Manual'; CUR_CREF='';
+  document.getElementById('fi-rate').readOnly=false;
+  const e=document.getElementById('rate-box');
+  if(e) e.outerHTML=`<div class="rate-box rb-m" id="rate-box"><div class="rb-hdr"><span class="rtag rtag-m">✏️ Manual Input</span><span style="font-size:10px;color:var(--muted)">Pilih Customer + Tipe Kamar</span></div></div>`;
+  calcPrev();
+}
+
+function unlockRate(){
+  CUR_RT='Manual'; CUR_CREF='';
+  document.getElementById('fi-rate').readOnly=false;
+  document.getElementById('fi-rate').focus();
+  document.getElementById('rate-box').outerHTML=`<div class="rate-box rb-m" id="rate-box"><div class="rb-hdr"><span class="rtag rtag-m">✏️ Override Manual</span></div></div>`;
+  calcPrev();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIVE PREVIEW CALC
+═══════════════════════════════════════════════════════════ */
+function calcPrev() {
+  const ci=document.getElementById('fi-ci').value;
+  const co=document.getElementById('fi-co').value;
+  const rm=parseInt(document.getElementById('fi-rooms').value)||0;
+  const rp=parseInt(document.getElementById('fi-rate').value)||0;
+  const seg=document.getElementById('fi-seg').value;
+  const bar=document.getElementById('prev-bar');
+  if(!ci||!co||!rm||!rp){bar.classList.add('hide');return;}
+  const d=(new Date(co)-new Date(ci))/864e5;
+  if(d<=0){bar.classList.add('hide');return;}
+  const rn=Math.ceil(d),rv=rn*rm*rp;
+  document.getElementById('pv-rn').textContent=rn;
+  document.getElementById('pv-rm').textContent=rm;
+  document.getElementById('pv-rv').textContent='Rp '+rv.toLocaleString('id-ID');
+  const sw=document.getElementById('pv-seg-w');
+  if(seg){document.getElementById('pv-seg').textContent=seg;sw.style.display='';}else sw.style.display='none';
+  document.getElementById('pv-rt').textContent={Contract:'✅ Contract',Rack:'🏷️ Rack',Manual:'✏️ Manual'}[CUR_RT]||'—';
+  bar.classList.remove('hide');
+}
+document.getElementById('fi-seg').addEventListener('change',calcPrev);
+
+/* ═══════════════════════════════════════════════════════════
+   SUBMIT BOOKING
+═══════════════════════════════════════════════════════════ */
+async function submitBooking() {
+  const v = id => document.getElementById(id).value.trim();
+  const checks = [
+    [!v('fc-name')||!v('fc-id'), 'Pilih customer dari hasil pencarian.'],
+    [!v('fc-guest'),             'Nama tamu wajib diisi.'],
+    [!v('fi-ci')||!v('fi-co'),  'Tanggal Check-In & Check-Out wajib diisi.'],
+    [new Date(v('fi-co'))<=new Date(v('fi-ci')), 'Check-Out harus setelah Check-In.'],
+    [!v('fi-rt'),   'Pilih tipe kamar.'],
+    [!v('fi-rooms'),'Jumlah kamar tidak valid.'],
+    [!v('fi-rate'), 'Room rate tidak valid.'],
+    [!v('fi-st'),   'Pilih status booking.'],
+    [!v('fi-seg'),  'Market Segment wajib dipilih.'],
+    [!v('fi-sob'),  'Source of Business wajib dipilih.'],
+  ];
+  for (const [cond, msg] of checks) { if(cond){toast('wn','Lengkapi Data',msg);return;} }
+
+  const btn=document.getElementById('btn-sub');
+  btn.classList.add('ld');btn.disabled=true;
+  try {
+    const res = await gasCall('processTransaction',{payload:{
+      picSales:SESSION.name, customerId:v('fc-id'), companyName:v('fc-name'),
+      guestName:v('fc-guest'), checkInDate:v('fi-ci'), checkOutDate:v('fi-co'),
+      roomType:v('fi-rt'), totalRooms:v('fi-rooms'), roomRate:v('fi-rate'),
+      status:v('fi-st'), remarks:v('fi-rem'), marketSegment:v('fi-seg'),
+      sourceOfBusiness:v('fi-sob'), rateType:CUR_RT, contractRef:CUR_CREF,
+    }});
+    if(res.success){toast('ok',`✅ ${res.bookingId}`,res.message);resetForm();}
+    else toast('er','Gagal Simpan',res.error);
+  } catch(e){toast('er','Error',e.message);}
+  btn.classList.remove('ld');btn.disabled=false;
+}
+
+function resetForm() {
+  ['fc-name','fc-id','fc-cp','fc-ph','fc-guest','fi-ci','fi-co','fi-rem'].forEach(id=>document.getElementById(id).value='');
+  ['fi-rt','fi-st','fi-seg','fi-sob'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fi-rooms').value='1';
+  document.getElementById('fi-rate').value='';
+  document.getElementById('fi-rate').readOnly=false;
+  document.getElementById('prev-bar').classList.add('hide');
+  CUR_RT='Manual';CUR_CREF='';resetRB();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ▸ BUG FIX #3 — Speed: History dengan lazy load & skeleton
+═══════════════════════════════════════════════════════════ */
+async function loadH() {
+  const hl=document.getElementById('h-loading');
+  const tb=document.getElementById('h-body');
+  // Show skeleton
+  tb.innerHTML = Array(5).fill(`<tr>${Array(15).fill(`<td><div class="skel" style="height:14px;border-radius:4px"></div></td>`).join('')}</tr>`).join('');
+  hl.style.display='none';
+  try {
+    const res = await gasCall('getRecentBookings',{picSales:SESSION.name});
+    if(!res.success){toast('er','Gagal',res.error);tb.innerHTML=`<tr><td colspan="15"><div class="es"><div class="ei">⚠️</div><p>${res.error}</p></div></td></tr>`;return;}
+    HIST=res.bookings; filtH();
+  } catch(e){toast('er','Error',e.message);tb.innerHTML=`<tr><td colspan="15"><div class="es"><div class="ei">⚠️</div><p>${e.message}</p></div></td></tr>`;}
+}
+
+function filtH(){
+  const kw=(document.getElementById('hs-kw').value||'').toLowerCase();
+  const seg=document.getElementById('fs-seg').value;
+  const sob=document.getElementById('fs-sob').value;
+  const sta=document.getElementById('fs-st').value;
+  const rt =document.getElementById('fs-rt').value;
+  rendH(HIST.filter(b=>{
+    const mk=!kw||(b.bookingId||'').toLowerCase().includes(kw)||(b.companyName||'').toLowerCase().includes(kw)||(b.guestName||'').toLowerCase().includes(kw);
+    return mk&&(!seg||b.marketSegment===seg)&&(!sob||b.sourceOfBusiness===sob)&&(!sta||b.status===sta)&&(!rt||b.rateType===rt);
+  }));
+}
+
+function rendH(list){
+  const tb=document.getElementById('h-body');
+  if(!list.length){tb.innerHTML=`<tr><td colspan="15"><div class="es"><div class="ei">📭</div><p>Tidak ada data.</p></div></td></tr>`;return;}
+  const SM={tentative:'bg-tent',confirm:'bg-conf',canceled:'bg-canc'};
+  const RM={Contract:'bg-ctr',Rack:'bg-rack',Manual:'bg-man'};
+  tb.innerHTML=list.map(b=>{
+    const ts=b.timestamp?new Date(b.timestamp).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'2-digit'}):'—';
+    const ci=b.checkIn?new Date(b.checkIn).toLocaleDateString('id-ID',{day:'2-digit',month:'short'}):'—';
+    const co=b.checkOut?new Date(b.checkOut).toLocaleDateString('id-ID',{day:'2-digit',month:'short'}):'—';
+    return `<tr>
+      <td><strong style="color:var(--gold-l);font-size:11.5px">${b.bookingId}</strong></td>
+      <td style="font-size:10.5px;color:var(--muted)">${ts}</td>
+      <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${b.companyName||'—'}</td>
+      <td>${ci}</td><td>${co}</td>
+      <td style="font-size:11.5px">${b.roomType||'—'}</td>
+      <td style="text-align:right">${b.totalRooms||0}</td>
+      <td style="text-align:right">${b.totalRN||0}</td>
+      <td style="text-align:right">Rp ${(b.roomRate||0).toLocaleString('id-ID')}</td>
+      <td style="text-align:right;color:var(--gold-l);font-weight:600">Rp ${(b.totalRev||0).toLocaleString('id-ID')}</td>
+      <td><span class="bg ${RM[b.rateType]||'bg-man'}">${b.rateType||'—'}</span>${b.contractRef?`<div style="font-size:9.5px;color:var(--muted);margin-top:2px">${b.contractRef}</div>`:''}</td>
+      <td><span class="bg ${segCls(b.marketSegment)}">${b.marketSegment||'—'}</span></td>
+      <td style="font-size:11px;color:var(--muted)">${b.sourceOfBusiness||'—'}</td>
+      <td><span class="bg ${SM[(b.status||'').toLowerCase()]||''}">${b.status||'—'}</span></td>
+      <td><button class="btn btn-s sm" style="padding:5px 9px" onclick='openEdit(${JSON.stringify(b)})'>✏️</button></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ▸ BUG FIX #4 — Segment Analytics + Detail Module
+═══════════════════════════════════════════════════════════ */
+async function loadAn() {
+  document.getElementById('an-chart').innerHTML = `<div style="padding:16px;text-align:center;color:var(--muted)"><div class="spin sm" style="margin:0 auto 8px;display:block"></div>Memuat data…</div>`;
+  try {
+    const res = await gasCall('getSegmentSummary');
+    if(!res.success){toast('er','Gagal',res.error);return;}
+    rendAn(res.summary);
+  } catch(e){toast('er','Error',e.message);}
+}
+
+function rendAn(summary) {
+  if(!summary.length){document.getElementById('an-chart').innerHTML='<div class="es"><div class="ei">📊</div><p>Belum ada data.</p></div>';return;}
+  const tB=summary.reduce((a,b)=>a+b.bookings,0);
+  const tR=summary.reduce((a,b)=>a+b.totalRevenue,0);
+  const tN=summary.reduce((a,b)=>a+b.totalRN,0);
+  const top=summary[0];
+  const cC=summary.reduce((a,b)=>a+(b.rateTypes?.Contract||0),0);
+
+  document.getElementById('a-tbk').textContent=tB;
+  document.getElementById('a-trv').textContent='Rp '+Math.round(tR/1e6)+'jt';
+  document.getElementById('a-trn').textContent=tN+' RN';
+  document.getElementById('a-top').textContent=top?.segment||'—';
+  document.getElementById('a-toprv').textContent=top?'Rp '+(top.totalRevenue||0).toLocaleString('id-ID'):'—';
+  document.getElementById('a-cpct').textContent=tB>0?Math.round(cC/tB*100)+'%':'0%';
+
+  const maxR=Math.max(...summary.map(s=>s.totalRevenue),1);
+  const COLS=['#63b3ed','#9ae6b4','#fbd38d','#c58af9','#fc8181','#81e6d9','#f6ad55','#76a9fa','#f8b4b4','#86efac'];
+
+  document.getElementById('an-chart').innerHTML = summary.map((s,i) => `
+    <div class="bar-row">
+      <div class="bar-lbl">${s.segment}</div>
+      <div class="bar-trk" onclick="loadSegDetail('${s.segment}')" title="Klik untuk detail ${s.segment}">
+        <div class="bar-fill" style="width:${Math.round(s.totalRevenue/maxR*100)}%;background:linear-gradient(90deg,${COLS[i%COLS.length]}99,${COLS[i%COLS.length]})">
+          ${s.bookings} booking
+        </div>
+      </div>
+      <div class="bar-rev">Rp ${(s.totalRevenue/1e6).toFixed(1)}jt</div>
+    </div>`).join('');
+
+  // SOB Breakdown
+  document.getElementById('an-sob').innerHTML = summary.map(s => {
+    const sobs=Object.entries(s.sobBreakdown||{}).sort((a,b)=>b[1]-a[1]);
+    return `<div class="sob-card">
+      <div class="sob-ct"><span>${s.segment}</span><span style="color:var(--muted);font-size:10.5px">${s.bookings} booking</span></div>
+      ${sobs.map(([k,v])=>`<div class="item-row"><span class="item-name">${k}</span><span class="item-val">${v}x (${Math.round(v/s.bookings*100)}%)</span></div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+/* ── Segment Detail (Bug Fix #4) ── */
+async function loadSegDetail(segment) {
+  const panel = document.getElementById('seg-detail');
+  document.getElementById('sd-title').textContent = segment;
+  document.getElementById('sd-kpi').innerHTML = `<div style="grid-column:1/-1;padding:16px;text-align:center;color:var(--muted)"><div class="spin sm" style="display:inline-block;margin-right:8px"></div>Memuat detail ${segment}…</div>`;
+  document.getElementById('sd-grid').innerHTML = '';
+  panel.style.display = '';
+  panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
+
+  try {
+    const res = await gasCall('getSegmentDetail', { segment });
+    if (!res.success || !res.detail) { toast('er','Gagal',res.error||'Tidak ada data'); return; }
+    rendSegDetail(res.detail);
+  } catch(e) { toast('er','Error',e.message); }
+}
+
+function closeSegDetail() {
+  document.getElementById('seg-detail').style.display = 'none';
+}
+
+function rendSegDetail(d) {
+  if (d.empty) {
+    document.getElementById('sd-kpi').innerHTML = `<div style="grid-column:1/-1"><div class="es"><div class="ei">📭</div><p>Belum ada data untuk segment ini.</p></div></div>`;
+    return;
+  }
+
+  // KPIs
+  const adrFmt = d.adr ? 'Rp '+d.adr.toLocaleString('id-ID') : '—';
+  document.getElementById('sd-kpi').innerHTML = `
+    <div class="kpi-box"><div class="kpi-lbl">Total Booking</div><div class="kpi-val">${d.totalBookings}</div></div>
+    <div class="kpi-box"><div class="kpi-lbl">Total Revenue</div><div class="kpi-val" style="font-size:16px">Rp ${(d.totalRevenue/1e6).toFixed(1)}jt</div></div>
+    <div class="kpi-box"><div class="kpi-lbl">Total Room Nights</div><div class="kpi-val">${d.totalRN}</div></div>
+    <div class="kpi-box"><div class="kpi-lbl">ADR (Avg Daily Rate)</div><div class="kpi-val" style="font-size:15px">${adrFmt}</div></div>
+    <div class="kpi-box"><div class="kpi-lbl">Avg Kamar/Booking</div><div class="kpi-val">${d.avgRooms}</div></div>`;
+
+  const COLS=['#63b3ed','#9ae6b4','#fbd38d','#c58af9','#fc8181','#81e6d9','#f6ad55','#76a9fa','#f8b4b4','#86efac'];
+
+  // Monthly chart
+  let monthlyHtml = '';
+  if (d.monthly && d.monthly.length) {
+    const maxRv = Math.max(...d.monthly.map(m=>m.revenue),1);
+    monthlyHtml = `
+      <div class="sd-section" style="grid-column:1/-1">
+        <div class="sd-sec-title">📅 Trend Bulanan (Revenue)</div>
+        <div class="month-chart">
+          ${d.monthly.map((m,i)=>{
+            const pct=Math.round(m.revenue/maxRv*100);
+            const mon=m.month.split('-');const label=`${['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des')[parseInt(mon[1])-1]}`;
+            return `<div class="mc-bar-wrap" title="${m.month}: ${m.bookings} booking · Rp ${m.revenue.toLocaleString('id-ID')}">
+              <div class="mc-bar" style="height:${Math.max(pct,3)}%;background:${COLS[i%COLS.length]}99"></div>
+              <div class="mc-lbl">${label}</div>
+            </div>`;
+          }).join('')}
+        </div>
+        <div style="display:flex;gap:16px;margin-top:8px;font-size:11px;color:var(--muted)">
+          <span>Total: ${d.monthly.reduce((a,m)=>a+m.bookings,0)} booking</span>
+          <span>ADR rata-rata: Rp ${d.monthly.length>0?Math.round(d.monthly.reduce((a,m)=>a+(m.rn>0?m.revenue/m.rn:0),0)/d.monthly.length).toLocaleString('id-ID'):'—'}</span>
+        </div>
+      </div>`;
+  }
+
+  // Rate type breakdown
+  const rtTotal = Object.values(d.rateTypes).reduce((a,b)=>a+b,0);
+  const rtColors = { Contract:'#34c87a', Rack:'#63b3ed', Manual:'#8898c0' };
+  const rateHtml = Object.entries(d.rateTypes).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{
+    const pct=Math.round(v/rtTotal*100);
+    return `<div class="rt-row">
+      <div class="rt-lbl">${k}</div>
+      <div class="rt-bar"><div class="rt-fill" style="width:${pct}%;background:${rtColors[k]||'#8898c0'}"></div></div>
+      <div class="rt-pct">${pct}%</div>
+    </div>`;
+  }).join('');
+
+  // Top customers
+  const custHtml = (d.topCustomers||[]).map((c,i)=>
+    `<div class="item-row">
+      <span class="item-name">${i+1}. ${c.name}</span>
+      <span class="item-val">Rp ${(c.revenue/1e6).toFixed(1)}jt (${c.pct}%)</span>
+    </div>`
+  ).join('');
+
+  // Room types
+  const maxRm = Math.max(...(d.roomTypes||[]).map(r=>r.revenue),1);
+  const rmHtml = (d.roomTypes||[]).map((r,i)=>
+    `<div class="rt-mini">
+      <div style="width:90px;font-size:11.5px;color:var(--text);text-align:right;flex-shrink:0">${r.type}</div>
+      <div class="rt-mini-bar"><div class="rt-mini-fill" style="width:${Math.round(r.revenue/maxRm*100)}%;background:${COLS[i%COLS.length]}99"></div></div>
+      <div style="width:70px;text-align:right;font-size:11px;color:var(--gold-l)">${r.bookings} bk</div>
+    </div>`
+  ).join('');
+
+  // SOB ranked
+  const sobHtml = (d.sobRanked||[]).map(s=>
+    `<div class="item-row"><span class="item-name">${s.name}</span><span class="item-val">${s.count}x · ${s.pct}%</span></div>`
+  ).join('');
+
+  document.getElementById('sd-grid').innerHTML = `
+    ${monthlyHtml}
+    <div class="sd-section">
+      <div class="sd-sec-title">💰 Rate Type Distribution</div>
+      ${rateHtml || '<div style="color:var(--muted);font-size:12px">Belum ada data.</div>'}
+    </div>
+    <div class="sd-section">
+      <div class="sd-sec-title">🏢 Top 5 Customer</div>
+      ${custHtml || '<div style="color:var(--muted);font-size:12px">Belum ada data.</div>'}
+    </div>
+    <div class="sd-section">
+      <div class="sd-sec-title">🛏️ Room Type Breakdown</div>
+      ${rmHtml || '<div style="color:var(--muted);font-size:12px">Belum ada data.</div>'}
+    </div>
+    <div class="sd-section">
+      <div class="sd-sec-title">🔗 Source of Business</div>
+      ${sobHtml || '<div style="color:var(--muted);font-size:12px">Belum ada data.</div>'}
+    </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CONTRACTS TAB
+═══════════════════════════════════════════════════════════ */
+function onCtrSearch(val) {
+  clearTimeout(CSRCH_T);
+  if (val.length < 2) { closeDD('acd-ctr'); return; }
+  CSRCH_T = setTimeout(async () => {
+    try {
+      showDDLoading('acd-ctr');
+      const res = await gasCall('searchCustomer', { keyword: val });
+      if (res.success) renderDD(res.results, val, 'acd-ctr', selCtrCus, false);
+    } catch(e) { closeDD('acd-ctr'); }
+  }, 350);
+}
+
+function selCtrCus(c) {
+  CTR_CUS = c;
+  document.getElementById('ct-kw').value = c.companyName;
+  document.getElementById('ctr-co-name').textContent = c.companyName;
+  document.getElementById('ctr-panel').style.display = '';
+  loadCtrList(c.id);
+}
+
+async function loadCtrList(id) {
+  document.getElementById('ctr-list').innerHTML = `<div style="padding:14px;text-align:center;color:var(--muted)"><div class="spin sm" style="display:inline-block;margin-right:7px"></div>Memuat kontrak…</div>`;
+  try {
+    const res = await gasCall('getCustomerContracts', { customerId: id });
+    if (!res.success) { toast('er','Gagal',res.error); return; }
+    const SM={active:'bg-conf',expired:'bg-canc',upcoming:'bg-tent'};
+    const SL={active:'Aktif',expired:'Expired',upcoming:'Upcoming'};
+    if (!res.contracts.length) {
+      document.getElementById('ctr-list').innerHTML = '<div class="es" style="padding:22px"><div class="ei">📄</div><p>Belum ada kontrak. Klik Tambah Kontrak.</p></div>';
+      return;
+    }
+    document.getElementById('ctr-list').innerHTML = res.contracts.map(c=>`
+      <div class="ctr-row">
+        <div class="ctr-room">${c.roomType}</div>
+        <div class="ctr-rate">Rp ${(c.contractRate||0).toLocaleString('id-ID')}</div>
+        <div class="ctr-period">
+          📅 ${fmtD(c.validFrom)} — ${fmtD(c.validTo)}
+          ${c.status==='active'?`<br><span style="font-size:10.5px;color:var(--ok)">⏳ ${c.daysLeft} hari lagi</span>`:''}
+          ${c.remarks?`<br><span style="font-size:10.5px;color:var(--muted)">${c.remarks}</span>`:''}
+        </div>
+        <span class="bg ${SM[c.status]||''}">${SL[c.status]||c.status}</span>
+      </div>`).join('');
+  } catch(e) { toast('er','Error',e.message); }
+}
+
+function openAddCtr() {
+  if (!CTR_CUS) { toast('wn','','Pilih customer terlebih dahulu.'); return; }
+  document.getElementById('ctr-cid').value = CTR_CUS.id;
+  document.getElementById('ctr-co').value  = CTR_CUS.companyName;
+  ['ctr-rt','ctr-rp','ctr-vf','ctr-vt','ctr-rem'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('m-ctr').classList.add('on');
+}
+
+async function doSaveCtr() {
+  const v=id=>document.getElementById(id).value.trim();
+  if(!v('ctr-rt'))return toast('wn','','Pilih tipe kamar.');
+  if(!v('ctr-rp'))return toast('wn','','Rate wajib diisi.');
+  if(!v('ctr-vf')||!v('ctr-vt'))return toast('wn','','Periode kontrak wajib diisi.');
+  if(new Date(v('ctr-vt'))<=new Date(v('ctr-vf')))return toast('wn','','Tanggal akhir harus setelah tanggal mulai.');
+  try {
+    const res=await gasCall('saveContractRate',{payload:{
+      customerId:document.getElementById('ctr-cid').value,
+      companyName:CTR_CUS.companyName, roomType:v('ctr-rt'), contractRate:v('ctr-rp'),
+      validFrom:v('ctr-vf'), validTo:v('ctr-vt'), picSales:SESSION.name, remarks:v('ctr-rem'),
+    }});
+    closeMo('m-ctr');
+    if(res.success){toast('ok','Kontrak Tersimpan!',res.message);loadCtrList(CTR_CUS.id);}
+    else toast('er','Gagal',res.error);
+  } catch(e){toast('er','Error',e.message);}
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MODAL EDIT BOOKING
+═══════════════════════════════════════════════════════════ */
+function openEdit(b){
+  document.getElementById('e-ri').value=b.rowIndex;
+  document.getElementById('e-bid').value=b.bookingId;
+  document.getElementById('e-cid').value=b.customerId;
+  document.getElementById('e-co').value=b.companyName;
+  document.getElementById('e-gu').value=b.guestName;
+  document.getElementById('e-ci').value=fmtDI(b.checkIn);
+  document.getElementById('e-co2').value=fmtDI(b.checkOut);
+  document.getElementById('e-rt').value=b.roomType;
+  document.getElementById('e-rm').value=b.totalRooms;
+  document.getElementById('e-rp').value=b.roomRate;
+  document.getElementById('e-st').value=b.status;
+  document.getElementById('e-rem').value=b.remarks||'';
+  document.getElementById('e-seg').value=b.marketSegment||'';
+  document.getElementById('e-sob').value=b.sourceOfBusiness||'';
+  document.getElementById('e-rtype').value=b.rateType||'Manual';
+  document.getElementById('e-cref').value=b.contractRef||'';
+  const isDel=(b.status||'').toLowerCase()==='confirm';
+  document.getElementById('btn-del').disabled=isDel;
+  document.getElementById('btn-del').title=isDel?'Booking Confirm tidak bisa dihapus':'';
+  document.getElementById('m-edit').classList.add('on');
+}
+
+async function saveEdit(){
+  const btn=document.getElementById('btn-esave');btn.classList.add('ld');btn.disabled=true;
+  const v=id=>document.getElementById(id).value;
+  try{
+    const res=await gasCall('updateOrDeleteTransaction',{payload:{
+      action:'update',rowIndex:v('e-ri'),bookingId:v('e-bid'),customerId:v('e-cid'),
+      companyName:v('e-co'),guestName:v('e-gu'),checkInDate:v('e-ci'),checkOutDate:v('e-co2'),
+      roomType:v('e-rt'),totalRooms:v('e-rm'),roomRate:v('e-rp'),status:v('e-st'),
+      remarks:v('e-rem'),marketSegment:v('e-seg'),sourceOfBusiness:v('e-sob'),
+      rateType:v('e-rtype'),contractRef:v('e-cref'),
+    }});
+    if(res.success){toast('ok','Tersimpan!',res.message);closeMo('m-edit');loadH();}
+    else toast('er','Gagal',res.error);
+  }catch(e){toast('er','Error',e.message);}
+  btn.classList.remove('ld');btn.disabled=false;
+}
+
+async function delBooking(){
+  if(!confirm('Yakin ingin menghapus booking ini?'))return;
+  try{
+    const res=await gasCall('updateOrDeleteTransaction',{payload:{
+      action:'delete',rowIndex:document.getElementById('e-ri').value,
+      bookingId:document.getElementById('e-bid').value,
+    }});
+    if(res.success){toast('ok','Dihapus!',res.message);closeMo('m-edit');loadH();}
+    else toast('er','Ditolak!',res.error);
+  }catch(e){toast('er','Error',e.message);}
+}
+
+/* ═══════════════════════════════════════════════════════════
+   UTILS
+═══════════════════════════════════════════════════════════ */
+function closeMo(id){document.getElementById(id).classList.remove('on');}
+
+function segCls(seg){
+  return({'Corporate':'bg-corp','Government':'bg-gov','Travel Agent':'bg-ta','OTA':'bg-ota',
+    'MICE':'bg-mice','Social':'bg-soc','FIT':'bg-fit','Wholesale':'bg-whl',
+    'Airline Crew':'bg-arl','Long Stay':'bg-lng'}[seg])||'bg-oth';
+}
+
+function toast(type,title,msg){
+  const icons={ok:'✅',er:'❌',wn:'⚠️'};
+  const wrap=document.getElementById('toast-wrap');
+  const el=document.createElement('div');
+  el.className=`toast ${type}`;
+  el.style.animation='tin .35s cubic-bezier(.34,1.56,.64,1) both';
+  el.innerHTML=`<div class="ti">${icons[type]||'ℹ️'}</div><div><div class="tt">${title}</div>${msg?`<div class="tm">${msg}</div>`:''}</div>`;
+  wrap.appendChild(el);
+  setTimeout(()=>{el.style.animation='tout .28s ease forwards';setTimeout(()=>el.remove(),280);},4200);
+}
+
+function fmtDI(v){if(!v)return'';try{const d=new Date(v);return isNaN(d)?'':d.toISOString().split('T')[0];}catch{return'';}}
+function fmtD(v){if(!v)return'—';try{return new Date(v).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});}catch{return v;}}
+</script>
+</body>
+</html>
