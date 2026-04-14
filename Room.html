@@ -590,7 +590,7 @@ tr:last-child td{border-bottom:none;}
 /* ══════════════════════════════════════════════════════
    CONFIG & GAS API
 ══════════════════════════════════════════════════════ */
-const GAS_URL  = 'https://script.google.com/macros/s/AKfycbzcQpG0JJxide2p-RWB4efij7S7HyEnot1UlMnTjmT54WJI4iYxfi3C8sK9HZqZmsz6/exec';
+const GAS_URL  = 'https://script.google.com/macros/s/AKfycbx49Pavf_wEwpRCFq2u9nSij2lIKCWucxDJzJxOiT-L45Ca0ijkHWbpOy1kEf8cYj7h/exec';
 const CFG_KEY  = 'ss_cfg_cache';
 const CFG_TTL  = 15 * 60 * 1000; // 15 menit
 
@@ -600,6 +600,7 @@ let PIN     = '';
 let HIST    = [], SRCH_T = null, CSRCH_T = null;
 let CUR_RT  = 'Manual', CUR_CREF = '';
 let CTR_CUS = null;
+let NC_KEYWORD = ''; // keyword dari search yang dibawa ke modal new customer
 
 /* ── gasCall: GET ke GAS (bukan POST, hindari redirect issue) ── */
 async function gasCall(action, params={}, timeoutMs=20000) {
@@ -770,109 +771,6 @@ function showScreen(id) {
   else el.style.display = 'block';                    // dashboard: block
   el.classList.add('fadein');
   setTimeout(() => el.classList.remove('fadein'), 400);
-}
-
-/* ═══════════════════════════════════════════════════════════
-   GAS URL SETUP
-═══════════════════════════════════════════════════════════ */
-
-
-/* ═══════════════════════════════════════════════════════════
-   INIT — dengan localStorage config cache (Bug Fix #3)
-═══════════════════════════════════════════════════════════ */
-window.addEventListener('DOMContentLoaded', initApp);
-
-async function initApp() {
-  showScreen('s-load');
-
-  // Coba pakai cache dulu — validasi dulu sebelum pakai
-  try {
-    const cached = JSON.parse(localStorage.getItem(CFG_KEY)||'null');
-    const cacheValid = cached 
-      && cached._ts 
-      && (Date.now() - cached._ts) < CFG_TTL
-      && cached.salesList 
-      && cached.salesList.length > 0  // pastikan ada data sales
-      && cached.roomTypes 
-      && cached.roomTypes.length > 0;
-    if (cacheValid) {
-      CONFIG = cached;
-      buildDropdowns();
-      showScreen('s-auth');
-      return;
-    }
-  } catch(_) {}
-  // Bersihkan cache korup
-  try { localStorage.removeItem(CFG_KEY); } catch(_) {}
-
-  // Fetch dari GAS
-  try {
-    document.getElementById('ld-txt').textContent = 'Memuat konfigurasi…';
-    const cfg = await gasCall('getGlobalConfig');
-    if (!cfg.success) { showCfgError(cfg.error); return; }
-    cfg._ts = Date.now();
-    CONFIG = cfg;
-    localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); // simpan ke cache
-    buildDropdowns();
-    showScreen('s-auth');
-  } catch(e) {
-    showCfgError(e.message);
-  }
-}
-
-function showCfgError(msg) {
-  // Force semua screen hidden
-  document.querySelectorAll('.screen').forEach(el => {
-    el.classList.remove('active');
-    el.style.cssText = 'display:none !important';
-  });
-  // Bersihkan cache yang mungkin korup
-  try { localStorage.removeItem('ss_cfg_cache'); } catch(_) {}
-  // Tampilkan error screen di main
-  const body = document.querySelector('.main');
-  if (body) body.innerHTML = `
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:70vh;gap:18px;text-align:center;padding:20px;">
-      <div style="font-size:52px">⚠️</div>
-      <div style="font-family:'Playfair Display',serif;font-size:20px;color:#f8f9fc">Gagal Terhubung ke Server</div>
-      <div style="font-size:12.5px;color:#8898c0;max-width:400px;line-height:1.8;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px">
-        <strong style="color:#f5a623">Error:</strong> ${msg}<br><br>
-        Pastikan:<br>
-        1. Code.gs sudah di-update dan di-<strong>deploy ulang (New Deployment)</strong><br>
-        2. Setting: Execute as <strong>Me</strong>, Who has access: <strong>Anyone</strong><br>
-        3. Pakai URL deployment terbaru
-      </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
-        <button onclick="localStorage.removeItem('ss_cfg_cache');location.reload()"
-          style="background:linear-gradient(135deg,#c9943a,#d4a030);color:#0d1b3e;border:none;padding:11px 22px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
-          🔄 Clear Cache & Retry
-        </button>
-        <button onclick="doTestGAS()"
-          style="background:rgba(99,179,237,.15);color:#63b3ed;border:1px solid rgba(99,179,237,.3);padding:11px 22px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">
-          🔍 Test Koneksi GAS
-        </button>
-      </div>
-      <div id="test-result" style="font-size:12px;color:#8898c0;max-width:420px;word-break:break-all;line-height:1.6"></div>
-    </div>`;
-}
-
-async function doTestGAS() {
-  const el = document.getElementById('test-result');
-  if (!el) return;
-  el.innerHTML = '<span style="color:#f5a623">⏳ Menguji koneksi…</span>';
-  try {
-    const url = GAS_URL + '?payload=' + encodeURIComponent(JSON.stringify({action:'getGlobalConfig'}));
-    const r = await fetch(url);
-    const data = await r.json();
-    if (data.salesList && data.salesList.length > 0) {
-      el.innerHTML = '<span style="color:#34c87a">✅ GAS OK! Sales: ' + data.salesList.map(s=>s.name).join(', ') + '</span><br><button onclick="location.reload()" style="margin-top:8px;background:#34c87a;color:#0d1b3e;border:none;padding:8px 16px;border-radius:7px;font-weight:700;cursor:pointer">▶ Lanjut Login</button>';
-    } else if (data.success && !data.salesList) {
-      el.innerHTML = '<span style="color:#f5a623">⚠️ GAS merespons tapi data kosong.<br>doGet di Code.gs belum diupdate atau belum New Deployment.</span><br><small>Response: ' + JSON.stringify(data).substring(0,150) + '</small>';
-    } else {
-      el.innerHTML = '<span style="color:#f05252">❌ ' + (data.error||JSON.stringify(data).substring(0,150)) + '</span>';
-    }
-  } catch(e) {
-    el.innerHTML = '<span style="color:#f05252">❌ ' + e.message + '</span>';
-  }
 }
 
 function buildDropdowns() {
