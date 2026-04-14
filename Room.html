@@ -588,6 +588,20 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 /* ══════════════════════════════════════════════════════
+   FIX Bug 2: Unregister Service Worker lama dari GitHub Pages
+   SW lama mengintercepti fetch() ke GAS → response body conflict
+══════════════════════════════════════════════════════ */
+(function unregisterOldSW() {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    if (regs.length) {
+      console.log('[SalesSync] Unregistering ' + regs.length + ' old service worker(s)…');
+      regs.forEach(reg => reg.unregister().then(() => console.log('[SalesSync] SW unregistered:', reg.scope)));
+    }
+  }).catch(() => {});
+})();
+
+/* ══════════════════════════════════════════════════════
    CONFIG & GAS API
 ══════════════════════════════════════════════════════ */
 const GAS_URL  = 'https://script.google.com/macros/s/AKfycbx49Pavf_wEwpRCFq2u9nSij2lIKCWucxDJzJxOiT-L45Ca0ijkHWbpOy1kEf8cYj7h/exec';
@@ -602,27 +616,42 @@ let CUR_RT  = 'Manual', CUR_CREF = '';
 let CTR_CUS = null;
 let NC_KEYWORD = ''; // keyword dari search yang dibawa ke modal new customer
 
-/* ── gasCall: GET ke GAS (bukan POST, hindari redirect issue) ── */
+/* ── gasCall: GET ke GAS — robust dengan redirect & SW detection ── */
 async function gasCall(action, params={}, timeoutMs=20000) {
   const payload = encodeURIComponent(JSON.stringify({ action, ...params }));
   const url = GAS_URL + '?payload=' + payload;
   const ctrl = new AbortController();
   const tid  = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    const r = await fetch(url, { signal: ctrl.signal });
+    // FIX Bug 3: redirect:'follow' eksplisit, credentials:'omit' cegah SW auth issue
+    const r = await fetch(url, {
+      signal: ctrl.signal,
+      redirect: 'follow',
+      credentials: 'omit',
+      cache: 'no-store'
+    });
     clearTimeout(tid);
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    // Ambil sebagai text dulu untuk debug jika JSON gagal parse
+    if (!r.ok) throw new Error('HTTP ' + r.status + ' — GAS tidak merespons dengan benar.');
     const txt = await r.text();
+    // Deteksi jika GAS redirect ke Google login (HTML bukan JSON)
+    if (txt.trim().startsWith('<!DOCTYPE') || txt.trim().startsWith('<html')) {
+      throw new Error(
+        'GAS mengembalikan halaman HTML (bukan JSON). ' +
+        'Kemungkinan: (1) Deploy setting bukan "Anyone" — harus "Anyone, even anonymous". ' +
+        '(2) URL deployment salah atau sudah kadaluarsa. ' +
+        '(3) Perlu New Deployment bukan Manage Deployment.'
+      );
+    }
     try {
       return JSON.parse(txt);
     } catch(_) {
-      throw new Error('Response bukan JSON. Pastikan Code.gs sudah diupdate & di-deploy ulang. Preview: ' + txt.substring(0,120));
+      throw new Error('Response bukan JSON valid. Preview: ' + txt.substring(0, 150));
     }
   } catch(e) {
     clearTimeout(tid);
     if (e.name === 'AbortError')
-      throw new Error('Timeout ' + (timeoutMs/1000) + ' detik. GAS tidak merespons.');
+      throw new Error('Timeout ' + (timeoutMs/1000) + ' detik — GAS tidak merespons. Cek koneksi internet.');
+    // Re-throw dengan pesan yang sudah jelas
     throw e;
   }
 }
@@ -739,7 +768,11 @@ async function doTestGAS() {
     try {
       const json = JSON.parse(txt);
       if (json.salesList && json.salesList.length > 0) {
-        out.innerHTML += '<br><span style="color:#34c87a">✅ Data OK! Sales: ' + json.salesList.map(s=>s.name).join(', ') + '</span><br><button onclick="localStorage.removeItem('ss_cfg_cache');initApp()" style="margin-top:8px;background:#34c87a;color:#0d1b3e;border:none;padding:8px 16px;border-radius:7px;font-weight:700;cursor:pointer">▶ Lanjut Login</button>';
+        // FIX Bug 1: template literal — single quote tidak konflik dengan string JS
+        const salesNames = json.salesList.map(s=>s.name).join(', ');
+        out.innerHTML += `<br><span style="color:#34c87a">✅ GAS OK! Sales: ${salesNames}</span><br>` +
+          `<button onclick="localStorage.removeItem('ss_cfg_cache');initApp()" ` +
+          `style="margin-top:8px;background:#34c87a;color:#0d1b3e;border:none;padding:8px 16px;border-radius:7px;font-weight:700;cursor:pointer">▶ Lanjut Login</button>`;
       } else {
         out.innerHTML += '<br><span style="color:#f5a623">⚠️ GAS merespons tapi salesList kosong. Cek Code.gs & New Deployment.</span>';
       }
